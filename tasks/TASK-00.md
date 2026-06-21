@@ -29,17 +29,17 @@
 
 ## 执行步骤
 - [x] 确认 minSdk 决策（=26）
-- [x] 改造 Gradle：引入 Compose / Material3 / Navigation（version catalog）；DataStore/Room/Hilt 待后续阶段
+- [x] 改造 Gradle：引入 Compose / Material3 / Navigation / DataStore（version catalog）；Room/Hilt 待后续阶段
 - [x] 用 Compose 替换入口（新建 MainActivity），配置 MD3 主题与 edge-to-edge
-- [~] 实现主题骨架：蓝色默认配色 + 浅/深/跟随系统 + 动态配色 hook（强调色预设与持久化待接 DataStore）
-- [x] 建立中/英 strings 资源（语言切换骨架待接 DataStore）
+- [x] 实现主题：蓝色默认 + 7 种预设强调色 + 浅/深/跟随系统 + 动态配色，全部由 DataStore 驱动
+- [x] 建立中/英 strings 资源（语言**选择已持久化**；运行时 locale 应用待后续，见遗留）
 - [x] 搭三页底部导航与占位页
-- [ ] 初始化 DataStore 设置仓库 + Room 数据库骨架
-- [ ] 建立 Logger 与错误模型、核心数据 enum/data class（MediaType/QualityPreset/SizePreset 等）
-- [ ] 接入 Hilt，按包结构组织
+- [x] 初始化 DataStore 设置仓库（Room 数据库骨架待 Stage C）
+- [x] 建立 Logger 与错误模型、核心数据 enum/data class（MediaType/QualityPreset/SizePreset/AppSettings 等）
+- [~] 依赖注入：第一版用手动 AppContainer（Hilt 待 Stage D，替换点局限于 Application/ViewModel 工厂）
 
-> 进度分阶段：Stage A（Compose/主题/导航底座）✅ 已构建通过；
-> Stage B（DataStore + 设置/主题持久化）、Stage C（Room）、Stage D（Hilt + 核心模型/Logger）待续。
+> 进度分阶段：Stage A（Compose/主题/导航底座）✅；Stage B（DataStore 设置 + 主题/强调色持久化 + 核心模型 + Logger）✅ 已构建通过；
+> Stage C（Room 骨架）、Stage D（Hilt，需先验证 KSP/AGP9 兼容）待续。
 
 ## 验收标准
 - 应用可启动，三页底部导航可切换。
@@ -59,6 +59,19 @@
 - 关键修正：AGP 9 内置 Kotlin，需移除 `org.jetbrains.kotlin.android` 插件；XML Material3 主题依赖 `com.google.android.material`，需保留。
 - 验证：`gradlew :app:assembleDebug` BUILD SUCCESSFUL，产出 `app-debug.apk`。**未做**实机/模拟器运行验证（环境无设备）。
 
+### Stage B（已完成，已验证）
+- 新增依赖：`datastore-preferences`、`lifecycle-runtime-compose`。
+- 新增核心模型：`core/model/{MediaType,QualityPreset,SizePreset,ConversionError,AppSettings(含 ThemeMode/AccentColor/AppLanguage)}`。
+- 新增 `core/common/Logger`（接口 + AndroidLogger）。
+- 新增 `core/datastore/SettingsRepository`（DataStore Preferences，settings 冷流 + setter）。
+- 设计系统重构：`Color`(中性基底) + `Accent`(7 强调色映射/swatch) + `Theme`(由 ThemeMode/AccentColor/dynamic 驱动)。
+- 新增 `di/AppContainer` + `SwiftFormatApplication`（手动 DI），manifest 注册 application。
+- 设置页落地：主题模式 / 强调色 / 动态配色 / 语言 选择，经 `SettingsViewModel` 写回 DataStore；
+  `MainActivity` 观察 settings 实时应用主题。
+- 验证：`gradlew :app:assembleDebug` BUILD SUCCESSFUL；无编译警告。**未做**实机运行验证。
+
 ### 待续
-- Stage B/C/D：DataStore 设置与主题/语言持久化、Room 骨架、Hilt、Logger 与核心数据模型。
-- 验收标准中「强调色/主题重启保留」「语言手动切换即时刷新」「Room/DataStore 读写样例」依赖后续阶段。
+- Stage C：Room 数据库骨架（历史表，需 KSP，先验证 KSP/AGP9 兼容）。
+- Stage D：Hilt 替换手动容器（需 KSP）。
+- 语言运行时切换：当前仅持久化选择，实际 locale 应用（不重启刷新）待实现（候选：AppCompatDelegate.setApplicationLocales 或 API33 LocaleManager）。
+- 验收标准中「语言手动切换即时刷新」「Room 读写样例」仍待上述项；其余（主题/强调色即时生效与重启保留、构建通过、无硬编码文案）已满足（构建层面，未实机）。

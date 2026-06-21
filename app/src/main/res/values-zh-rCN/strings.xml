@@ -13,4 +13,25 @@
     <!-- 占位页面标题 -->
     <string name="history_title">历史</string>
     <string name="settings_title">设置</string>
+
+    <!-- 设置 · 外观 -->
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="settings_accent">强调色</string>
+    <string name="settings_dynamic_color">系统动态配色</string>
+    <string name="settings_dynamic_color_desc">使用系统壁纸取色（Android 12+）</string>
+    <string name="settings_language">语言</string>
+    <string name="language_system">跟随系统</string>
+    <string name="language_chinese">简体中文</string>
+    <string name="language_english">English</string>
+    <string name="accent_blue">蓝色</string>
+    <string name="accent_cyan">青色</string>
+    <string name="accent_green">绿色</string>
+    <string name="accent_purple">紫色</string>
+    <string name="accent_pink">粉色</string>
+    <string name="accent_orange">橙色</string>
+    <string name="accent_red">红色</string>
 </resources>

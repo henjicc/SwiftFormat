@@ -13,4 +13,25 @@
     <!-- Placeholder screen titles -->
     <string name="history_title">History</string>
     <string name="settings_title">Settings</string>
+
+    <!-- Settings · appearance -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_accent">Accent color</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_desc">Use colors from your wallpaper (Android 12+)</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">Follow system</string>
+    <string name="language_chinese">简体中文</string>
+    <string name="language_english">English</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_cyan">Cyan</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_purple">Purple</string>
+    <string name="accent_pink">Pink</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_red">Red</string>
 </resources>

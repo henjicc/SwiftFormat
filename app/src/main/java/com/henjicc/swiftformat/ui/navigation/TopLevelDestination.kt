@@ -11,7 +11,7 @@ import com.henjicc.swiftformat.R
 /** 底部导航三个顶层目的地（见 SPEC 6.2）。 */
 enum class TopLevelDestination(
     val route: String,
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
     CONVERT("convert", R.string.nav_convert, Icons.Filled.SwapHoriz),

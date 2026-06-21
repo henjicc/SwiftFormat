@@ -105,10 +105,12 @@
 
 ## 5. 当前进度
 
-- **总体阶段**：TASK-00 进行中（Stage A 已完成）。
-- **已完成**：项目资料分析；任务目录创建；TASK-00 Stage A —— minSdk=26，appcompat 骨架改造为
-  Compose + Material3，蓝色默认主题、三页底部导航、中英文资源，`assembleDebug` 构建通过。
-- **下一步**：TASK-00 Stage B —— DataStore 设置仓库与主题/强调色/语言持久化；随后 Room、Hilt、Logger 与核心数据模型。
+- **总体阶段**：TASK-00 进行中（Stage A、B 已完成）。
+- **已完成**：项目资料分析；任务目录创建；TASK-00 Stage A（Compose/主题/导航底座）；
+  TASK-00 Stage B —— DataStore 设置仓库与主题/7 强调色/动态配色/语言持久化、核心数据模型、Logger、
+  设置页可视控件，`assembleDebug` 构建通过。
+- **下一步**：TASK-00 Stage C —— Room 历史表骨架（需先验证 KSP/AGP9 兼容）；随后 Stage D Hilt 替换手动容器；
+  语言运行时 locale 应用待实现。
 - **未解决问题 / 风险**：
   - minSdk 24 vs 26 待用户确认（见 TASK-00）。
   - FFmpeg AAR 选型、许可证（LGPL/GPL）与 16KB 页面支持需在 TASK-05 前确认。
