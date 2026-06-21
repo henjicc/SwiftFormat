@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
+    implementation(libs.androidx.heifwriter)
     implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.effect)

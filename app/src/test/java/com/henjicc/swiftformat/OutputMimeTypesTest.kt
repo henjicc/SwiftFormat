@@ -13,6 +13,8 @@ class OutputMimeTypesTest {
         assertEquals("image/webp", OutputMimeTypes.forFormat("WEBP"))
         assertEquals("image/bmp", OutputMimeTypes.forFormat("BMP"))
         assertEquals("image/tiff", OutputMimeTypes.forFormat("TIFF"))
+        assertEquals("image/heic", OutputMimeTypes.forFormat("HEIC"))
+        assertEquals("image/avif", OutputMimeTypes.forFormat("AVIF"))
         assertEquals("video/mp4", OutputMimeTypes.forFormat("MP4"))
         assertEquals("video/quicktime", OutputMimeTypes.forFormat("MOV"))
         assertEquals("video/webm", OutputMimeTypes.forFormat("WEBM"))

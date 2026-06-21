@@ -106,8 +106,9 @@
 > 维护的 16KB fork（`JamaisMagic/ffmpeg-kit-16KB` non-GPL full 变体，LGPL-3.0，已用 javap 核实 API、
 > 解压 aar 确认四 ABI 原生库与许可证字段，非凭空采信）；后续扩展已补齐
 > `IMAGE -> BMP/TIFF`、`AUDIO -> OGG`、`VIDEO -> MOV`、`VIDEO -> M4A/WAV/FLAC/MP3/WEBM/MKV`，
-> 并新增 `FfmpegStillImageEngine` 与 `FFprobeKit` / 图片 bounds 输出校验；
-> 当前仍未做 16KB 真机验证、APK 体积评估与硬件加速验证，详见 TASK-05「已知简化」。
+> 并新增 `FfmpegStillImageEngine` 与 `FFprobeKit` / 图片 bounds 输出校验；图片链路后续也已补齐
+> `HEIC / AVIF` 输出（基于 AndroidX `HeifWriter` / `AvifWriter`，非 FFmpeg 路径）；
+> 当前仍未做 16KB 真机验证、APK 体积评估、硬件加速验证与 HEIC/AVIF 真机覆盖，详见 TASK-05「已知简化」。
 
 ### 依赖关系图
 ```
@@ -178,14 +179,17 @@
   其中 `MP3 / M4A / WAV / FLAC` 走“视频提取音频”链路，新增 `FfmpegStillImageEngine`、
   `UNSUPPORTED_IMAGE_OUTPUT` / `NO_AUDIO_TRACK` / `UNSUPPORTED_VIDEO_OUTPUT` /
   `OUTPUT_VALIDATION_FAILED` 友好错误类型），
+  图片输出扩展第二步（新增 `HEIC / AVIF` 输出，接入 AndroidX `heifwriter`，新增
+  `HeifAvifImageEngine`，图片组选项顺序扩为 `JPG / PNG / WEBP / BMP / TIFF / HEIC / AVIF`，
+  并补齐 MIME、命名、路由与不支持错误映射），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先做真机/模拟器验证与多设备测试，
-  重点覆盖失败场景、前台服务恢复、分享/打开/查看位置、超大字体/TalkBack、横竖屏和 4KB/16KB 页面设备，
-  然后再决定是否补剩余设置项与发布收尾。
-- **遗留**：TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
+  重点覆盖失败场景、前台服务恢复、分享/打开/查看位置、超大字体/TalkBack、横竖屏、4KB/16KB 页面设备，
+  以及 `HEIC / AVIF` 的实际编码可用性与系统互操作性，然后再决定是否补剩余设置项与发布收尾。
+- **遗留**：TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP/HEIC/AVIF 互转打开、
   MP4/AAC 转换效果、BMP/TIFF/MP3/M4A/OGG/FLAC/WAV/MOV/WEBM/MKV/视频→音频 转换效果、16KB 页面设备）待设备/模拟器环境；
   TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
-  UI 动态显隐、EXIF 完整标签保留、HEIC/AVIF、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
+  UI 动态显隐、EXIF 完整标签保留、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
   判定逻辑拆成纯函数单测，编排本身运行时行为待 Robolectric/插桩或真机验证）；输出统一写入
   `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消为"双重保证"非事务性保证；
@@ -199,6 +203,9 @@
   - **FFmpeg 依赖为社区维护 fork，非官方项目**：官方 `arthenica/ffmpeg-kit` 已退役下架，当前用的
     `JamaisMagic/ffmpeg-kit-16KB` 缺乏长期生产验证记录，若后续出现兼容性/维护停滞问题需重新评估
     替换（已通过 `ConversionEngine` 接口隔离，替换成本可控）。详见 TASK-05「选型决策」。
+  - **HEIC/AVIF 输出依赖系统编码能力**：当前实现通过 AndroidX `heifwriter` 接入，`HEIC` 需 API 28+、
+    `AVIF` 需 API 31+；同时因库本身声明 `minSdk 28`，工程侧使用了 manifest `tools:overrideLibrary`
+    并在运行时门控，构建已验证通过，但仍需真机确认设备互操作性与失败表现。
   - **任务恢复不是断点续转**：当前“进程恢复”实现是应用重启后重新提交未完成任务并沿用原历史记录/目标 Uri，
     不是从原编码进度继续；对第一版用户体验足够，但耗时会比真正断点续转更长。
   - design token 为 teal，与 SPEC 蓝色默认强调色冲突，已约定以 SPEC 为准。

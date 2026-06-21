@@ -136,7 +136,7 @@ class ConversionOrchestrator(
                     failTask(
                         request.id,
                         historyId,
-                        ConversionError(ConversionError.Kind.UNSUPPORTED_OUTPUT, "no engine supports this request"),
+                        ConversionError(unsupportedOutputKind(request), "no engine supports this request"),
                     )
                     return@withPermit
                 }
@@ -221,6 +221,14 @@ class ConversionOrchestrator(
             }
         }
         activeJobs[taskId] = job
+    }
+
+    private fun unsupportedOutputKind(request: ConversionRequest): ConversionError.Kind = when {
+        request.input.mediaType == MediaType.IMAGE -> ConversionError.Kind.UNSUPPORTED_IMAGE_OUTPUT
+        request.input.mediaType == MediaType.VIDEO && request.targetMediaType == MediaType.VIDEO ->
+            ConversionError.Kind.UNSUPPORTED_VIDEO_OUTPUT
+
+        else -> ConversionError.Kind.UNSUPPORTED_OUTPUT
     }
 
     private fun updateTaskStatus(id: String, status: ConversionStatus) {

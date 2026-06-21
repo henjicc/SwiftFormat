@@ -11,6 +11,8 @@ object OutputMimeTypes {
         "WEBP" -> "image/webp"
         "BMP" -> "image/bmp"
         "TIFF" -> "image/tiff"
+        "HEIC" -> "image/heic"
+        "AVIF" -> "image/avif"
         "MP4" -> "video/mp4"
         "MOV" -> "video/quicktime"
         "WEBM" -> "video/webm"

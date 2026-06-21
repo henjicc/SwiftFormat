@@ -20,6 +20,7 @@ import com.henjicc.swiftformat.core.file.ThumbnailImageLoader
 import com.henjicc.swiftformat.engine.api.ConversionEngineSelector
 import com.henjicc.swiftformat.engine.ffmpeg.FfmpegEngine
 import com.henjicc.swiftformat.engine.ffmpeg.FfmpegStillImageEngine
+import com.henjicc.swiftformat.engine.image.HeifAvifImageEngine
 import com.henjicc.swiftformat.engine.image.NativeImageEngine
 import com.henjicc.swiftformat.engine.media.Media3Engine
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -45,7 +46,7 @@ class AppContainer(context: Context) {
         ConversionHistoryRepository(database.conversionHistoryDao())
     }
 
-    /** 引擎注册顺序即优先级：原生图片 → FFmpeg 图片扩展 → Media3（常用音视频）→ FFmpeg（兼容层）。 */
+    /** 引擎注册顺序即优先级：原生图片 → HEIC/AVIF → FFmpeg 图片扩展 → Media3 → FFmpeg。 */
     @get:UnstableApi
     val conversionEngineSelector: ConversionEngineSelector by lazy {
         buildConversionEngineSelector()
@@ -72,6 +73,7 @@ class AppContainer(context: Context) {
         ConversionEngineSelector(
             listOf(
                 NativeImageEngine(appContext, logger),
+                HeifAvifImageEngine(appContext, logger),
                 FfmpegStillImageEngine(appContext, logger),
                 Media3Engine(appContext, logger),
                 FfmpegEngine(appContext, logger),

@@ -11,6 +11,8 @@ class OutputNamingTest {
         assertEquals("photo.webp", OutputNaming.withExtension("photo.jpg", "WEBP"))
         assertEquals("archive.tar.png", OutputNaming.withExtension("archive.tar.heic", "PNG"))
         assertEquals("voice.m4a", OutputNaming.withExtension("voice.aac", "M4A"))
+        assertEquals("image.heic", OutputNaming.withExtension("image.jpg", "HEIC"))
+        assertEquals("image.avif", OutputNaming.withExtension("image.png", "AVIF"))
     }
 
     @Test

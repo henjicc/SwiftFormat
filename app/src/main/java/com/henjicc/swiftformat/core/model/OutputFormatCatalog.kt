@@ -11,6 +11,7 @@ object OutputFormatCatalog {
 
     enum class EngineHint {
         NATIVE_IMAGE,
+        HEIF_WRITER,
         MEDIA3,
         FFMPEG,
     }
@@ -30,6 +31,8 @@ object OutputFormatCatalog {
         OutputOption("WEBP", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = true, sizeApplicable = true, sortOrder = 30),
         OutputOption("BMP", MediaType.IMAGE, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = true, sortOrder = 40),
         OutputOption("TIFF", MediaType.IMAGE, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = true, sortOrder = 50),
+        OutputOption("HEIC", MediaType.IMAGE, EngineHint.HEIF_WRITER, qualityApplicable = true, sizeApplicable = true, sortOrder = 60),
+        OutputOption("AVIF", MediaType.IMAGE, EngineHint.HEIF_WRITER, qualityApplicable = true, sizeApplicable = true, sortOrder = 70),
     )
 
     private val videoOptions = listOf(

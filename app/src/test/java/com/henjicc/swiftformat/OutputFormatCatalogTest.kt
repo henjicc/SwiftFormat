@@ -44,7 +44,7 @@ class OutputFormatCatalogTest {
     @Test
     fun outputOptions_followPlannedStableOrder() {
         assertEquals(
-            listOf("JPG", "PNG", "WEBP", "BMP", "TIFF"),
+            listOf("JPG", "PNG", "WEBP", "BMP", "TIFF", "HEIC", "AVIF"),
             OutputFormatCatalog.outputOptions(MediaType.IMAGE).map { it.format },
         )
         assertEquals(
@@ -77,6 +77,10 @@ class OutputFormatCatalogTest {
         assertFalse(OutputFormatCatalog.isQualityApplicable(MediaType.IMAGE, "BMP"))
         assertTrue(OutputFormatCatalog.isSizeApplicable(MediaType.IMAGE, "TIFF"))
         assertFalse(OutputFormatCatalog.isQualityApplicable(MediaType.IMAGE, "TIFF"))
+        assertTrue(OutputFormatCatalog.isSizeApplicable(MediaType.IMAGE, "HEIC"))
+        assertTrue(OutputFormatCatalog.isQualityApplicable(MediaType.IMAGE, "HEIC"))
+        assertTrue(OutputFormatCatalog.isSizeApplicable(MediaType.IMAGE, "AVIF"))
+        assertTrue(OutputFormatCatalog.isQualityApplicable(MediaType.IMAGE, "AVIF"))
     }
 
     @Test

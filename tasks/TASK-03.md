@@ -3,11 +3,11 @@
 **状态**：已完成　|　**依赖**：TASK-00, TASK-02　|　对应 SPEC：阶段 3、5.3/5.6、10、11 章
 
 ## 目标
-实现原生图片转换引擎，支持 JPG/PNG/WebP 输出，落实质量与尺寸映射，支持批量。
+实现图片转换引擎，支持 JPG/PNG/WebP 及后续扩展格式输出，落实质量与尺寸映射，支持批量。
 
 ## 实现要求
 - 实现 `ConversionEngine` 接口（`supports/convert/cancel`）的 `NativeImageEngine`。
-- 输入：JPG/PNG/WebP/BMP/GIF(首帧)/HEIC(设备支持)；输出：JPG/PNG/WebP。
+- 输入：JPG/PNG/WebP/BMP/GIF(首帧)/HEIC/AVIF(设备支持)；输出：JPG/PNG/WebP，后续扩展支持 BMP/TIFF/HEIC/AVIF。
 - 质量映射（SPEC 5.3）：最佳95/高85/标准75/省空间60；PNG 无损不显示质量；无损 WebP 不显示画质档。
 - 尺寸（SPEC 5.6）：按最长边缩放，默认保持宽高比；不放大低质源；保持原始为默认。
 - 解码按目标尺寸采样（inSampleSize / ImageDecoder targetSize），避免无意义多次解码与 OOM。
@@ -59,6 +59,10 @@
 - 后续扩格式阶段新增 `engine/ffmpeg/FfmpegStillImageEngine`：图片组现额外支持 `BMP / TIFF` 输出，
   路由策略为“先复用原生位图链路完成解码、EXIF 旋正与尺寸缩放，再交给 FFmpeg 写出 BMP/TIFF”，
   避免直接用 FFmpeg 读取 JPEG 时丢失现有的方向修正行为。
+- 后续扩格式阶段新增 `engine/image/HeifAvifImageEngine`：图片组现额外支持 `HEIC / AVIF` 输出，
+  复用现有 bounds 读取、EXIF 旋正、采样解码与尺寸映射流程，再分别交给
+  `androidx.heifwriter.HeifWriter` 与 `androidx.heifwriter.AvifWriter` 编码；
+  `HEIC` 运行时要求 API 28+，`AVIF` 运行时要求 API 31+。
 - 验证：`gradlew :app:assembleDebug` 通过、无警告；`testDebugUnitTest` 26/26 通过（7 个测试类）。
 
 ### 已知简化（明确记录）
@@ -67,8 +71,10 @@
   不复制完整 EXIF 标签集（GPS、相机信息等）；该设置项本身待 TASK-07 设置页落地后再决定具体策略。
 - GIF/HEIC/AVIF 输入虽然已补 `ImageDecoder` 回退，但仍未做设备能力探测或更细粒度错误区分；
   在 API 28 以下或系统解码器缺失时，失败仍会统一归类为 `CORRUPT_INPUT`。
+- HEIC/AVIF 输出已实现，但当前仍未做“按设备能力动态隐藏格式选项”；不支持的设备会在调度/执行阶段
+  返回不支持错误，而不是在 UI 前置过滤。
+- `androidx.heifwriter` 依赖自身声明 `minSdk 28`，当前通过 manifest `tools:overrideLibrary`
+  接入，并在运行时用 API 等级门控避免低版本误调用；这条链路已完成构建验证，但尚未做真机覆盖。
 - 未做实机/模拟器运行验证（互转产物可正常打开、大图不 OOM 的真实表现），当前环境无 Android 设备。
 - 输出位置解析（MediaStore/SAF、Download/转个格式 默认目录）未实现，留给 TASK-06；本任务的
   `ConversionRequest.destination` 需由未来的任务编排层先解析好 Uri 再传入。
-- 引擎未接入 `AppContainer`/UI（没有调用方）：`NativeImageEngine` 目前是独立、可单元测试的模块，
-  实际接到「开始转换」按钮与任务流程是 TASK-06 的工作，本任务有意不做这层接线以避免无意义占位代码。
