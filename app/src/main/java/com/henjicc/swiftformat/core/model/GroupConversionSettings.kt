@@ -7,6 +7,7 @@ package com.henjicc.swiftformat.core.model
 data class GroupConversionSettings(
     val mediaType: MediaType,
     val outputFormat: String,
+    val targetMediaType: MediaType,
     val quality: QualityPreset?,
     val size: SizePreset?,
 )

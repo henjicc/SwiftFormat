@@ -140,13 +140,19 @@ class HomeViewModel(
         val state = _uiState.value
         state.groups.forEach { (type, files) ->
             val settings = state.settings[type] ?: OutputFormatCatalog.defaultSettings(type)
-            orchestrator.submitAll(files, settings.outputFormat, settings.quality, settings.size)
+            orchestrator.submitAll(files, settings.outputFormat, settings.targetMediaType, settings.quality, settings.size)
         }
         clear()
     }
 
     fun setOutputFormat(mediaType: MediaType, format: String) {
-        updateSettings(mediaType) { it.copy(outputFormat = format) }
+        val option = OutputFormatCatalog.option(mediaType, format)
+        updateSettings(mediaType) {
+            it.copy(
+                outputFormat = format,
+                targetMediaType = option?.targetMediaType ?: mediaType,
+            )
+        }
     }
 
     fun setQuality(mediaType: MediaType, quality: QualityPreset) {

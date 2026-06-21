@@ -134,10 +134,13 @@
     <string name="error_permission_denied">Permission lost or denied</string>
     <string name="error_unsupported_format">This file format is not supported</string>
     <string name="error_corrupt_input">This file may be damaged or unreadable</string>
+    <string name="error_no_audio_track">This video does not contain an audio track</string>
     <string name="error_no_encoder">This device cannot convert to the selected format</string>
     <string name="error_unsupported_output">The selected output format is not available</string>
+    <string name="error_unsupported_video_output">This video output format is not available</string>
     <string name="error_insufficient_storage">Not enough storage space</string>
     <string name="error_output_not_writable">Cannot write to the output location</string>
+    <string name="error_output_validation_failed">The converted file could not be verified</string>
     <string name="error_engine_crash">The conversion engine stopped unexpectedly</string>
     <string name="error_cancelled">Conversion cancelled</string>
     <string name="error_unknown">Unknown conversion error</string>

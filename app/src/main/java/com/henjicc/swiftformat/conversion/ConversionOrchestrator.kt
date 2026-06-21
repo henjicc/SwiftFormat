@@ -51,11 +51,24 @@ class ConversionOrchestrator(
     val tasks: StateFlow<Map<String, ConversionTask>> = _tasks.asStateFlow()
 
     /** 提交单个文件转换；返回任务 id（即 [ConversionRequest.id]）。 */
-    fun submit(input: InputFile, outputFormat: String, quality: QualityPreset?, size: SizePreset?): String {
+    fun submit(
+        input: InputFile,
+        outputFormat: String,
+        targetMediaType: MediaType? = null,
+        quality: QualityPreset?,
+        size: SizePreset?,
+    ): String {
         val requestId = requestFactory.newRequestId()
         launchTask(requestId) {
             try {
-                val resolvedRequest = requestFactory.createResolvedRequest(requestId, input, outputFormat, quality, size)
+                val resolvedRequest = requestFactory.createResolvedRequest(
+                    requestId,
+                    input,
+                    outputFormat,
+                    targetMediaType,
+                    quality,
+                    size,
+                )
                 val historyId = historyTracker.insertPending(resolvedRequest)
                 runTask(resolvedRequest, historyId)
             } catch (e: CancellationException) {
@@ -74,8 +87,13 @@ class ConversionOrchestrator(
         return requestId
     }
 
-    fun submitAll(inputs: List<InputFile>, outputFormat: String, quality: QualityPreset?, size: SizePreset?): List<String> =
-        inputs.map { submit(it, outputFormat, quality, size) }
+    fun submitAll(
+        inputs: List<InputFile>,
+        outputFormat: String,
+        targetMediaType: MediaType? = null,
+        quality: QualityPreset?,
+        size: SizePreset?,
+    ): List<String> = inputs.map { submit(it, outputFormat, targetMediaType, quality, size) }
 
     /**
      * 进程恢复：沿用同一条历史记录继续执行，避免应用被系统回收后历史里出现重复条目。
@@ -85,6 +103,7 @@ class ConversionOrchestrator(
         historyId: Long,
         input: InputFile,
         outputFormat: String,
+        targetMediaType: MediaType? = null,
         quality: QualityPreset?,
         size: SizePreset?,
         existingOutputUri: android.net.Uri?,
@@ -94,6 +113,7 @@ class ConversionOrchestrator(
             id = requestId,
             input = input,
             outputFormat = outputFormat,
+            targetMediaType = targetMediaType,
             quality = quality,
             size = size,
             existingOutputUri = existingOutputUri,
@@ -165,7 +185,13 @@ class ConversionOrchestrator(
     /** 再次转换会新建任务与历史记录，并重新解析输出位置，避免覆写既有结果。 */
     fun convertAgain(taskId: String): String? {
         val task = _tasks.value[taskId] ?: return null
-        return submit(task.request.input, task.request.outputFormat, task.request.quality, task.request.size)
+        return submit(
+            task.request.input,
+            task.request.outputFormat,
+            task.request.targetMediaType,
+            task.request.quality,
+            task.request.size,
+        )
     }
 
     fun summary(): ConversionBatchSummary = ConversionBatchSummary.from(_tasks.value.values)

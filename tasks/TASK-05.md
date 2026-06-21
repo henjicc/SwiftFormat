@@ -24,19 +24,22 @@
 - [x] 建立隔离 `engine/ffmpeg` 包与命令生成内聚封装（`FfmpegCommandBuilder`，纯函数）
 - [x] 实现 FfmpegEngine：临时文件流程 + 进度 + 取消 + 资源清理
 - [x] 实现输出验证（空文件检测）与失败降级（错误码映射到 `ConversionError.Kind`）
+- [x] 扩展一期补齐 `VIDEO -> WEBM / MKV / MP3`：新增 `targetMediaType`、结构化输出选项、
+  `FFprobeKit` 流结构校验、视频提取音频与友好错误文案
 - [ ] 接入调度器（`ConversionEngineSelector`/`AppContainer`）—— 沿用 TASK-03/04 的既定安排，
   统一移交 TASK-06（引擎已满足 `supports()` 协议，可被直接注册）
 - [ ] 验证 16KB 页面设备与体积/ABI 打包 —— **未做实机验证**（无 16KB 页面设备），
   已确认 AAR 内置 arm64-v8a/armeabi-v7a/x86/x86_64 四 ABI 原生库
 
 ## 验收标准
-- [ ] FLAC→MP3、视频→MP3 等链路成功，输出可正常播放 —— 命令构建与转换流程已实现并通过单元测试，
-  **未做**实机/模拟器运行验证（无设备）；视频→MP3 当前不在范围内（见下方「范围收敛」）
+- [ ] FLAC→MP3、视频→MP3、视频→WEBM/MKV 等链路成功，输出可正常播放 —— 命令构建、路由、输出校验
+  与错误处理已实现并通过 JVM 单元测试，**未做**实机/模拟器运行验证（无设备）
 - [x] UI/业务层无任何 FFmpeg 命令拼接（命令构建收敛在 `FfmpegCommandBuilder`，`FfmpegEngine` 是唯一调用方）
 - [x] 临时文件在成功/失败/取消后均被清理（`finally` 块统一 `delete()` 输入/输出临时文件）
 - [ ] 16KB 页面设备可运行 —— 依赖声明与构建产物已确认含 16KB 对齐的 so（fork 名称与发布说明如此），
   **未做**真实 16KB 页面设备验证；许可证与构建配置已记录（见下方）
-- [x] 覆盖单元测试：MP3 码率映射（1）+ 命令构建（5），均为纯函数无需 Android 运行时
+- [x] 覆盖单元测试：MP3/Opus 码率映射、命令构建、格式目录、引擎路由、MIME、失败原因编解码，
+  均为纯函数或 JVM 测试，无需 Android 运行时
 
 ## 完成情况
 
@@ -63,22 +66,25 @@
   缺乏大规模使用track record；后续若发现兼容性/稳定性问题或维护停滞，需重新评估替换。
 
 ### 范围收敛
-- `OutputFormatCatalog` 当前音频格式只有 MP3/AAC/WAV/FLAC（无 Ogg/Opus 选项），且 AAC 已由
-  `Media3Engine` 覆盖，故 `FfmpegEngine.supports()` 范围收敛为 **AUDIO → MP3/FLAC/WAV** 三种，
-  未实现"视频→MP3"等任务文件原描述的链路（`OutputFormatCatalog` 的视频输出格式只有 MP4/WEBM，
-  当前无"视频转音频"的 UI/模型入口，且属于 SPEC 未明确要求的能力，本任务不顺带扩出该范围）。
-- WebM 视频输出（TASK-04 已知简化项）本可由 FFmpeg 弥补，但同理无 UI/模型支持，留待后续按需评估，
-  不在本任务内顺带实现。
+- 本阶段保持 **Media3 负责主流稳定链路 `VIDEO -> MP4(H.264/AAC)`**，FFmpeg 只承接扩展格式，
+  当前范围收敛为 **AUDIO -> MP3/FLAC/WAV**、**VIDEO -> WEBM/MKV**、**VIDEO -> MP3**（提取首条音轨）。
+- 本阶段**不**扩出 `MOV` 输出、`HEVC/AV1`、`VIDEO -> AAC/M4A/Opus`、FFmpeg 硬件加速，
+  也不做设备能力驱动的 UI 动态隐藏，避免把 FFmpeg 变成默认视频引擎。
 
 ### 已完成
 - 新增 `engine/ffmpeg/FfmpegCommandBuilder`：纯函数按输出格式（MP3/FLAC/WAV）构建 ffmpeg 参数数组
   （`-y -i <in> -vn <codec参数> <out>`），MP3 用 `libmp3lame` + 码率、FLAC 用内置 `flac` 编码器、
   WAV 用 `pcm_s16le`；不依赖 Android 框架，可在 JVM 单元测试中直接验证生成的参数列表。
+- 扩展一期将 `FfmpegCommandBuilder` 拆为 `buildAudioTranscodeArgs()`、`buildVideoTranscodeArgs()`、
+  `buildVideoExtractAudioArgs()` 三类纯函数；其中 `WEBM` 固定 `VP9 + Opus`，`MKV` 固定
+  `OpenH264 + AAC`，`VIDEO -> MP3` 固定 `libmp3lame` 且仅映射首条音轨。
 - 新增 `engine/ffmpeg/FfmpegAudioBitrateMapper`：MP3 质量档位 → 目标码率（320/256/192/128 kbps），
   与 `engine/media/AudioBitrateMapper`（AAC 档位）分离，因 MP3 编码效率低于 AAC 需要更高码率才能
   达到相近听感。
+- 新增 `engine/ffmpeg/OpusBitrateMapper`：WebM 的 Opus 音频码率映射（192/160/128/96 kbps）。
 - 新增 `engine/ffmpeg/FfmpegEngine`（`ConversionEngine`）：
-  - `supports()`：仅 AUDIO + 输出格式在 {MP3, FLAC, WAV}。
+  - `supports()`：覆盖 AUDIO + 输出格式在 {MP3, FLAC, WAV}，以及 VIDEO + 输出格式在
+    {WEBM, MKV}、VIDEO 提取 MP3。
   - 转换前检查 `cacheDir.usableSpace` 是否足够（源文件大小 ×2 + 16MB 余量），不足则返回
     `INSUFFICIENT_STORAGE` 而不是转换中途失败（落实 SPEC 12.2"转换前检查空间"）。
   - 临时文件流程：源 `Uri` → `ContentResolver.openInputStream` 拷贝到 `cacheDir` 临时文件 →
@@ -92,26 +98,31 @@
   - 失败降级：用 `ReturnCode.isSuccess/isCancel` 区分成功/取消/失败，失败时取
     `session.failStackTrace`（为空则取 `session.allLogsAsString`）作为 `debugMessage`，
     不向上层暴露 FFmpeg 原始堆栈作为用户可见文案（与 `ConversionError.debugMessage` 的既定用途一致）。
+  - 扩展一期新增 `FFprobeKit` 探测：输入侧先检查视频/音频流是否存在，输出侧再验证 `WEBM/MKV`
+    至少含 1 条视频流、`VIDEO -> MP3` 仅含音频流，避免“执行成功但产物流结构错误”的假成功。
   - 与 `Media3Engine` 不同：FFmpegKit 的 `execute*Async`/`cancel`/回调没有 Looper 线程绑定要求，
     `convert()`/`cancel()` 固定跑在 `Dispatchers.IO`（FFmpegKit 内部自行管理原生执行线程）。
 - **API 核实方法**：延续 TASK-04 的 `javap` 反编译验证方法（见上方「选型决策」），核实
   `FFmpegKit.executeWithArgumentsAsync`/`FFmpegSession`/`FFmpegSessionCompleteCallback`/
-  `StatisticsCallback`/`Statistics`/`ReturnCode`/`Session` 的真实签名后再编码，一次编译即通过。
-- 验证：`gradlew :app:assembleDebug` 通过（确认 `libavcodec`/`libavformat` 等原生库被正确打入 APK）；
-  `testDebugUnitTest` 45/45 通过（新增 6 个测试：`FfmpegCommandBuilderTest` 5 个 + 
-  `FfmpegAudioBitrateMapperTest` 1 个）。
+  `StatisticsCallback`/`Statistics`/`ReturnCode`/`Session` 以及 `FFprobeKit` /
+  `MediaInformation` / `StreamInformation` 的真实签名后再编码，一次编译即通过。
+- 扩展一期同时更新了 UI/模型路由：`GroupConversionSettings` / `ConversionRequest` 新增
+  `targetMediaType`，`OutputFormatCatalog` 改为结构化 `OutputOption`，视频组选项现为
+  `MP4 / WEBM / MKV / MP3`，其中 `MP3` 会隐藏尺寸但保留质量选择。
+- 验证：`gradlew.bat testDebugUnitTest`、`gradlew.bat lintDebug`、`gradlew.bat assembleDebug`
+  均通过；当前 JVM 单元测试总数 78。
 
 ### 已知简化（明确记录）
 - **未接入调度器/AppContainer**：与 TASK-03/04 的既定安排一致，引擎已满足 `ConversionEngine` 协议
-  可被 `ConversionEngineSelector` 直接注册，实际接线移交 TASK-06（届时三个引擎一起接入）。
-- **范围只覆盖 MP3/FLAC/WAV 音频转码**：未实现"视频→MP3"等链路（无对应 UI/模型支持，见上方
-  「范围收敛」），未实现 WebM 视频输出（同上）。
+  可被 `ConversionEngineSelector` 直接注册，实际接线已在 TASK-06 完成。
+- **视频扩展仍是一期范围**：未实现 `MOV` 输出、`HEVC/AV1`、`VIDEO -> AAC/M4A/Opus`，
+  也未验证 FFmpeg MediaCodec 硬件加速能力。
 - **16KB 页面设备与体积验证未做实机测试**：当前环境无 16KB 页面真机；APK 体积影响（四 ABI 全量
   FFmpeg 原生库会显著增加包体积）未测量，正式发布前应评估按 ABI 拆分 APK/AAB 或裁剪未用编解码器
   （SPEC 要求"仅编译必要编解码器"，当前用的是 fork 提供的预编译 full 包，并非按需自建最小化构建，
   这是相对官方建议方案的一处妥协，换来的是不需要自建 NDK 交叉编译流水线）。
-- **未做输出文件的可播放性校验**：当前"输出验证"仅检查文件存在且非空，没有进一步解码校验
-  （如重新探测输出文件的编码参数确认与预期一致），属于轻量级验证，足以拦截"FFmpeg 报成功但实际
-  没写出内容"的明显失败场景，但无法发现"写出了但内容损坏"的边界情况。
+- **未做真实解码级可播放性校验**：当前输出验证已提升为 `FFprobeKit` 的流结构探测
+  （而非仅检查非空文件），足以拦截“执行成功但流类型不符合预期”的明显失败场景；但仍未做
+  二次实际解码验证，无法发现“写出了但内容损坏”的更深层边界情况。
 - **未做实机/模拟器运行验证**：MP3/FLAC/WAV 真实转换效果、进度回调实际触发频率、取消的真实表现均
   未验证；FFmpegKit 16KB fork 本身是个人维护、缺乏长期生产验证记录（见上方「已知风险」）。

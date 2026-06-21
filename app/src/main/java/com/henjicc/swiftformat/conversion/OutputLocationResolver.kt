@@ -23,8 +23,8 @@ class OutputLocationResolver(context: Context) {
 
     private val appContext = context.applicationContext
 
-    fun resolve(originalDisplayName: String, outputFormat: String, mediaType: MediaType): Uri {
-        require(mediaType != MediaType.UNKNOWN) { "cannot resolve output location for UNKNOWN media type" }
+    fun resolve(originalDisplayName: String, outputFormat: String, targetMediaType: MediaType): Uri {
+        require(targetMediaType != MediaType.UNKNOWN) { "cannot resolve output location for UNKNOWN media type" }
 
         val desiredName = OutputNaming.withExtension(originalDisplayName, outputFormat)
         val existingNames = queryExistingNames()

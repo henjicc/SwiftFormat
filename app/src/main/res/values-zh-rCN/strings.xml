@@ -134,10 +134,13 @@
     <string name="error_permission_denied">文件权限已失效或被拒绝</string>
     <string name="error_unsupported_format">暂不支持这种文件格式</string>
     <string name="error_corrupt_input">文件可能已损坏或无法读取</string>
+    <string name="error_no_audio_track">该视频没有可提取的音轨</string>
     <string name="error_no_encoder">当前设备无法转换为所选格式</string>
     <string name="error_unsupported_output">当前输出格式不可用</string>
+    <string name="error_unsupported_video_output">当前视频输出格式不可用</string>
     <string name="error_insufficient_storage">存储空间不足</string>
     <string name="error_output_not_writable">无法写入输出位置</string>
+    <string name="error_output_validation_failed">转换结果校验失败</string>
     <string name="error_engine_crash">转换引擎意外停止</string>
     <string name="error_cancelled">转换已取消</string>
     <string name="error_unknown">未知转换错误</string>

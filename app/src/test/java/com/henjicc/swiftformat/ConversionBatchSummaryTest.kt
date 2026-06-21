@@ -28,6 +28,7 @@ class ConversionBatchSummaryTest {
                 mediaType = MediaType.IMAGE,
             ),
             outputFormat = "JPG",
+            targetMediaType = MediaType.IMAGE,
             quality = null,
             size = null,
             destination = OutputDestination.ResolvedUri(uri),

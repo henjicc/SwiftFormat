@@ -3,7 +3,9 @@ package com.henjicc.swiftformat.conversion
 import android.net.Uri
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.InputFile
+import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.OutputDestination
+import com.henjicc.swiftformat.core.model.OutputFormatCatalog
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.SizePreset
 import kotlinx.coroutines.sync.Mutex
@@ -22,17 +24,20 @@ internal class ConversionRequestFactory(
         id: String,
         input: InputFile,
         outputFormat: String,
+        targetMediaType: MediaType? = null,
         quality: QualityPreset?,
         size: SizePreset?,
         existingOutputUri: Uri? = null,
     ): ConversionRequest {
+        val resolvedTargetMediaType = targetMediaType ?: OutputFormatCatalog.targetMediaTypeFor(input.mediaType, outputFormat)
         val destinationUri = existingOutputUri ?: outputResolutionMutex.withLock {
-            outputLocationResolver.resolve(input.displayName, outputFormat, input.mediaType)
+            outputLocationResolver.resolve(input.displayName, outputFormat, resolvedTargetMediaType)
         }
         return ConversionRequest(
             id = id,
             input = input,
             outputFormat = outputFormat,
+            targetMediaType = resolvedTargetMediaType,
             quality = quality,
             size = size,
             destination = OutputDestination.ResolvedUri(destinationUri),

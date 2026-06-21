@@ -11,6 +11,7 @@ object OutputMimeTypes {
         "WEBP" -> "image/webp"
         "MP4" -> "video/mp4"
         "WEBM" -> "video/webm"
+        "MKV" -> "video/x-matroska"
         "MP3" -> "audio/mpeg"
         "AAC", "M4A" -> "audio/aac"
         "WAV" -> "audio/wav"

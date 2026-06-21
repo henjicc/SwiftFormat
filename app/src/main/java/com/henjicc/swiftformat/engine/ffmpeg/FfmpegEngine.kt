@@ -14,6 +14,7 @@ import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.engine.api.ConversionEngine
 import com.henjicc.swiftformat.engine.api.ConversionProgress
 import com.henjicc.swiftformat.engine.api.ConversionResult
+import com.henjicc.swiftformat.engine.media.VideoSizeMapper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -22,9 +23,11 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * 基于社区维护的 FFmpegKit 16KB fork（见 build.gradle.kts 依赖说明）的音频转换引擎（SPEC 10.5）。
- * 范围：Media3/原生引擎不处理的音频输出 —— MP3（[com.henjicc.swiftformat.engine.media.Media3Engine]
- * 只覆盖 AAC/M4A，WAV/FLAC 容器 Android `MediaMuxer` 不支持，见 TASK-04 完成情况）。
+ * 基于社区维护的 FFmpegKit 16KB fork（见 build.gradle.kts 依赖说明）的扩展格式引擎（SPEC 10.5）。
+ * 范围：
+ * - AUDIO → MP3/FLAC/WAV
+ * - VIDEO → WEBM/MKV
+ * - VIDEO → MP3（提取首条音轨）
  *
  * 所有命令拼接收敛在 [FfmpegCommandBuilder]，本类及 UI/业务层不直接拼接 FFmpeg 参数字符串。
  * 临时文件策略（SPEC 12.2）：源 Uri → 缓存临时文件 → FFmpeg 转换到另一缓存临时文件 → 校验非空 →
@@ -38,8 +41,18 @@ class FfmpegEngine(
     private val appContext = context.applicationContext
     private val activeSessions = ConcurrentHashMap<String, FFmpegSession>()
 
-    override fun supports(request: ConversionRequest): Boolean =
-        request.input.mediaType == MediaType.AUDIO && request.outputFormat.uppercase() in SUPPORTED_AUDIO_FORMATS
+    override fun supports(request: ConversionRequest): Boolean = when (request.input.mediaType) {
+        MediaType.AUDIO ->
+            request.targetMediaType == MediaType.AUDIO && request.outputFormat.uppercase() in SUPPORTED_AUDIO_FORMATS
+
+        MediaType.VIDEO -> when {
+            request.targetMediaType == MediaType.VIDEO -> request.outputFormat.uppercase() in SUPPORTED_VIDEO_FORMATS
+            request.targetMediaType == MediaType.AUDIO -> request.outputFormat.uppercase() in SUPPORTED_VIDEO_EXTRACT_FORMATS
+            else -> false
+        }
+
+        else -> false
+    }
 
     override suspend fun convert(
         request: ConversionRequest,
@@ -67,6 +80,11 @@ class FfmpegEngine(
     ): ConversionResult {
         val destinationUri = (request.destination as? OutputDestination.ResolvedUri)?.uri
             ?: return failure(ConversionError.Kind.OUTPUT_NOT_WRITABLE, "destination not resolved")
+        val mode = try {
+            resolveMode(request)
+        } catch (e: IllegalArgumentException) {
+            return unsupportedOutputFailure(request, e.message)
+        }
 
         onProgress(ConversionProgress(0f))
 
@@ -81,12 +99,59 @@ class FfmpegEngine(
 
             withContext(Dispatchers.IO) { copyUriToFile(request.input.uri, inputTemp) }
 
-            val args = FfmpegCommandBuilder.buildAudioArgs(
-                inputPath = inputTemp.absolutePath,
-                outputPath = outputTemp.absolutePath,
-                outputFormat = request.outputFormat,
-                quality = request.quality ?: QualityPreset.HIGH,
-            ).toTypedArray()
+            val probe = probeMediaInformation(inputTemp.absolutePath)
+            val quality = request.quality ?: QualityPreset.HIGH
+            val args = try {
+                when (mode) {
+                    FfmpegMode.AUDIO_TRANSCODE -> FfmpegCommandBuilder.buildAudioTranscodeArgs(
+                        inputPath = inputTemp.absolutePath,
+                        outputPath = outputTemp.absolutePath,
+                        outputFormat = request.outputFormat,
+                        quality = quality,
+                    )
+
+                    FfmpegMode.VIDEO_TRANSCODE -> {
+                        val requiredProbe = probe
+                            ?: return failure(ConversionError.Kind.CORRUPT_INPUT, "ffprobe failed to inspect input")
+                        if (requiredProbe.videoStreams.isEmpty()) {
+                            return failure(ConversionError.Kind.CORRUPT_INPUT, "ffprobe found no video stream")
+                        }
+                        val primaryVideoStream = requiredProbe.primaryVideoStream
+                        val sourceDimensions = VideoSizeMapper.Dimensions(
+                            width = request.input.width ?: primaryVideoStream?.width?.toInt() ?: 0,
+                            height = request.input.height ?: primaryVideoStream?.height?.toInt() ?: 0,
+                        )
+                        val sourceBitrate = primaryVideoStream?.bitrate?.toLongOrNull()
+                            ?: requiredProbe.mediaInformation?.bitrate?.toLongOrNull()
+                        FfmpegCommandBuilder.buildVideoTranscodeArgs(
+                            inputPath = inputTemp.absolutePath,
+                            outputPath = outputTemp.absolutePath,
+                            outputFormat = request.outputFormat,
+                            quality = quality,
+                            size = request.size,
+                            sourceDimensions = sourceDimensions,
+                            frameRate = primaryVideoStream?.averageFrameRate.parseFrameRate(),
+                            sourceBitrateBps = sourceBitrate,
+                        )
+                    }
+
+                    FfmpegMode.VIDEO_EXTRACT_AUDIO -> {
+                        val requiredProbe = probe
+                            ?: return failure(ConversionError.Kind.CORRUPT_INPUT, "ffprobe failed to inspect input")
+                        if (requiredProbe.audioStreams.isEmpty()) {
+                            return failure(ConversionError.Kind.NO_AUDIO_TRACK, "source video has no audio stream")
+                        }
+                        FfmpegCommandBuilder.buildVideoExtractAudioArgs(
+                            inputPath = inputTemp.absolutePath,
+                            outputPath = outputTemp.absolutePath,
+                            outputFormat = request.outputFormat,
+                            quality = quality,
+                        )
+                    }
+                }
+            } catch (e: IllegalArgumentException) {
+                return unsupportedOutputFailure(request, e.message)
+            }.toTypedArray()
 
             val durationMs = request.input.durationMs
             val sessionDeferred = CompletableDeferred<FFmpegSession>()
@@ -107,7 +172,9 @@ class FfmpegEngine(
             return when {
                 ReturnCode.isSuccess(completedSession.returnCode) -> {
                     if (!outputTemp.exists() || outputTemp.length() == 0L) {
-                        failure(ConversionError.Kind.ENGINE_CRASH, "ffmpeg produced empty output")
+                        failure(ConversionError.Kind.OUTPUT_VALIDATION_FAILED, "ffmpeg produced empty output")
+                    } else if (!validateOutput(mode, outputTemp.absolutePath)) {
+                        failure(ConversionError.Kind.OUTPUT_VALIDATION_FAILED, "ffprobe validation failed")
                     } else {
                         val sizeBytes = withContext(Dispatchers.IO) { copyToDestination(outputTemp, destinationUri) }
                         onProgress(ConversionProgress(1f))
@@ -144,12 +211,69 @@ class FfmpegEngine(
 
     private fun extensionFor(outputFormat: String): String = outputFormat.lowercase()
 
+    private fun resolveMode(request: ConversionRequest): FfmpegMode = when {
+        request.input.mediaType == MediaType.AUDIO && request.targetMediaType == MediaType.AUDIO ->
+            FfmpegMode.AUDIO_TRANSCODE
+
+        request.input.mediaType == MediaType.VIDEO && request.targetMediaType == MediaType.VIDEO ->
+            FfmpegMode.VIDEO_TRANSCODE
+
+        request.input.mediaType == MediaType.VIDEO && request.targetMediaType == MediaType.AUDIO ->
+            FfmpegMode.VIDEO_EXTRACT_AUDIO
+
+        request.input.mediaType == MediaType.VIDEO ->
+            throw IllegalArgumentException("unsupported video target media type: ${request.targetMediaType}")
+
+        else -> throw IllegalArgumentException("unsupported ffmpeg request: ${request.input.mediaType} -> ${request.outputFormat}")
+    }
+
+    private fun validateOutput(mode: FfmpegMode, outputPath: String): Boolean {
+        val probe = probeMediaInformation(outputPath) ?: return false
+        return when (mode) {
+            FfmpegMode.AUDIO_TRANSCODE -> probe.audioStreams.isNotEmpty()
+            FfmpegMode.VIDEO_TRANSCODE -> probe.videoStreams.isNotEmpty()
+            FfmpegMode.VIDEO_EXTRACT_AUDIO -> probe.audioStreams.isNotEmpty() && probe.videoStreams.isEmpty()
+        }
+    }
+
     private fun failure(kind: ConversionError.Kind, message: String?) =
         ConversionResult.Failure(ConversionError(kind, message))
+
+    private fun unsupportedOutputFailure(request: ConversionRequest, message: String?) =
+        failure(
+            kind = if (request.input.mediaType == MediaType.VIDEO) {
+                ConversionError.Kind.UNSUPPORTED_VIDEO_OUTPUT
+            } else {
+                ConversionError.Kind.UNSUPPORTED_OUTPUT
+            },
+            message = message,
+        )
+
+    private enum class FfmpegMode {
+        AUDIO_TRANSCODE,
+        VIDEO_TRANSCODE,
+        VIDEO_EXTRACT_AUDIO,
+    }
 
     private companion object {
         const val TAG = "FfmpegEngine"
         const val MIN_FREE_BYTES_MARGIN = 16L * 1024 * 1024
         val SUPPORTED_AUDIO_FORMATS = setOf("MP3", "FLAC", "WAV")
+        val SUPPORTED_VIDEO_FORMATS = setOf("WEBM", "MKV")
+        val SUPPORTED_VIDEO_EXTRACT_FORMATS = setOf("MP3")
+    }
+}
+
+private fun String?.parseFrameRate(): Double {
+    if (this.isNullOrBlank()) return 30.0
+    val parts = split('/')
+    return when (parts.size) {
+        2 -> {
+            val numerator = parts[0].toDoubleOrNull()
+            val denominator = parts[1].toDoubleOrNull()
+            if (numerator != null && denominator != null && denominator != 0.0) numerator / denominator else 30.0
+        }
+
+        else -> toDoubleOrNull() ?: 30.0
     }
 }

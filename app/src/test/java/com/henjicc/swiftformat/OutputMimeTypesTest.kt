@@ -13,6 +13,7 @@ class OutputMimeTypesTest {
         assertEquals("image/webp", OutputMimeTypes.forFormat("WEBP"))
         assertEquals("video/mp4", OutputMimeTypes.forFormat("MP4"))
         assertEquals("video/webm", OutputMimeTypes.forFormat("WEBM"))
+        assertEquals("video/x-matroska", OutputMimeTypes.forFormat("MKV"))
         assertEquals("audio/mpeg", OutputMimeTypes.forFormat("MP3"))
         assertEquals("audio/aac", OutputMimeTypes.forFormat("AAC"))
         assertEquals("audio/wav", OutputMimeTypes.forFormat("WAV"))

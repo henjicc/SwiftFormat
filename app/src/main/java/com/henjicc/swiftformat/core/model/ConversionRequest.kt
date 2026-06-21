@@ -9,6 +9,7 @@ data class ConversionRequest(
     val id: String,
     val input: InputFile,
     val outputFormat: String,
+    val targetMediaType: MediaType,
     val quality: QualityPreset?,
     val size: SizePreset?,
     val destination: OutputDestination,

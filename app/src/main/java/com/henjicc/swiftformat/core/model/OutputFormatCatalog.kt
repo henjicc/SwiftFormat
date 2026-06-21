@@ -9,18 +9,50 @@ package com.henjicc.swiftformat.core.model
  */
 object OutputFormatCatalog {
 
-    private val imageFormats = listOf("JPG", "PNG", "WEBP")
-    private val videoFormats = listOf("MP4", "WEBM")
-    private val audioFormats = listOf("MP3", "AAC", "WAV", "FLAC")
+    enum class EngineHint {
+        NATIVE_IMAGE,
+        MEDIA3,
+        FFMPEG,
+    }
 
-    /** 无损/不适用画质档位的格式，按 SPEC 5.7 隐藏质量行。 */
-    private val qualityHiddenFormats = setOf("PNG", "WAV", "FLAC")
+    data class OutputOption(
+        val format: String,
+        val targetMediaType: MediaType,
+        val preferredEngine: EngineHint,
+        val qualityApplicable: Boolean,
+        val sizeApplicable: Boolean,
+    )
+
+    private val imageOptions = listOf(
+        OutputOption("JPG", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = true, sizeApplicable = true),
+        OutputOption("PNG", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = false, sizeApplicable = true),
+        OutputOption("WEBP", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = true, sizeApplicable = true),
+    )
+
+    private val videoOptions = listOf(
+        OutputOption("MP4", MediaType.VIDEO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = true),
+        OutputOption("WEBM", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true),
+        OutputOption("MKV", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true),
+        OutputOption("MP3", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false),
+    )
+
+    private val audioOptions = listOf(
+        OutputOption("MP3", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false),
+        OutputOption("AAC", MediaType.AUDIO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = false),
+        OutputOption("WAV", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false),
+        OutputOption("FLAC", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false),
+    )
+
+    fun outputOptions(mediaType: MediaType): List<OutputOption> = when (mediaType) {
+        MediaType.IMAGE -> imageOptions
+        MediaType.VIDEO -> videoOptions
+        MediaType.AUDIO -> audioOptions
+        MediaType.UNKNOWN -> emptyList()
+    }
 
     fun outputFormats(mediaType: MediaType): List<String> = when (mediaType) {
-        MediaType.IMAGE -> imageFormats
-        MediaType.VIDEO -> videoFormats
-        MediaType.AUDIO -> audioFormats
         MediaType.UNKNOWN -> emptyList()
+        else -> outputOptions(mediaType).map(OutputOption::format)
     }
 
     fun defaultFormat(mediaType: MediaType): String = when (mediaType) {
@@ -30,7 +62,23 @@ object OutputFormatCatalog {
         MediaType.UNKNOWN -> ""
     }
 
-    fun isQualityApplicable(outputFormat: String): Boolean = outputFormat !in qualityHiddenFormats
+    fun option(mediaType: MediaType, outputFormat: String): OutputOption? =
+        outputOptions(mediaType).firstOrNull { it.format.equals(outputFormat, ignoreCase = true) }
+
+    fun targetMediaTypeFor(sourceMediaType: MediaType, outputFormat: String): MediaType =
+        option(sourceMediaType, outputFormat)?.targetMediaType ?: sourceMediaType
+
+    fun isQualityApplicable(mediaType: MediaType, outputFormat: String): Boolean =
+        option(mediaType, outputFormat)?.qualityApplicable ?: true
+
+    fun isQualityApplicable(outputFormat: String): Boolean =
+        (imageOptions + videoOptions + audioOptions)
+            .firstOrNull { it.format.equals(outputFormat, ignoreCase = true) }
+            ?.qualityApplicable
+            ?: true
+
+    fun isSizeApplicable(mediaType: MediaType, outputFormat: String): Boolean =
+        option(mediaType, outputFormat)?.sizeApplicable ?: sizePresets(mediaType).isNotEmpty()
 
     /** 尺寸选项，按 SPEC 5.6；音频/未知类型不提供尺寸（空列表 = 不显示该行）。 */
     fun sizePresets(mediaType: MediaType): List<SizePreset> = when (mediaType) {
@@ -61,6 +109,7 @@ object OutputFormatCatalog {
     fun defaultSettings(mediaType: MediaType): GroupConversionSettings = GroupConversionSettings(
         mediaType = mediaType,
         outputFormat = defaultFormat(mediaType),
+        targetMediaType = targetMediaTypeFor(mediaType, defaultFormat(mediaType)),
         quality = QualityPreset.HIGH,
         size = sizePresets(mediaType).firstOrNull(), // Original 或 null（音频/未知）
     )

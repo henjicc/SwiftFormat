@@ -60,8 +60,8 @@ internal fun GroupCard(
     var expanded by rememberSaveable(mediaType) { mutableStateOf(false) }
 
     val sizeOptions = OutputFormatCatalog.sizePresets(mediaType)
-    val showQuality = OutputFormatCatalog.isQualityApplicable(settings.outputFormat)
-    val showSize = sizeOptions.isNotEmpty()
+    val showQuality = OutputFormatCatalog.isQualityApplicable(mediaType, settings.outputFormat)
+    val showSize = OutputFormatCatalog.isSizeApplicable(mediaType, settings.outputFormat) && sizeOptions.isNotEmpty()
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -111,10 +111,10 @@ internal fun GroupCard(
 
     when (activeSheet) {
         SheetKind.FORMAT -> OptionsBottomSheet(
-            options = OutputFormatCatalog.outputFormats(mediaType),
-            optionLabel = { it },
-            isSelected = { it == settings.outputFormat },
-            onSelect = onFormatChange,
+            options = OutputFormatCatalog.outputOptions(mediaType),
+            optionLabel = { it.format },
+            isSelected = { it.format == settings.outputFormat },
+            onSelect = { onFormatChange(it.format) },
             onDismiss = { activeSheet = null },
         )
 

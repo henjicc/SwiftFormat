@@ -100,7 +100,12 @@ class HistoryViewModel(
                 _events.emit(HistoryEvent.ShowMessage(R.string.history_reconvert_failed))
                 return@launch
             }
-            orchestrator.submit(input, record.outputFormat, record.quality, record.size)
+            orchestrator.submit(
+                input = input,
+                outputFormat = record.outputFormat,
+                quality = record.quality,
+                size = record.size,
+            )
             _events.emit(HistoryEvent.NavigateToProgress)
         }
     }

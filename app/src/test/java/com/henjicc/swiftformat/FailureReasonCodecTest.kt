@@ -11,13 +11,13 @@ class FailureReasonCodecTest {
     @Test
     fun decode_restoresKindAndMultilineDetails() {
         val encoded = FailureReasonCodec.encode(
-            ConversionError.Kind.ENGINE_CRASH,
+            ConversionError.Kind.OUTPUT_VALIDATION_FAILED,
             "first line\nsecond line",
         )
 
         val decoded = FailureReasonCodec.decode(encoded)
 
-        assertEquals(ConversionError.Kind.ENGINE_CRASH, decoded?.kind)
+        assertEquals(ConversionError.Kind.OUTPUT_VALIDATION_FAILED, decoded?.kind)
         assertEquals("first line\nsecond line", decoded?.details)
         assertEquals(encoded, decoded?.raw)
     }
