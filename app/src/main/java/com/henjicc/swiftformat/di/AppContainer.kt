@@ -12,6 +12,7 @@ import com.henjicc.swiftformat.conversion.OutputLocationResolver
 import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
 import com.henjicc.swiftformat.core.database.SwiftFormatDatabase
 import com.henjicc.swiftformat.core.datastore.SettingsRepository
+import com.henjicc.swiftformat.core.file.CacheMaintenance
 import com.henjicc.swiftformat.core.file.FileMetadataReader
 import com.henjicc.swiftformat.core.file.ResultFileActions
 import com.henjicc.swiftformat.core.file.ThumbnailImageLoader
@@ -30,6 +31,7 @@ class AppContainer(context: Context) {
 
     val logger: Logger = AndroidLogger
     val settingsRepository: SettingsRepository by lazy { SettingsRepository(appContext) }
+    val cacheMaintenance: CacheMaintenance by lazy { CacheMaintenance(appContext) }
     val fileMetadataReader: FileMetadataReader by lazy { FileMetadataReader(appContext, logger) }
     val resultFileActions: ResultFileActions by lazy { ResultFileActions(appContext, logger) }
     val thumbnailImageLoader: ImageLoader by lazy { ThumbnailImageLoader.build(appContext) }

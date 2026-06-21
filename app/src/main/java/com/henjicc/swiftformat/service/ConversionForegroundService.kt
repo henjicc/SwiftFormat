@@ -34,6 +34,8 @@ class ConversionForegroundService : Service() {
         get() = (application as SwiftFormatApplication).container.conversionOrchestrator
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var hasStartedForeground = false
+    private var hasObservedActiveTask = false
 
     override fun onCreate() {
         super.onCreate()
@@ -49,6 +51,7 @@ class ConversionForegroundService : Service() {
             ACTION_CANCEL_TASK -> intent.getStringExtra(EXTRA_TASK_ID)?.let(orchestrator::cancel)
         }
         startForeground(NOTIFICATION_ID, buildNotification(orchestrator.tasks.value.values))
+        hasStartedForeground = true
         return START_NOT_STICKY
     }
 
@@ -66,7 +69,13 @@ class ConversionForegroundService : Service() {
 
     private fun onTasksChanged(tasks: Collection<ConversionTask>) {
         val activeCount = tasks.count { it.status.isActive() }
+        if (activeCount > 0) {
+            hasObservedActiveTask = true
+        }
         if (activeCount == 0) {
+            // 忽略服务启动后的第一帧空任务，避免在 startForeground() 之前就 stopSelf()
+            // 触发“startForegroundService 后未及时进入前台”的系统崩溃。
+            if (!hasStartedForeground || !hasObservedActiveTask) return
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return

@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：未开始　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -31,4 +31,39 @@
 - 可产出可发布的 App Bundle，许可证/隐私说明齐备。
 
 ## 完成情况
-（待填写）
+
+### Stage A（已完成，已验证）—— 真机测试前的设置页/语言基础收尾
+- **运行时语言切换真正生效**：
+  - 新增 `core/localization/AppLocaleManager`，使用 `AppCompatDelegate.setApplicationLocales(...)`
+    驱动应用级语言切换；`MainActivity` 在观察到 `AppSettings.language` 变化后立即应用，不再只是把语言存进
+    DataStore 却不真正切换界面。
+  - `app/build.gradle.kts` 开启 `androidResources.generateLocaleConfig = true`，并新增
+    `app/src/main/res/resources.properties`（`unqualifiedResLocale=en`），让 Android 13+ 的系统
+    “应用语言”入口可以根据资源自动生成 locale config（对应官方推荐方案）。
+- **设置页从“只有外观”扩展到更适合真机测试**：
+  - 新增“转换默认值”分区：图片/视频/音频默认质量均可设置（`BEST/HIGH/STANDARD/SMALL_SIZE`）。
+  - 新增“文件”分区：自动清理临时文件开关、缓存占用展示、手动清理缓存按钮。
+  - 新增“关于”分区：展示应用版本号，方便真机反馈时确认版本。
+  - `ChipRow` 与强调色选择从单行 `Row` 改为 `FlowRow`，强调色触点提升到 48dp，并补上可读的
+    `contentDescription`，对小屏、大字体和基础无障碍更友好。
+- **默认值真正接入首页行为**：
+  - `HomeViewModel` 改为读取 `SettingsRepository` 当前设置，新加入文件分组时会使用设置页里选好的
+    图片/视频/音频默认质量，而不再永远固定 `HIGH`。
+- **缓存维护能力收口**：
+  - 新增 `core/file/CacheMaintenance`，供设置页“清理缓存”和 `ResidualTempCleanupWorker`
+    共用；“清理缓存”会清理应用缓存目录，不影响 `Download/转个格式` 正式输出。
+  - 若当前仍有活跃转换任务，设置页会阻止“清理缓存”，避免误删进行中的中间文件。
+  - 应用启动时是否自动排队残留临时文件清理，现在受 `AppSettings.autoCleanupTempFiles` 控制。
+- 验证：`gradlew.bat assembleDebug testDebugUnitTest` 通过。
+
+### 已知简化 / 下一步
+- **设置页仍未完整覆盖 SPEC 15**：目前只补到了“外观 + 部分转换默认值 + 文件中的临时清理 + 关于版本”；
+  还缺默认目录、重名处理、完成通知、保留元数据/音轨、开源许可、隐私说明、反馈、查看日志等。
+- **错误详情页仍未实现**：目前失败原因仍是简短文案/调试消息，尚未补“查看详情”技术信息入口。
+- **国际化与无障碍主要做了基础修正**：运行时语言、FlowRow、防溢出、强调色可读性已补，但还没做系统级
+  TalkBack、超大字体、对比度、横竖屏逐项验收。
+- **多设备/真机验证仍待执行**：这一步现在已经更适合上手验证，建议优先测：
+  1. 设置页切换中文/英文是否立即生效。
+  2. 默认质量设置后，重新选择文件时首页分组默认值是否跟着变化。
+  3. 清理缓存按钮在空闲/转换中两种状态下的行为。
+  4. Android 13+ 系统设置中的“应用语言”是否能看到本应用语言项。

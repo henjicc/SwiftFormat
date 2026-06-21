@@ -7,7 +7,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.henjicc.swiftformat.SwiftFormatApplication
-import java.io.File
 
 /**
  * 清理应用缓存目录中遗留的中间文件（SPEC 12.2 / 13.2）。
@@ -19,13 +18,10 @@ class ResidualTempCleanupWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val logger = (applicationContext as SwiftFormatApplication).container.logger
+        val container = (applicationContext as SwiftFormatApplication).container
+        val logger = container.logger
         return runCatching {
-            val cacheDir = applicationContext.cacheDir
-            val deletedCount = cacheDir.listFiles()
-                .orEmpty()
-                .filter(::isResidualTempFile)
-                .count { file -> file.deleteRecursively() }
+            val deletedCount = container.cacheMaintenance.clearResidualTempFiles()
             logger.i(TAG, "cleanup finished, deleted=$deletedCount")
             Result.success()
         }.getOrElse { error ->
@@ -44,13 +40,6 @@ class ResidualTempCleanupWorker(
                 ExistingWorkPolicy.REPLACE,
                 OneTimeWorkRequestBuilder<ResidualTempCleanupWorker>().build(),
             )
-        }
-
-        private fun isResidualTempFile(file: File): Boolean {
-            val name = file.name
-            return name.startsWith("media3_") ||
-                name.startsWith("ffmpeg_in_") ||
-                name.startsWith("ffmpeg_out_")
         }
     }
 }

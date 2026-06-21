@@ -1,5 +1,6 @@
 package com.henjicc.swiftformat.feature.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -7,18 +8,28 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.henjicc.swiftformat.SwiftFormatApplication
+import com.henjicc.swiftformat.conversion.ConversionOrchestrator
 import com.henjicc.swiftformat.core.datastore.SettingsRepository
+import com.henjicc.swiftformat.core.file.CacheMaintenance
 import com.henjicc.swiftformat.core.model.AccentColor
 import com.henjicc.swiftformat.core.model.AppLanguage
 import com.henjicc.swiftformat.core.model.AppSettings
+import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.ThemeMode
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val repository: SettingsRepository,
+    private val cacheMaintenance: CacheMaintenance,
+    private val orchestrator: ConversionOrchestrator,
+    appContext: Context,
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = repository.settings.stateIn(
@@ -26,17 +37,46 @@ class SettingsViewModel(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AppSettings(),
     )
+    private val _cacheBytes = MutableStateFlow(cacheMaintenance.cacheSizeBytes())
+    val cacheBytes: StateFlow<Long> = _cacheBytes.asStateFlow()
+
+    private val _events = MutableSharedFlow<Int>()
+    val events = _events.asSharedFlow()
+
+    @Suppress("DEPRECATION")
+    val appVersion: String = runCatching {
+        appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName ?: "1.0"
+    }.getOrDefault("1.0")
 
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { repository.setThemeMode(mode) }
     fun setAccentColor(color: AccentColor) = viewModelScope.launch { repository.setAccentColor(color) }
     fun setDynamicColor(enabled: Boolean) = viewModelScope.launch { repository.setDynamicColor(enabled) }
     fun setLanguage(language: AppLanguage) = viewModelScope.launch { repository.setLanguage(language) }
+    fun setDefaultImageQuality(quality: QualityPreset) = viewModelScope.launch { repository.setDefaultImageQuality(quality) }
+    fun setDefaultVideoQuality(quality: QualityPreset) = viewModelScope.launch { repository.setDefaultVideoQuality(quality) }
+    fun setDefaultAudioQuality(quality: QualityPreset) = viewModelScope.launch { repository.setDefaultAudioQuality(quality) }
+    fun setAutoCleanupTempFiles(enabled: Boolean) = viewModelScope.launch { repository.setAutoCleanupTempFiles(enabled) }
+
+    fun clearCache() = viewModelScope.launch {
+        if (orchestrator.summary().inProgress > 0) {
+            _events.emit(com.henjicc.swiftformat.R.string.settings_clear_cache_busy)
+            return@launch
+        }
+        cacheMaintenance.clearAppCache()
+        _cacheBytes.value = cacheMaintenance.cacheSizeBytes()
+        _events.emit(com.henjicc.swiftformat.R.string.settings_cache_cleared)
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as SwiftFormatApplication
-                SettingsViewModel(app.container.settingsRepository)
+                SettingsViewModel(
+                    repository = app.container.settingsRepository,
+                    cacheMaintenance = app.container.cacheMaintenance,
+                    orchestrator = app.container.conversionOrchestrator,
+                    appContext = app.applicationContext,
+                )
             }
         }
     }

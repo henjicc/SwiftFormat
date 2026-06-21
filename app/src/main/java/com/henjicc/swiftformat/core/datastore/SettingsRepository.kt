@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.henjicc.swiftformat.core.model.AccentColor
 import com.henjicc.swiftformat.core.model.AppLanguage
 import com.henjicc.swiftformat.core.model.AppSettings
+import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,6 +27,10 @@ class SettingsRepository(private val context: Context) {
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val DYNAMIC_COLOR = stringPreferencesKey("dynamic_color")
         val LANGUAGE = stringPreferencesKey("language")
+        val DEFAULT_IMAGE_QUALITY = stringPreferencesKey("default_image_quality")
+        val DEFAULT_VIDEO_QUALITY = stringPreferencesKey("default_video_quality")
+        val DEFAULT_AUDIO_QUALITY = stringPreferencesKey("default_audio_quality")
+        val AUTO_CLEANUP_TEMP_FILES = stringPreferencesKey("auto_cleanup_temp_files")
     }
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { prefs ->
@@ -37,6 +42,13 @@ class SettingsRepository(private val context: Context) {
             dynamicColor = prefs[Keys.DYNAMIC_COLOR]?.toBooleanStrictOrNull() ?: false,
             language = prefs[Keys.LANGUAGE]?.let { enumValueOfOrNull<AppLanguage>(it) }
                 ?: AppLanguage.SYSTEM,
+            defaultImageQuality = prefs[Keys.DEFAULT_IMAGE_QUALITY]?.let { enumValueOfOrNull<QualityPreset>(it) }
+                ?: QualityPreset.HIGH,
+            defaultVideoQuality = prefs[Keys.DEFAULT_VIDEO_QUALITY]?.let { enumValueOfOrNull<QualityPreset>(it) }
+                ?: QualityPreset.HIGH,
+            defaultAudioQuality = prefs[Keys.DEFAULT_AUDIO_QUALITY]?.let { enumValueOfOrNull<QualityPreset>(it) }
+                ?: QualityPreset.HIGH,
+            autoCleanupTempFiles = prefs[Keys.AUTO_CLEANUP_TEMP_FILES]?.toBooleanStrictOrNull() ?: true,
         )
     }
 
@@ -54,6 +66,22 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setLanguage(language: AppLanguage) {
         context.settingsDataStore.edit { it[Keys.LANGUAGE] = language.name }
+    }
+
+    suspend fun setDefaultImageQuality(quality: QualityPreset) {
+        context.settingsDataStore.edit { it[Keys.DEFAULT_IMAGE_QUALITY] = quality.name }
+    }
+
+    suspend fun setDefaultVideoQuality(quality: QualityPreset) {
+        context.settingsDataStore.edit { it[Keys.DEFAULT_VIDEO_QUALITY] = quality.name }
+    }
+
+    suspend fun setDefaultAudioQuality(quality: QualityPreset) {
+        context.settingsDataStore.edit { it[Keys.DEFAULT_AUDIO_QUALITY] = quality.name }
+    }
+
+    suspend fun setAutoCleanupTempFiles(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.AUTO_CLEANUP_TEMP_FILES] = enabled.toString() }
     }
 }
 

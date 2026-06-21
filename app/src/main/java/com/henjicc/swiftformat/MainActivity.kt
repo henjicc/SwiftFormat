@@ -6,10 +6,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.henjicc.swiftformat.core.designsystem.SwiftFormatTheme
+import com.henjicc.swiftformat.core.localization.AppLocaleManager
 import com.henjicc.swiftformat.core.model.AppSettings
 import com.henjicc.swiftformat.ui.navigation.SwiftFormatApp
 
@@ -25,6 +27,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by settingsRepository.settings
                 .collectAsStateWithLifecycle(initialValue = AppSettings())
+            LaunchedEffect(settings.language) {
+                AppLocaleManager.apply(settings.language)
+            }
             SwiftFormatTheme(
                 themeMode = settings.themeMode,
                 accentColor = settings.accentColor,

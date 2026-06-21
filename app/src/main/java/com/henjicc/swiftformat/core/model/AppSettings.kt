@@ -34,4 +34,8 @@ data class AppSettings(
     val accentColor: AccentColor = AccentColor.BLUE,
     val dynamicColor: Boolean = false,
     val language: AppLanguage = AppLanguage.SYSTEM,
+    val defaultImageQuality: QualityPreset = QualityPreset.HIGH,
+    val defaultVideoQuality: QualityPreset = QualityPreset.HIGH,
+    val defaultAudioQuality: QualityPreset = QualityPreset.HIGH,
+    val autoCleanupTempFiles: Boolean = true,
 )

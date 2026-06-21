@@ -6,6 +6,7 @@ import com.henjicc.swiftformat.service.ResidualTempCleanupWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SwiftFormatApplication : Application() {
@@ -16,8 +17,11 @@ class SwiftFormatApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        ResidualTempCleanupWorker.enqueue(this)
         appScope.launch {
+            val settings = container.settingsRepository.settings.first()
+            if (settings.autoCleanupTempFiles) {
+                ResidualTempCleanupWorker.enqueue(this@SwiftFormatApplication)
+            }
             container.conversionRecoveryManager.recoverActiveTasks()
         }
     }

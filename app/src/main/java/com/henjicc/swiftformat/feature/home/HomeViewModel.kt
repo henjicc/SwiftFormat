@@ -9,7 +9,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.henjicc.swiftformat.SwiftFormatApplication
 import com.henjicc.swiftformat.conversion.ConversionOrchestrator
+import com.henjicc.swiftformat.core.datastore.SettingsRepository
 import com.henjicc.swiftformat.core.file.FileMetadataReader
+import com.henjicc.swiftformat.core.model.AppSettings
 import com.henjicc.swiftformat.core.model.GroupConversionSettings
 import com.henjicc.swiftformat.core.model.InputFile
 import com.henjicc.swiftformat.core.model.MediaType
@@ -47,15 +49,20 @@ data class HomeUiState(
 class HomeViewModel(
     private val metadataReader: FileMetadataReader,
     private val orchestrator: ConversionOrchestrator,
+    private val settingsRepository: SettingsRepository,
     incomingShareFiles: MutableSharedFlow<List<Uri>>,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private var currentAppSettings: AppSettings = AppSettings()
 
     init {
         viewModelScope.launch {
             incomingShareFiles.collect { uris -> addFiles(uris) }
+        }
+        viewModelScope.launch {
+            settingsRepository.settings.collect { settings -> currentAppSettings = settings }
         }
     }
 
@@ -78,7 +85,7 @@ class HomeViewModel(
                 val activeTypes = newFiles.mapTo(HashSet()) { it.mediaType } - MediaType.UNKNOWN
                 val newSettings = state.settings.toMutableMap()
                 activeTypes.forEach { type ->
-                    newSettings.getOrPut(type) { OutputFormatCatalog.defaultSettings(type) }
+                    newSettings.getOrPut(type) { defaultSettings(type) }
                 }
                 state.copy(files = newFiles, settings = newSettings, isLoading = false)
             }
@@ -129,6 +136,17 @@ class HomeViewModel(
         }
     }
 
+    private fun defaultSettings(mediaType: MediaType): GroupConversionSettings {
+        val base = OutputFormatCatalog.defaultSettings(mediaType)
+        val quality = when (mediaType) {
+            MediaType.IMAGE -> currentAppSettings.defaultImageQuality
+            MediaType.VIDEO -> currentAppSettings.defaultVideoQuality
+            MediaType.AUDIO -> currentAppSettings.defaultAudioQuality
+            MediaType.UNKNOWN -> base.quality ?: QualityPreset.HIGH
+        }
+        return base.copy(quality = quality)
+    }
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
@@ -136,6 +154,7 @@ class HomeViewModel(
                 HomeViewModel(
                     metadataReader = app.container.fileMetadataReader,
                     orchestrator = app.container.conversionOrchestrator,
+                    settingsRepository = app.container.settingsRepository,
                     incomingShareFiles = app.container.incomingShareFiles,
                 )
             }
