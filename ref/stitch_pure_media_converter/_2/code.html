@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Conversion Settings - FlexConvert</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&amp;family=Be+Vietnam+Pro:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed-dim": "#b8cac9",
+                      "outline": "#6c7a76",
+                      "inverse-primary": "#44ddc1",
+                      "background": "#f8f9fa",
+                      "on-secondary-fixed": "#0e1e1e",
+                      "on-background": "#191c1d",
+                      "on-surface": "#191c1d",
+                      "on-secondary-fixed-variant": "#3a4a49",
+                      "secondary-container": "#d4e6e5",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed": "#111d23",
+                      "error": "#ba1a1a",
+                      "surface-container-highest": "#e1e3e4",
+                      "tertiary": "#546067",
+                      "surface-tint": "#006b5c",
+                      "on-tertiary-container": "#344047",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-surface": "#2e3132",
+                      "surface-bright": "#f8f9fa",
+                      "tertiary-container": "#9facb3",
+                      "surface-container": "#edeeef",
+                      "on-primary-fixed": "#00201a",
+                      "inverse-on-surface": "#f0f1f2",
+                      "on-surface-variant": "#3c4a46",
+                      "surface": "#f8f9fa",
+                      "on-secondary-container": "#576867",
+                      "surface-variant": "#e1e3e4",
+                      "secondary-fixed": "#d4e6e5",
+                      "primary-container": "#00bfa5",
+                      "surface-container-low": "#f3f4f5",
+                      "on-error": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-secondary": "#ffffff",
+                      "surface-container-high": "#e7e8e9",
+                      "tertiary-fixed": "#d7e4ec",
+                      "tertiary-fixed-dim": "#bbc8d0",
+                      "primary-fixed-dim": "#44ddc1",
+                      "on-primary-fixed-variant": "#005145",
+                      "secondary": "#516161",
+                      "on-primary-container": "#00473c",
+                      "on-tertiary-fixed-variant": "#3c494f",
+                      "outline-variant": "#bbcac4",
+                      "on-primary": "#ffffff",
+                      "primary": "#006b5c",
+                      "surface-dim": "#d9dadb",
+                      "on-error-container": "#93000a",
+                      "primary-fixed": "#68fadd"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter-mobile": "12px",
+                      "baseline": "4px",
+                      "sm": "8px",
+                      "xl": "32px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Roboto Flex"
+                      ],
+                      "headline-md": [
+                              "Be Vietnam Pro"
+                      ],
+                      "headline-lg-mobile": [
+                              "Be Vietnam Pro"
+                      ],
+                      "headline-lg": [
+                              "Be Vietnam Pro"
+                      ],
+                      "label-md": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Roboto Flex"
+                      ],
+                      "display-lg": [
+                              "Be Vietnam Pro"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "44px",
+                              {
+                                      "lineHeight": "52px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .elevation-1 {
+            box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 1px 3px 1px rgba(0,0,0,0.15);
+        }
+        .elevation-2 {
+            box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15);
+        }
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-lg antialiased">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface w-full top-0 flat no shadows flex items-center justify-between px-margin-mobile py-sm w-full sticky z-50">
+<button class="text-on-surface-variant p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-100 flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">FlexConvert</h1>
+<button class="text-on-surface-variant p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-100 flex items-center justify-center invisible">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-margin-mobile py-md flex flex-col gap-lg pb-32">
+<!-- Header Section -->
+<section>
+<h2 class="font-headline-md text-headline-md text-on-background mb-sm">Conversion Settings</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure output formats for your selected files.</p>
+</section>
+<!-- File List -->
+<section class="flex flex-col gap-sm">
+<!-- File Card 1: Image -->
+<div class="bg-surface-container-lowest elevation-1 rounded-lg p-md flex flex-col gap-md transition-all duration-200">
+<div class="flex items-center gap-md">
+<div class="w-[48px] h-[48px] rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined filled-icon">image</span>
+</div>
+<div class="flex-grow min-w-0">
+<h3 class="font-body-lg text-body-lg text-on-surface truncate">vacation.jpg</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">3.2 MB • JPEG</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex items-center gap-sm mt-xs">
+<div class="relative flex-grow">
+<select class="w-full appearance-none bg-surface-container-lowest border-outline text-on-surface font-body-md text-body-md rounded-lg pl-md pr-xl py-sm focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+<option value="png">To PNG</option>
+<option value="webp">To WebP</option>
+<option value="gif">To GIF</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<button class="p-2 text-secondary hover:bg-surface-container-high rounded-full transition-colors active:scale-95 shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+<!-- File Card 2: Video -->
+<div class="bg-surface-container-lowest elevation-1 rounded-lg p-md flex flex-col gap-md transition-all duration-200">
+<div class="flex items-center gap-md">
+<div class="w-[48px] h-[48px] rounded-lg bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined filled-icon">movie</span>
+</div>
+<div class="flex-grow min-w-0">
+<h3 class="font-body-lg text-body-lg text-on-surface truncate">intro_sequence_final_v2.mp4</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">142 MB • MP4</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex items-center gap-sm mt-xs">
+<div class="relative flex-grow">
+<select class="w-full appearance-none bg-surface-container-lowest border-outline text-on-surface font-body-md text-body-md rounded-lg pl-md pr-xl py-sm focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+<option value="mov">To MOV</option>
+<option value="avi">To AVI</option>
+<option value="webm">To WebM</option>
+<option value="gif">To GIF</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<button class="p-2 text-secondary hover:bg-surface-container-high rounded-full transition-colors active:scale-95 shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+<!-- File Card 3: Audio -->
+<div class="bg-surface-container-lowest elevation-1 rounded-lg p-md flex flex-col gap-md transition-all duration-200">
+<div class="flex items-center gap-md">
+<div class="w-[48px] h-[48px] rounded-lg bg-surface-variant text-on-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined filled-icon">audio_file</span>
+</div>
+<div class="flex-grow min-w-0">
+<h3 class="font-body-lg text-body-lg text-on-surface truncate">voiceover_take3.wav</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">12 MB • WAV</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex items-center gap-sm mt-xs">
+<div class="relative flex-grow">
+<select class="w-full appearance-none bg-surface-container-lowest border-outline text-on-surface font-body-md text-body-md rounded-lg pl-md pr-xl py-sm focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+<option value="mp3">To MP3</option>
+<option value="aac">To AAC</option>
+<option value="flac">To FLAC</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<button class="p-2 text-secondary hover:bg-surface-container-high rounded-full transition-colors active:scale-95 shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Area -->
+<div class="fixed bottom-0 w-full bg-surface-container-low pt-sm pb-margin-mobile px-margin-mobile flex gap-sm items-center justify-between z-40">
+<!-- Secondary Button -->
+<button class="flex-1 bg-secondary-container text-on-secondary-container font-label-md text-label-md py-3 rounded-full flex items-center justify-center gap-2 hover:bg-surface-variant active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined">add</span>
+            Add More
+        </button>
+<!-- Primary FAB-style Button -->
+<button class="flex-[2] bg-primary text-on-primary font-label-md text-label-md py-4 rounded-full flex items-center justify-center gap-2 elevation-2 hover:bg-surface-tint active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined">start</span>
+            Start Processing
+        </button>
+</div>
+</body></html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Processing - FlexConvert</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#b8cac9",
+                        "outline": "#6c7a76",
+                        "inverse-primary": "#44ddc1",
+                        "background": "#f8f9fa",
+                        "on-secondary-fixed": "#0e1e1e",
+                        "on-background": "#191c1d",
+                        "on-surface": "#191c1d",
+                        "on-secondary-fixed-variant": "#3a4a49",
+                        "secondary-container": "#d4e6e5",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#111d23",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e1e3e4",
+                        "tertiary": "#546067",
+                        "surface-tint": "#006b5c",
+                        "on-tertiary-container": "#344047",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2e3132",
+                        "surface-bright": "#f8f9fa",
+                        "tertiary-container": "#9facb3",
+                        "surface-container": "#edeeef",
+                        "on-primary-fixed": "#00201a",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-surface-variant": "#3c4a46",
+                        "surface": "#f8f9fa",
+                        "on-secondary-container": "#576867",
+                        "surface-variant": "#e1e3e4",
+                        "secondary-fixed": "#d4e6e5",
+                        "primary-container": "#00bfa5",
+                        "surface-container-low": "#f3f4f5",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e7e8e9",
+                        "tertiary-fixed": "#d7e4ec",
+                        "tertiary-fixed-dim": "#bbc8d0",
+                        "primary-fixed-dim": "#44ddc1",
+                        "on-primary-fixed-variant": "#005145",
+                        "secondary": "#516161",
+                        "on-primary-container": "#00473c",
+                        "on-tertiary-fixed-variant": "#3c494f",
+                        "outline-variant": "#bbcac4",
+                        "on-primary": "#ffffff",
+                        "primary": "#006b5c",
+                        "surface-dim": "#d9dadb",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#68fadd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter-mobile": "12px",
+                        "baseline": "4px",
+                        "sm": "8px",
+                        "xl": "32px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Roboto Flex"],
+                        "headline-md": ["Be Vietnam Pro"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "label-md": ["JetBrains Mono"],
+                        "body-md": ["Roboto Flex"],
+                        "display-lg": ["Be Vietnam Pro"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .progress-bar-fill {
+            transition: width 0.3s ease-in-out;
+        }
+        .ripple-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .ripple-effect::after {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+        .ripple-effect:active::after {
+            transform: scale(0, 0);
+            opacity: .2;
+            transition: 0s;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-lg pb-[88px]">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface w-full top-0 flat no shadows flex items-center justify-between px-margin-mobile py-sm w-full z-10 sticky">
+<button aria-label="menu" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Processing</h1>
+<button aria-label="account_circle" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-margin-mobile py-lg overflow-y-auto w-full max-w-3xl mx-auto space-y-md">
+<!-- Active Task Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-md shadow-sm border border-surface-variant flex flex-col gap-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+<h2 class="font-body-lg text-body-lg text-on-surface font-medium truncate w-48">IMG_8923.HEIC</h2>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">JPEG</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-xs overflow-hidden">
+<div class="bg-primary h-2 rounded-full progress-bar-fill w-[65%]"></div>
+</div>
+<div class="flex justify-between items-center mt-xs">
+<span class="font-label-md text-label-md text-tertiary">Converting...</span>
+<span class="font-label-md text-label-md text-primary font-medium">65%</span>
+</div>
+</div>
+<!-- Active Task Card 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-md shadow-sm border border-surface-variant flex flex-col gap-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">audiotrack</span>
+<h2 class="font-body-lg text-body-lg text-on-surface font-medium truncate w-48">Podcast_Ep12_Raw.wav</h2>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">MP3</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-xs overflow-hidden">
+<div class="bg-primary h-2 rounded-full progress-bar-fill w-[32%]"></div>
+</div>
+<div class="flex justify-between items-center mt-xs">
+<span class="font-label-md text-label-md text-tertiary">Converting...</span>
+<span class="font-label-md text-label-md text-primary font-medium">32%</span>
+</div>
+</div>
+<div class="h-px w-full bg-surface-variant my-lg"></div>
+<h3 class="font-label-md text-label-md text-outline uppercase tracking-wider mb-sm">Completed</h3>
+<!-- Completed Task Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-md shadow-sm border border-surface-variant flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="bg-secondary-container p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h2 class="font-body-lg text-body-lg text-on-surface font-medium truncate w-40">Document_Final.docx</h2>
+<span class="font-label-md text-label-md text-on-surface-variant">PDF • 1.2 MB</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary rounded-full px-4 py-2 font-label-md text-label-md flex items-center gap-xs hover:bg-primary-fixed-dim transition-colors ripple-effect shadow-sm">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                Download
+            </button>
+</div>
+<!-- Completed Task Card 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-md shadow-sm border border-surface-variant flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="bg-secondary-container p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h2 class="font-body-lg text-body-lg text-on-surface font-medium truncate w-40">Screenshot_2023.png</h2>
+<span class="font-label-md text-label-md text-on-surface-variant">WEBP • 450 KB</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary rounded-full px-4 py-2 font-label-md text-label-md flex items-center gap-xs hover:bg-primary-fixed-dim transition-colors ripple-effect shadow-sm">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                Download
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container-low dark:bg-surface-container-low docked full-width bottom-0 rounded-t-xl shadow-sm fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-90 transition-transform duration-200 ripple-effect rounded-lg group">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">sync_alt</span>
+<span class="font-label-md text-label-md mt-xs">Convert</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-full px-lg py-xs hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-90 transition-transform duration-200 ripple-effect">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-label-md text-label-md mt-xs font-bold text-primary">Recent</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors active:scale-90 transition-transform duration-200 ripple-effect rounded-lg group">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">settings</span>
+<span class="font-label-md text-label-md mt-xs">Settings</span>
+</button>
+</nav>
+</body></html>

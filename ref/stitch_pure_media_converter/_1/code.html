@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>FlexConvert</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#b8cac9",
+                        "outline": "#6c7a76",
+                        "inverse-primary": "#44ddc1",
+                        "background": "#f8f9fa",
+                        "on-secondary-fixed": "#0e1e1e",
+                        "on-background": "#191c1d",
+                        "on-surface": "#191c1d",
+                        "on-secondary-fixed-variant": "#3a4a49",
+                        "secondary-container": "#d4e6e5",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#111d23",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e1e3e4",
+                        "tertiary": "#546067",
+                        "surface-tint": "#006b5c",
+                        "on-tertiary-container": "#344047",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2e3132",
+                        "surface-bright": "#f8f9fa",
+                        "tertiary-container": "#9facb3",
+                        "surface-container": "#edeeef",
+                        "on-primary-fixed": "#00201a",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-surface-variant": "#3c4a46",
+                        "surface": "#f8f9fa",
+                        "on-secondary-container": "#576867",
+                        "surface-variant": "#e1e3e4",
+                        "secondary-fixed": "#d4e6e5",
+                        "primary-container": "#00bfa5",
+                        "surface-container-low": "#f3f4f5",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e7e8e9",
+                        "tertiary-fixed": "#d7e4ec",
+                        "tertiary-fixed-dim": "#bbc8d0",
+                        "primary-fixed-dim": "#44ddc1",
+                        "on-primary-fixed-variant": "#005145",
+                        "secondary": "#516161",
+                        "on-primary-container": "#00473c",
+                        "on-tertiary-fixed-variant": "#3c494f",
+                        "outline-variant": "#bbcac4",
+                        "on-primary": "#ffffff",
+                        "primary": "#006b5c",
+                        "surface-dim": "#d9dadb",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#68fadd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter-mobile": "12px",
+                        "baseline": "4px",
+                        "sm": "8px",
+                        "xl": "32px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Roboto Flex"],
+                        "headline-md": ["Be Vietnam Pro"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "label-md": ["JetBrains Mono"],
+                        "body-md": ["Roboto Flex"],
+                        "display-lg": ["Be Vietnam Pro"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .upload-area {
+            background-image: repeating-linear-gradient(0deg, theme('colors.primary'), theme('colors.primary') 8px, transparent 8px, transparent 16px, theme('colors.primary') 16px), repeating-linear-gradient(90deg, theme('colors.primary'), theme('colors.primary') 8px, transparent 8px, transparent 16px, theme('colors.primary') 16px), repeating-linear-gradient(180deg, theme('colors.primary'), theme('colors.primary') 8px, transparent 8px, transparent 16px, theme('colors.primary') 16px), repeating-linear-gradient(270deg, theme('colors.primary'), theme('colors.primary') 8px, transparent 8px, transparent 16px, theme('colors.primary') 16px);
+            background-size: 2px 100%, 100% 2px, 2px 100%, 100% 2px;
+            background-position: 0 0, 0 0, 100% 0, 0 100%;
+            background-repeat: no-repeat;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:active {
+            transform: scale(0.98);
+            opacity: 1;
+            background-color: theme('colors.surface-container-highest');
+        }
+
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        .ripple::after {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #000 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+        .ripple:active::after {
+            transform: scale(0, 0);
+            opacity: .1;
+            transition: 0s;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col font-body-lg text-body-lg bg-background overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container pb-24">
+<!-- TopAppBar -->
+<header class="w-full top-0 bg-surface text-primary font-headline-md text-headline-md flex items-center justify-between px-margin-mobile py-sm z-40 sticky">
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 text-primary ripple flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="font-headline-md text-headline-md font-bold text-primary flex-1 text-center">
+            FlexConvert
+        </div>
+<button class="p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 text-primary ripple flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col items-center justify-center p-md container mx-auto max-w-2xl relative">
+<!-- Animated Background Element (Subtle) -->
+<div class="absolute inset-0 pointer-events-none opacity-20 flex items-center justify-center -z-10 blur-3xl">
+<div class="w-64 h-64 bg-primary-container rounded-full mix-blend-multiply filter animate-pulse"></div>
+<div class="w-64 h-64 bg-secondary-container rounded-full mix-blend-multiply filter animate-pulse delay-75 -ml-32 mt-32"></div>
+</div>
+<!-- Hero Upload Area -->
+<div class="w-full aspect-square max-w-sm mx-auto bg-surface rounded-[32px] shadow-sm flex flex-col items-center justify-center p-lg cursor-pointer upload-area relative overflow-hidden group">
+<div class="w-20 h-20 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 mb-lg z-10">
+<span class="material-symbols-outlined text-[40px]" data-icon="add" style="font-variation-settings: 'FILL' 1;">add</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface text-center mb-xs z-10">
+                Drop or Tap
+            </h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-center z-10">
+                to upload files for conversion
+            </p>
+<!-- Subtle contextual hints -->
+<div class="absolute bottom-md flex gap-sm opacity-60 z-10">
+<span class="material-symbols-outlined text-sm" data-icon="image">image</span>
+<span class="material-symbols-outlined text-sm" data-icon="movie">movie</span>
+<span class="material-symbols-outlined text-sm" data-icon="audio_file">audio_file</span>
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span>
+</div>
+</div>
+<!-- Quick actions / Recent minimal layout -->
+<div class="w-full max-w-sm mt-xl">
+<div class="flex justify-between items-center mb-md px-xs">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Quick Formats</span>
+</div>
+<div class="flex gap-sm overflow-x-auto pb-sm snap-x scrollbar-hide">
+<button class="snap-start shrink-0 px-lg py-sm rounded-xl bg-surface shadow-sm border border-outline-variant text-on-surface font-body-md text-body-md hover:bg-surface-container-high transition-colors active:scale-95">
+                    JPG to PNG
+                </button>
+<button class="snap-start shrink-0 px-lg py-sm rounded-xl bg-surface shadow-sm border border-outline-variant text-on-surface font-body-md text-body-md hover:bg-surface-container-high transition-colors active:scale-95">
+                    MP4 to MP3
+                </button>
+<button class="snap-start shrink-0 px-lg py-sm rounded-xl bg-surface shadow-sm border border-outline-variant text-on-surface font-body-md text-body-md hover:bg-surface-container-high transition-colors active:scale-95">
+                    PDF to DOCX
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 docked full-width rounded-t-xl bg-surface-container-low shadow-sm font-label-md text-label-md md:hidden">
+<!-- Convert (Active) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-lg py-xs active:scale-90 transition-transform duration-200 ripple-effect">
+<span class="material-symbols-outlined mb-1" data-icon="sync_alt" style="font-variation-settings: 'FILL' 1;">sync_alt</span>
+<span class="font-label-md text-label-md">Convert</span>
+</button>
+<!-- Recent (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-high transition-colors active:scale-90 duration-200 rounded-xl ripple-effect">
+<span class="material-symbols-outlined mb-1" data-icon="history">history</span>
+<span class="font-label-md text-label-md">Recent</span>
+</button>
+<!-- Settings (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:bg-surface-container-high transition-colors active:scale-90 duration-200 rounded-xl ripple-effect">
+<span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</button>
+</nav>
+</body></html>
