@@ -1,6 +1,9 @@
 package com.henjicc.swiftformat.feature.home
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.ImageLoader
@@ -55,6 +59,7 @@ import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.OutputFormatCatalog
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.SizePreset
+import com.henjicc.swiftformat.service.ConversionForegroundService
 
 @Composable
 fun HomeScreen(
@@ -81,6 +86,20 @@ fun HomeScreen(
     }
     val launchPicker = { picker.launch(arrayOf("image/*", "video/*", "audio/*")) }
 
+    // Android 13+ 通知需要运行时授权；未授权也不阻塞转换，只是看不到前台服务通知（见 TASK-06 已知简化）。
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {}
+    val onStartConversion = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        viewModel.startConversion()
+        ConversionForegroundService.start(context)
+    }
+
     if (!state.hasFiles) {
         EmptyState(onPick = launchPicker, modifier = Modifier.fillMaxSize())
     } else {
@@ -92,6 +111,7 @@ fun HomeScreen(
             onFormatChange = viewModel::setOutputFormat,
             onQualityChange = viewModel::setQuality,
             onSizeChange = viewModel::setSize,
+            onStartConversion = onStartConversion,
             sizeFormatter = { Formatter.formatShortFileSize(context, it) },
             imageLoader = imageLoader,
         )
@@ -134,6 +154,7 @@ private fun FileList(
     onFormatChange: (MediaType, String) -> Unit,
     onQualityChange: (MediaType, QualityPreset) -> Unit,
     onSizeChange: (MediaType, SizePreset) -> Unit,
+    onStartConversion: () -> Unit,
     sizeFormatter: (Long) -> String,
     imageLoader: ImageLoader,
 ) {
@@ -191,8 +212,8 @@ private fun FileList(
         }
 
         Button(
-            onClick = {},
-            enabled = false, // 转换引擎见 TASK-03/04，本任务仅落地入口按钮
+            onClick = onStartConversion,
+            enabled = state.groups.isNotEmpty(),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),

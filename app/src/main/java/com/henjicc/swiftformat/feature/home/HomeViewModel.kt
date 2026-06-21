@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.henjicc.swiftformat.SwiftFormatApplication
+import com.henjicc.swiftformat.conversion.ConversionOrchestrator
 import com.henjicc.swiftformat.core.file.FileMetadataReader
 import com.henjicc.swiftformat.core.model.GroupConversionSettings
 import com.henjicc.swiftformat.core.model.InputFile
@@ -45,6 +46,7 @@ data class HomeUiState(
 
 class HomeViewModel(
     private val metadataReader: FileMetadataReader,
+    private val orchestrator: ConversionOrchestrator,
     incomingShareFiles: MutableSharedFlow<List<Uri>>,
 ) : ViewModel() {
 
@@ -91,6 +93,20 @@ class HomeViewModel(
         _uiState.update { HomeUiState() }
     }
 
+    /**
+     * 提交所有受支持分组到任务编排层（见 SPEC 4.4「开始转换」），随后清空首页文件列表
+     * （已提交的文件由 [ConversionOrchestrator] 持有自己的快照，清空不影响已提交的任务）。
+     * 不支持的文件（[HomeUiState.unsupported]）不会被提交。
+     */
+    fun startConversion() {
+        val state = _uiState.value
+        state.groups.forEach { (type, files) ->
+            val settings = state.settings[type] ?: OutputFormatCatalog.defaultSettings(type)
+            orchestrator.submitAll(files, settings.outputFormat, settings.quality, settings.size)
+        }
+        clear()
+    }
+
     fun setOutputFormat(mediaType: MediaType, format: String) {
         updateSettings(mediaType) { it.copy(outputFormat = format) }
     }
@@ -119,6 +135,7 @@ class HomeViewModel(
                 val app = this[APPLICATION_KEY] as SwiftFormatApplication
                 HomeViewModel(
                     metadataReader = app.container.fileMetadataReader,
+                    orchestrator = app.container.conversionOrchestrator,
                     incomingShareFiles = app.container.incomingShareFiles,
                 )
             }

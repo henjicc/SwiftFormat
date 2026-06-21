@@ -1,6 +1,6 @@
 # TASK-06 · 后台任务与历史
 
-**状态**：进行中（Stage A/B/C 已完成）　|　**依赖**：TASK-03, TASK-04　|　对应 SPEC：阶段 6、4.5/4.6、13、14 章
+**状态**：进行中（Stage A/B/C/D 已完成）　|　**依赖**：TASK-03, TASK-04　|　对应 SPEC：阶段 6、4.5/4.6、13、14 章
 
 ## 目标
 实现转换的后台执行、进度通知、转换/完成页面、Room 历史与进程恢复、临时文件清理。
@@ -30,6 +30,7 @@
 - [x] Room 历史数据层：`ConversionHistoryEntity`/`Dao`/`Database`/`Repository`，接入 `AppContainer`
 - [x] 任务编排层：队列、并发策略、状态机、批量汇总（`ConversionOrchestrator`，已接入三引擎到 `AppContainer`）
 - [x] 实现 Foreground Service + 通知（进度/取消/返回）
+- [x] `HomeScreen`「开始转换」按钮接线到 `ConversionOrchestrator` + 启动 `ConversionForegroundService`
 - [ ] 转换进度页面 UI（含取消/重试/失败原因）
 - [x] 输出写入 MediaStore + 重名处理（`OutputLocationResolver`，统一写入 `Download/转个格式`）
 - [ ] 完成页面与操作（打开/分享/查看位置/再次转换/删除）
@@ -189,3 +190,37 @@
   文件名，不会轮流展示或合并展示多个文件名；可接受的简化，完整体验留给转换进度页面 UI。
 - **未做实机验证**：前台服务在退后台、锁屏、Doze 模式下的真实行为（通知是否准时刷新、
   `onTimeout` 是否被正确触发、被系统杀掉后 `stopForeground`/历史一致性）均未在真机/模拟器验证。
+
+### Stage D（已完成，已验证）—— 「开始转换」按钮接线
+- `HomeViewModel` 新增 `startConversion()`：遍历当前受支持分组（`HomeUiState.groups`，已排除
+  `unsupported`），按分组取 `GroupConversionSettings` 调用
+  `ConversionOrchestrator.submitAll(files, outputFormat, quality, size)`，提交后调用既有的
+  `clear()` 清空首页文件列表（已提交的文件此时已经是 `ConversionOrchestrator` 自己持有的快照，
+  清空首页状态不影响已提交任务）。`HomeViewModel.Factory` 改为从 `AppContainer` 注入
+  `conversionOrchestrator`。
+- `HomeScreen.kt`：「开始转换」按钮从永久 `enabled = false` 改为 `state.groups.isNotEmpty()`
+  （只要有受支持文件就可点击，不要求 0 个不支持文件）；`onClick` 调用
+  `viewModel.startConversion()` 并紧接着 `ConversionForegroundService.start(context)`
+  （延续 `HomeScreen.kt` 已有的"Context 相关操作放在 Composable 里、不让 ViewModel 持有 Context"
+  的既有写法，例如已有的 SAF 持久化权限申请也是在 Composable 里做的）。
+  点击时若 API ≥ 33 且未授予 `POST_NOTIFICATIONS`，先用
+  `rememberLauncherForActivityResult(RequestPermission())` 发起一次运行时权限请求——
+  不等待结果、不阻塞后续流程（即使用户拒绝，转换仍正常执行，只是看不到通知，这本身就是
+  Android 通知权限的预期行为），补上了 Stage C 标注的"未请求 POST_NOTIFICATIONS"缺口。
+- 验证：`gradlew :app:assembleDebug` 通过；`testDebugUnitTest` 65/65 通过（无新增——
+  本 Stage 是 Compose UI 接线 + ViewModel 方法，依赖 `LocalContext`/Activity 结果 API，
+  与项目里其余 Compose 屏幕一致，未引入 Compose UI 测试基建，靠人工代码核查）。
+
+### 已知简化（Stage D 范围内）
+- **没有转换进度页面，点击后用户停留在首页**：SPEC 4.5 期望"开始转换"后进入转换状态页面，
+  该页面是 TASK-06 仍未完成的执行步骤；当前点击后首页直接清空回到空状态，用户只能通过系统通知
+  （Stage C 的 `ConversionForegroundService`）看到进度，体验不完整但功能链路是通的
+  （提交 → 编排执行 → 历史落库 → 通知展示）。
+- **权限请求结果未处理**：`notificationPermissionLauncher` 的回调是空 `{}`，不区分用户同意/拒绝/
+  「不再询问」，不会引导用户去设置页手动开启；这是可接受的最小实现，更完整的引导留给设置页或
+  转换进度页面一并设计。
+- **多分组同时提交时各分组各自的 `Mutex`/`Semaphore` 竞争未做联合验证**：例如视频+图片+音频
+  一次性提交，三种类型并行入队但各自限流，理论行为正确（按 Stage B 的设计），但没有在真机上
+  实际验证多组文件混合批量转换的端到端结果。
+- **未做实机验证**：点击按钮到收到系统通知、到 `Download/转个格式` 出现转换产物的完整链路，
+  在当前环境（无 Android 设备）下只验证了"代码逻辑正确、编译与单元测试通过"，未验证真实运行效果。

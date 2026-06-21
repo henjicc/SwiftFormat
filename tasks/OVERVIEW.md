@@ -144,12 +144,14 @@
   `AppContainer`/`ConversionEngineSelector`**，收尾 TASK-03/04/05 长期标注的"引擎尚未接入"遗留项）；
   TASK-06 Stage C（新增 `service/ConversionForegroundService`：只做保活+通知+取消，调度逻辑仍在
   `ConversionOrchestrator`；通知含总体进度/当前文件/取消全部/点击返回；覆写 API35+ `onTimeout`；
-  manifest 声明 `mediaProcessing` 前台服务类型与三个权限），构建通过、65 个单元测试通过。
-- **下一步**：继续 [TASK-06](./TASK-06.md) 后续 Stage——`HomeScreen`「开始转换」按钮接线到
-  `ConversionOrchestrator`（并调用 `ConversionForegroundService.start()`，目前没有任何调用方启动
-  这个 Service）、转换进度页面 UI（含取消/重试/失败原因）、完成页面与操作、历史页面 UI
-  （读 `ConversionHistoryRepository`）、进程恢复与残留临时文件清理（WorkManager）、
-  `POST_NOTIFICATIONS` 运行时权限请求时机。
+  manifest 声明 `mediaProcessing` 前台服务类型与三个权限）；
+  TASK-06 Stage D（`HomeScreen`「开始转换」按钮接线：`HomeViewModel.startConversion()` 按分组提交到
+  `ConversionOrchestrator`，按钮点击同时启动 `ConversionForegroundService` 并按需请求
+  `POST_NOTIFICATIONS` 运行时权限——首页 → 编排 → 历史落库 → 通知的链路首次打通），
+  构建通过、65 个单元测试通过。
+- **下一步**：继续 [TASK-06](./TASK-06.md) 后续 Stage——转换进度页面 UI（含取消/重试/失败原因，
+  当前点击「开始转换」后用户只能靠系统通知看进度，没有应用内页面）、完成页面与操作、历史页面 UI
+  （读 `ConversionHistoryRepository`）、进程恢复与残留临时文件清理（WorkManager）。
 - **遗留**：语言运行时 locale 应用；
   TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
   MP4/AAC 转换效果、MP3/FLAC/WAV 转换效果、16KB 页面设备）待设备/模拟器环境；
@@ -158,8 +160,8 @@
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
   判定逻辑拆成纯函数单测，编排本身运行时行为待 Robolectric/插桩或真机验证）；输出统一写入
   `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消为"双重保证"非事务性保证；
-  `POST_NOTIFICATIONS` 运行时权限未请求（通知服务已就绪但未授权时用户看不到通知）；
-  进度页/完成页/历史页 UI/进程恢复/按钮接线均在 TASK-06 后续 Stage 中完成。
+  点击「开始转换」后无应用内进度页面，只能靠系统通知查看进度；
+  进度页/完成页/历史页 UI/进程恢复均在 TASK-06 后续 Stage 中完成。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。
   - **KSP/AGP9 工具链阻塞已解决**（TASK-06 Stage A）：升级 `com.google.devtools.ksp` 到 `2.3.9`
