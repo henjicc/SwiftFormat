@@ -104,9 +104,9 @@
 > 已修正任务描述，WAV 移交 TASK-05。设备能力→UI 动态显隐、静音/提取音频、WebM、并发策略均明确推迟。
 > *TASK-05 功能性完成（构建/单元测试 45/45 通过）；官方 ffmpeg-kit 已于 2025-04 退役下架，改用社区
 > 维护的 16KB fork（`JamaisMagic/ffmpeg-kit-16KB` non-GPL full 变体，LGPL-3.0，已用 javap 核实 API、
-> 解压 aar 确认四 ABI 原生库与许可证字段，非凭空采信）；后续扩展一期已补齐 `VIDEO -> WEBM/MKV/MP3`，
-> `FfmpegEngine` 现覆盖 MP3/FLAC/WAV 音频转码、WEBM/MKV 视频转码与视频提取 MP3，
-> 命令构建收敛在纯函数 `FfmpegCommandBuilder`，并用 `FFprobeKit` 做输出流结构校验；
+> 解压 aar 确认四 ABI 原生库与许可证字段，非凭空采信）；后续扩展已补齐
+> `IMAGE -> BMP/TIFF`、`AUDIO -> OGG`、`VIDEO -> MOV`、`VIDEO -> M4A/WAV/FLAC/MP3/WEBM/MKV`，
+> 并新增 `FfmpegStillImageEngine` 与 `FFprobeKit` / 图片 bounds 输出校验；
 > 当前仍未做 16KB 真机验证、APK 体积评估与硬件加速验证，详见 TASK-05「已知简化」。
 
 ### 依赖关系图
@@ -132,10 +132,12 @@
   压缩写出、质量与尺寸纯函数映射、输出命名规则）；
   TASK-04（`Media3Engine`：视频→MP4(H.264)/音频→AAC/M4A，`Presentation` 缩放、`VideoEncoderSettings`/
   `AudioEncoderSettings` 码率控制、临时文件→目标 Uri 拷贝、进度轮询、取消、设备编码器能力检查）；
-  TASK-05（`FfmpegEngine`：音频→MP3/FLAC/WAV、视频→WEBM/MKV、视频提取→MP3，社区维护的 16KB fork
-  替代已退役的官方 ffmpeg-kit；`OutputFormatCatalog` 升级为结构化输出选项，`ConversionRequest` /
-  `GroupConversionSettings` 新增 `targetMediaType`，并用 `FFprobeKit` 做输入/输出流校验），
-  `testDebugUnitTest`、`lintDebug`、`assembleDebug` 通过，当前 JVM 单元测试总数 78；
+  TASK-05（`FfmpegEngine` / `FfmpegStillImageEngine`：图片→BMP/TIFF、音频→MP3/OGG/FLAC/WAV、
+  视频→MOV/WEBM/MKV、视频提取→MP3/M4A/WAV/FLAC，社区维护的 16KB fork 替代已退役的
+  官方 ffmpeg-kit；`OutputFormatCatalog` 升级为结构化输出选项并新增 `sortOrder`，
+  `ConversionRequest` / `GroupConversionSettings` 新增 `targetMediaType`，同时补了图片 `ImageDecoder`
+  回退与 `FFprobeKit`/图片 bounds 输入输出校验），`testDebugUnitTest`、`lintDebug`、`assembleDebug`
+  通过，当前 JVM 单元测试总数 85；
   TASK-06 Stage A（**解决 KSP/AGP9 工具链阻塞**——升级 KSP 到 2.3.9 后与 AGP9 内置 Kotlin 兼容，
   已用真实 Room `@Database`/`@Dao` 验证注解处理可生成代码；新增 `core/database` 历史数据层
   `ConversionHistoryEntity`/`Dao`/`Database`/`Repository` 接入 `AppContainer`，新增
@@ -171,16 +173,19 @@
   TASK-07 Stage G（按代码体量与职责密度拆分 4 个大 Screen：`SettingsScreen`/`HomeScreen`/
   `ConversionProgressScreen`/`HistoryScreen` 改为“路由 + 组件”结构；并把 `ConversionOrchestrator`
   的请求解析/历史同步、`Media3Engine` 的编码配置/Transformer 生命周期/错误映射抽到独立文件），
-  FFmpeg 视频扩展一期（视频组选项扩为 `MP4 / WEBM / MKV / MP3`，`MP3` 走“视频提取音频”链路，
-  新增 `NO_AUDIO_TRACK` / `UNSUPPORTED_VIDEO_OUTPUT` / `OUTPUT_VALIDATION_FAILED` 友好错误类型），
+  FFmpeg 全媒体扩展第一阶段（图片组选项扩为 `JPG / PNG / WEBP / BMP / TIFF`，音频组选项扩为
+  `MP3 / M4A / AAC / WAV / FLAC / OGG`，视频组选项扩为 `MP4 / MOV / WEBM / MKV / MP3 / M4A / WAV / FLAC`，
+  其中 `MP3 / M4A / WAV / FLAC` 走“视频提取音频”链路，新增 `FfmpegStillImageEngine`、
+  `UNSUPPORTED_IMAGE_OUTPUT` / `NO_AUDIO_TRACK` / `UNSUPPORTED_VIDEO_OUTPUT` /
+  `OUTPUT_VALIDATION_FAILED` 友好错误类型），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先做真机/模拟器验证与多设备测试，
   重点覆盖失败场景、前台服务恢复、分享/打开/查看位置、超大字体/TalkBack、横竖屏和 4KB/16KB 页面设备，
   然后再决定是否补剩余设置项与发布收尾。
 - **遗留**：TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
-  MP4/AAC 转换效果、MP3/FLAC/WAV 转换效果、WEBM/MKV/视频→MP3 转换效果、16KB 页面设备）待设备/模拟器环境；
+  MP4/AAC 转换效果、BMP/TIFF/MP3/M4A/OGG/FLAC/WAV/MOV/WEBM/MKV/视频→音频 转换效果、16KB 页面设备）待设备/模拟器环境；
   TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
-  UI 动态显隐、EXIF 完整标签保留、MOV/HEVC/AV1、视频→AAC/M4A/Opus、APK 体积/ABI
+  UI 动态显隐、EXIF 完整标签保留、HEIC/AVIF、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
   判定逻辑拆成纯函数单测，编排本身运行时行为待 Robolectric/插桩或真机验证）；输出统一写入
   `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消为"双重保证"非事务性保证；

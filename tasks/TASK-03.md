@@ -53,14 +53,20 @@
 - **关键修正**：最初实现里 EXIF 90°/270° 旋转会交换宽高，但目标尺寸是按旋转前的原始像素方向计算的，
   旋正后会与目标宽高比不一致而被强行拉伸变形——已修正为先读方向、按显示方向算目标尺寸、
   再反推解码阶段应使用的原始方向采样目标，避免该问题（`ImageSizeMapperTest.dimensions_swapped_...` 覆盖辅助函数）。
+- 后续扩格式阶段已补一轮**图片输入稳健性增强**：`BitmapFactory` 读 bounds/bitmap 失败时，会对
+  `GIF / HEIF / AVIF` 等图片尝试走 `ImageDecoder` 回退；静态图链路仍保持“只取单帧位图”策略，
+  不扩展到动图时间轴处理。
+- 后续扩格式阶段新增 `engine/ffmpeg/FfmpegStillImageEngine`：图片组现额外支持 `BMP / TIFF` 输出，
+  路由策略为“先复用原生位图链路完成解码、EXIF 旋正与尺寸缩放，再交给 FFmpeg 写出 BMP/TIFF”，
+  避免直接用 FFmpeg 读取 JPEG 时丢失现有的方向修正行为。
 - 验证：`gradlew :app:assembleDebug` 通过、无警告；`testDebugUnitTest` 26/26 通过（7 个测试类）。
 
 ### 已知简化（明确记录）
 - WebP 仍未区分有损/无损（沿用 TASK-02 的简化），统一按有损 `WEBP_LOSSY`（API 30+）/`WEBP`（更低版本）处理。
 - “是否保留元数据”设置项（SPEC 15.2）尚未接入——当前固定行为是旋正像素方向（保证视觉正确），
   不复制完整 EXIF 标签集（GPS、相机信息等）；该设置项本身待 TASK-07 设置页落地后再决定具体策略。
-- GIF/HEIC 输入解码依赖系统 `BitmapFactory` 原生支持，未做设备能力探测或针对性兜底，
-  失败会统一归类为 `CORRUPT_INPUT`。
+- GIF/HEIC/AVIF 输入虽然已补 `ImageDecoder` 回退，但仍未做设备能力探测或更细粒度错误区分；
+  在 API 28 以下或系统解码器缺失时，失败仍会统一归类为 `CORRUPT_INPUT`。
 - 未做实机/模拟器运行验证（互转产物可正常打开、大图不 OOM 的真实表现），当前环境无 Android 设备。
 - 输出位置解析（MediaStore/SAF、Download/转个格式 默认目录）未实现，留给 TASK-06；本任务的
   `ConversionRequest.destination` 需由未来的任务编排层先解析好 Uri 再传入。

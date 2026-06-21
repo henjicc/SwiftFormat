@@ -21,32 +21,41 @@ object OutputFormatCatalog {
         val preferredEngine: EngineHint,
         val qualityApplicable: Boolean,
         val sizeApplicable: Boolean,
+        val sortOrder: Int,
     )
 
     private val imageOptions = listOf(
-        OutputOption("JPG", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = true, sizeApplicable = true),
-        OutputOption("PNG", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = false, sizeApplicable = true),
-        OutputOption("WEBP", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = true, sizeApplicable = true),
+        OutputOption("JPG", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = true, sizeApplicable = true, sortOrder = 10),
+        OutputOption("PNG", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = false, sizeApplicable = true, sortOrder = 20),
+        OutputOption("WEBP", MediaType.IMAGE, EngineHint.NATIVE_IMAGE, qualityApplicable = true, sizeApplicable = true, sortOrder = 30),
+        OutputOption("BMP", MediaType.IMAGE, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = true, sortOrder = 40),
+        OutputOption("TIFF", MediaType.IMAGE, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = true, sortOrder = 50),
     )
 
     private val videoOptions = listOf(
-        OutputOption("MP4", MediaType.VIDEO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = true),
-        OutputOption("WEBM", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true),
-        OutputOption("MKV", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true),
-        OutputOption("MP3", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false),
+        OutputOption("MP4", MediaType.VIDEO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = true, sortOrder = 10),
+        OutputOption("MOV", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 20),
+        OutputOption("WEBM", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 30),
+        OutputOption("MKV", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 40),
+        OutputOption("MP3", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false, sortOrder = 50),
+        OutputOption("M4A", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false, sortOrder = 60),
+        OutputOption("WAV", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false, sortOrder = 70),
+        OutputOption("FLAC", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false, sortOrder = 80),
     )
 
     private val audioOptions = listOf(
-        OutputOption("MP3", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false),
-        OutputOption("AAC", MediaType.AUDIO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = false),
-        OutputOption("WAV", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false),
-        OutputOption("FLAC", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false),
+        OutputOption("MP3", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false, sortOrder = 10),
+        OutputOption("M4A", MediaType.AUDIO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = false, sortOrder = 20),
+        OutputOption("AAC", MediaType.AUDIO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = false, sortOrder = 30),
+        OutputOption("WAV", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false, sortOrder = 40),
+        OutputOption("FLAC", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false, sortOrder = 50),
+        OutputOption("OGG", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false, sortOrder = 60),
     )
 
     fun outputOptions(mediaType: MediaType): List<OutputOption> = when (mediaType) {
-        MediaType.IMAGE -> imageOptions
-        MediaType.VIDEO -> videoOptions
-        MediaType.AUDIO -> audioOptions
+        MediaType.IMAGE -> imageOptions.sortedBy(OutputOption::sortOrder)
+        MediaType.VIDEO -> videoOptions.sortedBy(OutputOption::sortOrder)
+        MediaType.AUDIO -> audioOptions.sortedBy(OutputOption::sortOrder)
         MediaType.UNKNOWN -> emptyList()
     }
 

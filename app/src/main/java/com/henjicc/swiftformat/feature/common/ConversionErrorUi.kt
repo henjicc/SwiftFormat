@@ -13,6 +13,7 @@ fun errorKindLabelRes(kind: ConversionError.Kind): Int = when (kind) {
     ConversionError.Kind.NO_AUDIO_TRACK -> R.string.error_no_audio_track
     ConversionError.Kind.NO_ENCODER -> R.string.error_no_encoder
     ConversionError.Kind.UNSUPPORTED_OUTPUT -> R.string.error_unsupported_output
+    ConversionError.Kind.UNSUPPORTED_IMAGE_OUTPUT -> R.string.error_unsupported_image_output
     ConversionError.Kind.UNSUPPORTED_VIDEO_OUTPUT -> R.string.error_unsupported_video_output
     ConversionError.Kind.INSUFFICIENT_STORAGE -> R.string.error_insufficient_storage
     ConversionError.Kind.OUTPUT_NOT_WRITABLE -> R.string.error_output_not_writable

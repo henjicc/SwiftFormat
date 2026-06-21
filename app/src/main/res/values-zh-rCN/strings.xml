@@ -137,6 +137,7 @@
     <string name="error_no_audio_track">该视频没有可提取的音轨</string>
     <string name="error_no_encoder">当前设备无法转换为所选格式</string>
     <string name="error_unsupported_output">当前输出格式不可用</string>
+    <string name="error_unsupported_image_output">当前图片输出格式不可用</string>
     <string name="error_unsupported_video_output">当前视频输出格式不可用</string>
     <string name="error_insufficient_storage">存储空间不足</string>
     <string name="error_output_not_writable">无法写入输出位置</string>

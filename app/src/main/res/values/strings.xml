@@ -137,6 +137,7 @@
     <string name="error_no_audio_track">This video does not contain an audio track</string>
     <string name="error_no_encoder">This device cannot convert to the selected format</string>
     <string name="error_unsupported_output">The selected output format is not available</string>
+    <string name="error_unsupported_image_output">This image output format is not available</string>
     <string name="error_unsupported_video_output">This video output format is not available</string>
     <string name="error_insufficient_storage">Not enough storage space</string>
     <string name="error_output_not_writable">Cannot write to the output location</string>

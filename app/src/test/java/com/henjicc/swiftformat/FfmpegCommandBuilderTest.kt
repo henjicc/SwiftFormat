@@ -17,6 +17,13 @@ class FfmpegCommandBuilderTest {
     }
 
     @Test
+    fun oggAudioTranscode_usesLibvorbis() {
+        val args = FfmpegCommandBuilder.buildAudioTranscodeArgs("in.wav", "out.ogg", "OGG", QualityPreset.STANDARD)
+        assertTrue(args.containsAll(listOf("-acodec", "libvorbis", "-b:a", "128k")))
+        assertEquals("out.ogg", args.last())
+    }
+
+    @Test
     fun webmVideoTranscode_usesVp9OpusAndKeepsAudioMap() {
         val args = FfmpegCommandBuilder.buildVideoTranscodeArgs(
             inputPath = "in.mp4",
@@ -52,17 +59,58 @@ class FfmpegCommandBuilderTest {
     }
 
     @Test
+    fun movVideoTranscode_usesOpenh264AndAac() {
+        val args = FfmpegCommandBuilder.buildVideoTranscodeArgs(
+            inputPath = "in.mp4",
+            outputPath = "out.mov",
+            outputFormat = "MOV",
+            quality = QualityPreset.HIGH,
+            size = SizePreset.Original,
+            sourceDimensions = VideoSizeMapper.Dimensions(1920, 1080),
+            frameRate = 30.0,
+            sourceBitrateBps = 3_000_000,
+        )
+
+        assertTrue(args.containsAll(listOf("-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libopenh264", "-c:a", "aac")))
+        assertEquals("out.mov", args.last())
+    }
+
+    @Test
     fun videoExtractMp3_mapsFirstAudioTrackOnly() {
         val args = FfmpegCommandBuilder.buildVideoExtractAudioArgs("in.mp4", "out.mp3", "MP3", QualityPreset.BEST)
         assertEquals(listOf("-y", "-i", "in.mp4", "-map", "0:a:0", "-vn", "-acodec", "libmp3lame", "-b:a", "320k", "out.mp3"), args)
+    }
+
+    @Test
+    fun videoExtractM4a_usesAac() {
+        val args = FfmpegCommandBuilder.buildVideoExtractAudioArgs("in.mp4", "out.m4a", "M4A", QualityPreset.HIGH)
+        assertTrue(args.containsAll(listOf("-map", "0:a:0", "-vn", "-acodec", "aac", "-b:a", "192k")))
+        assertEquals("out.m4a", args.last())
+    }
+
+    @Test
+    fun videoExtractLosslessFormats_useExpectedCodecs() {
+        val wavArgs = FfmpegCommandBuilder.buildVideoExtractAudioArgs("in.mp4", "out.wav", "WAV", QualityPreset.HIGH)
+        assertTrue(wavArgs.containsAll(listOf("-map", "0:a:0", "-vn", "-acodec", "pcm_s16le")))
+        val flacArgs = FfmpegCommandBuilder.buildVideoExtractAudioArgs("in.mp4", "out.flac", "FLAC", QualityPreset.HIGH)
+        assertTrue(flacArgs.containsAll(listOf("-map", "0:a:0", "-vn", "-acodec", "flac")))
+    }
+
+    @Test
+    fun stillImageTranscode_usesExpectedCodec() {
+        val bmpArgs = FfmpegCommandBuilder.buildStillImageTranscodeArgs("in.png", "out.bmp", "BMP")
+        assertEquals(listOf("-y", "-i", "in.png", "-frames:v", "1", "-c:v", "bmp", "out.bmp"), bmpArgs)
+
+        val tiffArgs = FfmpegCommandBuilder.buildStillImageTranscodeArgs("in.png", "out.tiff", "TIFF")
+        assertEquals(listOf("-y", "-i", "in.png", "-frames:v", "1", "-c:v", "tiff", "out.tiff"), tiffArgs)
     }
 
     @Test(expected = IllegalStateException::class)
     fun unsupportedVideoFormat_throws() {
         FfmpegCommandBuilder.buildVideoTranscodeArgs(
             inputPath = "in.mp4",
-            outputPath = "out.mov",
-            outputFormat = "MOV",
+            outputPath = "out.avi",
+            outputFormat = "AVI",
             quality = QualityPreset.HIGH,
             size = SizePreset.Original,
             sourceDimensions = VideoSizeMapper.Dimensions(1280, 720),

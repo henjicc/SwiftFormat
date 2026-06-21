@@ -10,6 +10,7 @@ class OutputNamingTest {
     fun withExtension_replacesExtensionKeepingBaseName() {
         assertEquals("photo.webp", OutputNaming.withExtension("photo.jpg", "WEBP"))
         assertEquals("archive.tar.png", OutputNaming.withExtension("archive.tar.heic", "PNG"))
+        assertEquals("voice.m4a", OutputNaming.withExtension("voice.aac", "M4A"))
     }
 
     @Test

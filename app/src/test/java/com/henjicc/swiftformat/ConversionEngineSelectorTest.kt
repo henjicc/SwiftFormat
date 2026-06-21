@@ -66,24 +66,51 @@ class ConversionEngineSelectorTest {
 
     @Test
     fun ffmpegVideoRoutes_canBeDistinguishedByFormatAndTargetType() {
+        val stillImageEngine = FakeEngine { request ->
+            request.input.mediaType == MediaType.IMAGE && request.outputFormat in setOf("BMP", "TIFF")
+        }
         val media3Engine = FakeEngine { request ->
-            request.input.mediaType == MediaType.VIDEO &&
-                request.targetMediaType == MediaType.VIDEO &&
-                request.outputFormat == "MP4"
+            when (request.input.mediaType) {
+                MediaType.VIDEO ->
+                    request.targetMediaType == MediaType.VIDEO &&
+                        request.outputFormat == "MP4"
+
+                MediaType.AUDIO ->
+                    request.targetMediaType == MediaType.AUDIO &&
+                        request.outputFormat in setOf("AAC", "M4A")
+
+                else -> false
+            }
         }
         val ffmpegEngine = FakeEngine { request ->
-            request.input.mediaType == MediaType.VIDEO &&
-                (
-                    request.outputFormat == "WEBM" ||
-                        request.outputFormat == "MKV" ||
-                        (request.outputFormat == "MP3" && request.targetMediaType == MediaType.AUDIO)
-                    )
-        }
-        val selector = ConversionEngineSelector(listOf(media3Engine, ffmpegEngine))
+            when (request.input.mediaType) {
+                MediaType.AUDIO ->
+                    request.targetMediaType == MediaType.AUDIO &&
+                        request.outputFormat in setOf("MP3", "WAV", "FLAC", "OGG")
 
+                MediaType.VIDEO ->
+                    (request.targetMediaType == MediaType.VIDEO &&
+                        request.outputFormat in setOf("MOV", "WEBM", "MKV")) ||
+                        (request.targetMediaType == MediaType.AUDIO &&
+                            request.outputFormat in setOf("MP3", "M4A", "WAV", "FLAC"))
+
+                else -> false
+            }
+        }
+        val selector = ConversionEngineSelector(listOf(stillImageEngine, media3Engine, ffmpegEngine))
+
+        assertSame(stillImageEngine, selector.select(requestFor(MediaType.IMAGE, "BMP")))
+        assertSame(stillImageEngine, selector.select(requestFor(MediaType.IMAGE, "TIFF")))
         assertSame(media3Engine, selector.select(requestFor(MediaType.VIDEO, "MP4")))
+        assertSame(ffmpegEngine, selector.select(requestFor(MediaType.VIDEO, "MOV")))
         assertSame(ffmpegEngine, selector.select(requestFor(MediaType.VIDEO, "WEBM")))
         assertSame(ffmpegEngine, selector.select(requestFor(MediaType.VIDEO, "MKV")))
         assertSame(ffmpegEngine, selector.select(requestFor(MediaType.VIDEO, "MP3")))
+        assertSame(ffmpegEngine, selector.select(requestFor(MediaType.VIDEO, "M4A")))
+        assertSame(ffmpegEngine, selector.select(requestFor(MediaType.VIDEO, "WAV")))
+        assertSame(ffmpegEngine, selector.select(requestFor(MediaType.VIDEO, "FLAC")))
+        assertSame(media3Engine, selector.select(requestFor(MediaType.AUDIO, "M4A")))
+        assertSame(media3Engine, selector.select(requestFor(MediaType.AUDIO, "AAC")))
+        assertSame(ffmpegEngine, selector.select(requestFor(MediaType.AUDIO, "OGG")))
     }
 }

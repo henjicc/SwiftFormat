@@ -26,13 +26,15 @@
 - [x] 实现输出验证（空文件检测）与失败降级（错误码映射到 `ConversionError.Kind`）
 - [x] 扩展一期补齐 `VIDEO -> WEBM / MKV / MP3`：新增 `targetMediaType`、结构化输出选项、
   `FFprobeKit` 流结构校验、视频提取音频与友好错误文案
+- [x] 扩展二期第一阶段补齐 `IMAGE -> BMP / TIFF`、`AUDIO -> OGG`、`VIDEO -> MOV`、
+  `VIDEO -> M4A / WAV / FLAC`：新增 `FfmpegStillImageEngine`、图片输出校验、`M4A` 容器别名与排序规则
 - [ ] 接入调度器（`ConversionEngineSelector`/`AppContainer`）—— 沿用 TASK-03/04 的既定安排，
   统一移交 TASK-06（引擎已满足 `supports()` 协议，可被直接注册）
 - [ ] 验证 16KB 页面设备与体积/ABI 打包 —— **未做实机验证**（无 16KB 页面设备），
   已确认 AAR 内置 arm64-v8a/armeabi-v7a/x86/x86_64 四 ABI 原生库
 
 ## 验收标准
-- [ ] FLAC→MP3、视频→MP3、视频→WEBM/MKV 等链路成功，输出可正常播放 —— 命令构建、路由、输出校验
+- [ ] FLAC→MP3、音频→OGG、图片→BMP/TIFF、视频→MP3/M4A/WAV/FLAC、视频→WEBM/MKV/MOV 等链路成功，输出可正常播放 —— 命令构建、路由、输出校验
   与错误处理已实现并通过 JVM 单元测试，**未做**实机/模拟器运行验证（无设备）
 - [x] UI/业务层无任何 FFmpeg 命令拼接（命令构建收敛在 `FfmpegCommandBuilder`，`FfmpegEngine` 是唯一调用方）
 - [x] 临时文件在成功/失败/取消后均被清理（`finally` 块统一 `delete()` 输入/输出临时文件）
@@ -67,8 +69,9 @@
 
 ### 范围收敛
 - 本阶段保持 **Media3 负责主流稳定链路 `VIDEO -> MP4(H.264/AAC)`**，FFmpeg 只承接扩展格式，
-  当前范围收敛为 **AUDIO -> MP3/FLAC/WAV**、**VIDEO -> WEBM/MKV**、**VIDEO -> MP3**（提取首条音轨）。
-- 本阶段**不**扩出 `MOV` 输出、`HEVC/AV1`、`VIDEO -> AAC/M4A/Opus`、FFmpeg 硬件加速，
+  当前范围收敛为 **IMAGE -> BMP/TIFF**、**AUDIO -> MP3/OGG/FLAC/WAV**、
+  **VIDEO -> MOV/WEBM/MKV**、**VIDEO -> MP3/M4A/WAV/FLAC**（提取首条音轨）。
+- 本阶段**不**扩出 `HEVC/AV1`、`VIDEO -> OGG/Opus`、FFmpeg 硬件加速，
   也不做设备能力驱动的 UI 动态隐藏，避免把 FFmpeg 变成默认视频引擎。
 
 ### 已完成
@@ -82,9 +85,11 @@
   与 `engine/media/AudioBitrateMapper`（AAC 档位）分离，因 MP3 编码效率低于 AAC 需要更高码率才能
   达到相近听感。
 - 新增 `engine/ffmpeg/OpusBitrateMapper`：WebM 的 Opus 音频码率映射（192/160/128/96 kbps）。
+- 新增 `engine/ffmpeg/FfmpegStillImageEngine`：负责 `BMP / TIFF` 输出；先复用原生位图链路做解码、
+  EXIF 旋正与尺寸缩放，再交给 FFmpeg 进行静态图容器写出，并用“非空文件 + 可读 bounds”做结果校验。
 - 新增 `engine/ffmpeg/FfmpegEngine`（`ConversionEngine`）：
-  - `supports()`：覆盖 AUDIO + 输出格式在 {MP3, FLAC, WAV}，以及 VIDEO + 输出格式在
-    {WEBM, MKV}、VIDEO 提取 MP3。
+  - `supports()`：覆盖 AUDIO + 输出格式在 {MP3, OGG, FLAC, WAV}，以及 VIDEO + 输出格式在
+    {MOV, WEBM, MKV}、VIDEO 提取 {MP3, M4A, WAV, FLAC}。
   - 转换前检查 `cacheDir.usableSpace` 是否足够（源文件大小 ×2 + 16MB 余量），不足则返回
     `INSUFFICIENT_STORAGE` 而不是转换中途失败（落实 SPEC 12.2"转换前检查空间"）。
   - 临时文件流程：源 `Uri` → `ContentResolver.openInputStream` 拷贝到 `cacheDir` 临时文件 →
@@ -98,8 +103,8 @@
   - 失败降级：用 `ReturnCode.isSuccess/isCancel` 区分成功/取消/失败，失败时取
     `session.failStackTrace`（为空则取 `session.allLogsAsString`）作为 `debugMessage`，
     不向上层暴露 FFmpeg 原始堆栈作为用户可见文案（与 `ConversionError.debugMessage` 的既定用途一致）。
-  - 扩展一期新增 `FFprobeKit` 探测：输入侧先检查视频/音频流是否存在，输出侧再验证 `WEBM/MKV`
-    至少含 1 条视频流、`VIDEO -> MP3` 仅含音频流，避免“执行成功但产物流结构错误”的假成功。
+  - 扩展阶段新增 `FFprobeKit` 探测：输入侧先检查视频/音频流是否存在，输出侧再验证
+    `MOV/WEBM/MKV` 至少含 1 条视频流、`VIDEO -> AUDIO` 仅含音频流，避免“执行成功但产物流结构错误”的假成功。
   - 与 `Media3Engine` 不同：FFmpegKit 的 `execute*Async`/`cancel`/回调没有 Looper 线程绑定要求，
     `convert()`/`cancel()` 固定跑在 `Dispatchers.IO`（FFmpegKit 内部自行管理原生执行线程）。
 - **API 核实方法**：延续 TASK-04 的 `javap` 反编译验证方法（见上方「选型决策」），核实
@@ -109,14 +114,18 @@
 - 扩展一期同时更新了 UI/模型路由：`GroupConversionSettings` / `ConversionRequest` 新增
   `targetMediaType`，`OutputFormatCatalog` 改为结构化 `OutputOption`，视频组选项现为
   `MP4 / WEBM / MKV / MP3`，其中 `MP3` 会隐藏尺寸但保留质量选择。
+- 扩展二期第一阶段继续更新了 UI/模型路由：图片组选项现为 `JPG / PNG / WEBP / BMP / TIFF`，
+  音频组选项现为 `MP3 / M4A / AAC / WAV / FLAC / OGG`，视频组选项现为
+  `MP4 / MOV / WEBM / MKV / MP3 / M4A / WAV / FLAC`；其中真正输出视频的格式才显示尺寸，
+  `BMP / TIFF / WAV / FLAC` 隐藏质量。
 - 验证：`gradlew.bat testDebugUnitTest`、`gradlew.bat lintDebug`、`gradlew.bat assembleDebug`
-  均通过；当前 JVM 单元测试总数 78。
+  均通过；当前 JVM 单元测试总数 85。
 
 ### 已知简化（明确记录）
 - **未接入调度器/AppContainer**：与 TASK-03/04 的既定安排一致，引擎已满足 `ConversionEngine` 协议
   可被 `ConversionEngineSelector` 直接注册，实际接线已在 TASK-06 完成。
-- **视频扩展仍是一期范围**：未实现 `MOV` 输出、`HEVC/AV1`、`VIDEO -> AAC/M4A/Opus`，
-  也未验证 FFmpeg MediaCodec 硬件加速能力。
+- **更高风险格式仍后置**：未实现 `HEVC/AV1`、`VIDEO -> OGG/Opus`、动图 GIF 输出、
+  `HEIC/AVIF` 输出，也未验证 FFmpeg MediaCodec 硬件加速能力。
 - **16KB 页面设备与体积验证未做实机测试**：当前环境无 16KB 页面真机；APK 体积影响（四 ABI 全量
   FFmpeg 原生库会显著增加包体积）未测量，正式发布前应评估按 ABI 拆分 APK/AAB 或裁剪未用编解码器
   （SPEC 要求"仅编译必要编解码器"，当前用的是 fork 提供的预编译 full 包，并非按需自建最小化构建，

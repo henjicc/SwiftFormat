@@ -26,6 +26,10 @@ object FfmpegCommandBuilder {
 
             "FLAC" -> listOf("-acodec", "flac")
             "WAV" -> listOf("-acodec", "pcm_s16le")
+            "OGG" -> {
+                val kbps = ((AudioBitrateMapper.targetBitrateBps("AAC", quality ?: QualityPreset.HIGH) ?: 160_000) / 1000).coerceAtLeast(1)
+                listOf("-acodec", "libvorbis", "-b:a", "${kbps}k")
+            }
             else -> error("FfmpegEngine 不支持的音频输出格式: $outputFormat")
         }
         return listOf("-y", "-i", inputPath, "-vn") + codecArgs + listOf(outputPath)
@@ -79,6 +83,16 @@ object FfmpegCommandBuilder {
                 )
             }
 
+            "MOV" -> {
+                val audioBitrateKbps = ((AudioBitrateMapper.targetBitrateBps("AAC", quality) ?: 192_000) / 1000).coerceAtLeast(1)
+                listOf(
+                    "-c:v", "libopenh264",
+                    "-b:v", "${videoBitrateKbps}k",
+                    "-c:a", "aac",
+                    "-b:a", "${audioBitrateKbps}k",
+                )
+            }
+
             else -> error("FfmpegEngine 不支持的视频输出格式: $outputFormat")
         }
 
@@ -110,7 +124,61 @@ object FfmpegCommandBuilder {
                 )
             }
 
+            "M4A" -> {
+                val kbps = ((AudioBitrateMapper.targetBitrateBps("AAC", quality) ?: 192_000) / 1000).coerceAtLeast(1)
+                listOf(
+                    "-y",
+                    "-i",
+                    inputPath,
+                    "-map",
+                    "0:a:0",
+                    "-vn",
+                    "-acodec",
+                    "aac",
+                    "-b:a",
+                    "${kbps}k",
+                    outputPath,
+                )
+            }
+
+            "WAV" -> listOf(
+                "-y",
+                "-i",
+                inputPath,
+                "-map",
+                "0:a:0",
+                "-vn",
+                "-acodec",
+                "pcm_s16le",
+                outputPath,
+            )
+
+            "FLAC" -> listOf(
+                "-y",
+                "-i",
+                inputPath,
+                "-map",
+                "0:a:0",
+                "-vn",
+                "-acodec",
+                "flac",
+                outputPath,
+            )
+
             else -> error("FfmpegEngine 不支持的视频提取音频格式: $outputFormat")
         }
+    }
+
+    fun buildStillImageTranscodeArgs(
+        inputPath: String,
+        outputPath: String,
+        outputFormat: String,
+    ): List<String> {
+        val codecArgs = when (outputFormat.uppercase()) {
+            "BMP" -> listOf("-frames:v", "1", "-c:v", "bmp")
+            "TIFF" -> listOf("-frames:v", "1", "-c:v", "tiff")
+            else -> error("FfmpegStillImageEngine 不支持的图片输出格式: $outputFormat")
+        }
+        return listOf("-y", "-i", inputPath) + codecArgs + listOf(outputPath)
     }
 }

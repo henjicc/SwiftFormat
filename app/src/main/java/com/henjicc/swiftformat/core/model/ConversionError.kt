@@ -17,6 +17,7 @@ data class ConversionError(
         NO_AUDIO_TRACK,
         NO_ENCODER,
         UNSUPPORTED_OUTPUT,
+        UNSUPPORTED_IMAGE_OUTPUT,
         UNSUPPORTED_VIDEO_OUTPUT,
         INSUFFICIENT_STORAGE,
         OUTPUT_NOT_WRITABLE,

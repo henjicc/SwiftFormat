@@ -25,9 +25,9 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * 基于社区维护的 FFmpegKit 16KB fork（见 build.gradle.kts 依赖说明）的扩展格式引擎（SPEC 10.5）。
  * 范围：
- * - AUDIO → MP3/FLAC/WAV
- * - VIDEO → WEBM/MKV
- * - VIDEO → MP3（提取首条音轨）
+ * - AUDIO → MP3/OGG/FLAC/WAV
+ * - VIDEO → MOV/WEBM/MKV
+ * - VIDEO → MP3/M4A/WAV/FLAC（提取首条音轨）
  *
  * 所有命令拼接收敛在 [FfmpegCommandBuilder]，本类及 UI/业务层不直接拼接 FFmpeg 参数字符串。
  * 临时文件策略（SPEC 12.2）：源 Uri → 缓存临时文件 → FFmpeg 转换到另一缓存临时文件 → 校验非空 →
@@ -258,9 +258,9 @@ class FfmpegEngine(
     private companion object {
         const val TAG = "FfmpegEngine"
         const val MIN_FREE_BYTES_MARGIN = 16L * 1024 * 1024
-        val SUPPORTED_AUDIO_FORMATS = setOf("MP3", "FLAC", "WAV")
-        val SUPPORTED_VIDEO_FORMATS = setOf("WEBM", "MKV")
-        val SUPPORTED_VIDEO_EXTRACT_FORMATS = setOf("MP3")
+        val SUPPORTED_AUDIO_FORMATS = setOf("MP3", "OGG", "FLAC", "WAV")
+        val SUPPORTED_VIDEO_FORMATS = setOf("MOV", "WEBM", "MKV")
+        val SUPPORTED_VIDEO_EXTRACT_FORMATS = setOf("MP3", "M4A", "WAV", "FLAC")
     }
 }
 

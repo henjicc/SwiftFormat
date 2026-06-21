@@ -2,12 +2,12 @@ package com.henjicc.swiftformat.engine.image
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.ExifInterface
-import android.net.Uri
 import android.os.Build
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.core.file.applyExifOrientation
+import com.henjicc.swiftformat.core.file.decodeImageBounds
+import com.henjicc.swiftformat.core.file.decodeSampledBitmap
+import com.henjicc.swiftformat.core.file.readExifOrientation
 import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.MediaType
@@ -69,25 +69,26 @@ class NativeImageEngine(
         onProgress(ConversionProgress(0f))
 
         // EXIF 旋转会交换宽高，目标尺寸必须按“旋正后”的视觉方向计算，否则旋转后会被强行拉伸变形。
-        val rawBounds = decodeBounds(request.input.uri)
+        val rawBounds = decodeImageBounds(appContext, request.input.uri, logger, TAG)
+            ?.let { ImageSizeMapper.Dimensions(it.width, it.height) }
             ?: return failure(ConversionError.Kind.CORRUPT_INPUT, "cannot decode bounds")
         coroutineContext.ensureActive()
 
-        val orientation = readExifOrientation(request.input.uri)
-        val swapsDimensions = orientation == ExifInterface.ORIENTATION_ROTATE_90 ||
-            orientation == ExifInterface.ORIENTATION_ROTATE_270
+        val orientation = readExifOrientation(appContext, request.input.uri)
+        val swapsDimensions = orientation == android.media.ExifInterface.ORIENTATION_ROTATE_90 ||
+            orientation == android.media.ExifInterface.ORIENTATION_ROTATE_270
         val displayBounds = if (swapsDimensions) rawBounds.swapped() else rawBounds
 
         val target = ImageSizeMapper.targetDimensions(displayBounds, request.size)
         val rawTarget = if (swapsDimensions) target.swapped() else target
         val sampleSize = ImageSizeMapper.sampleSizeFor(rawBounds, rawTarget)
 
-        val sampled = decodeSampled(request.input.uri, sampleSize)
+        val sampled = decodeSampledBitmap(appContext, request.input.uri, sampleSize, logger, TAG)
             ?: return failure(ConversionError.Kind.CORRUPT_INPUT, "cannot decode bitmap")
         coroutineContext.ensureActive()
         onProgress(ConversionProgress(0.4f))
 
-        val oriented = applyOrientation(sampled, orientation)
+        val oriented = applyExifOrientation(sampled, orientation)
         val resized = resizeIfNeeded(oriented, target)
         coroutineContext.ensureActive()
         onProgress(ConversionProgress(0.7f))
@@ -113,50 +114,6 @@ class NativeImageEngine(
 
     private fun failure(kind: ConversionError.Kind, message: String) =
         ConversionResult.Failure(ConversionError(kind, message))
-
-    private fun decodeBounds(uri: Uri): ImageSizeMapper.Dimensions? = runCatching {
-        appContext.contentResolver.openInputStream(uri)?.use { stream ->
-            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeStream(stream, null, options)
-            if (options.outWidth > 0 && options.outHeight > 0) {
-                ImageSizeMapper.Dimensions(options.outWidth, options.outHeight)
-            } else {
-                null
-            }
-        }
-    }.onFailure { logger.w(TAG, "decodeBounds failed", it) }.getOrNull()
-
-    private fun decodeSampled(uri: Uri, sampleSize: Int): Bitmap? = runCatching {
-        appContext.contentResolver.openInputStream(uri)?.use { stream ->
-            val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
-            BitmapFactory.decodeStream(stream, null, options)
-        }
-    }.onFailure { logger.w(TAG, "decodeSampled failed", it) }.getOrNull()
-
-    private fun readExifOrientation(uri: Uri): Int = runCatching {
-        appContext.contentResolver.openInputStream(uri)?.use { stream ->
-            ExifInterface(stream).getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL,
-            )
-        }
-    }.getOrNull() ?: ExifInterface.ORIENTATION_NORMAL
-
-    /** 按 EXIF 方向旋正像素，使输出文件视觉方向正确（不依赖下游是否保留 EXIF）。 */
-    private fun applyOrientation(bitmap: Bitmap, orientation: Int): Bitmap {
-        val matrix = Matrix()
-        when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
-            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
-            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
-            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
-            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
-            else -> return bitmap
-        }
-        val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-        if (rotated !== bitmap) bitmap.recycle()
-        return rotated
-    }
 
     private fun resizeIfNeeded(bitmap: Bitmap, target: ImageSizeMapper.Dimensions): Bitmap {
         if (bitmap.width == target.width && bitmap.height == target.height) return bitmap

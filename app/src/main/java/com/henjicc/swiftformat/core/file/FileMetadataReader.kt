@@ -1,7 +1,6 @@
 package com.henjicc.swiftformat.core.file
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -71,15 +70,7 @@ class FileMetadataReader(
     }
 
     private fun readImageBounds(uri: Uri): Pair<Int, Int>? = runCatching {
-        resolver.openInputStream(uri)?.use { stream ->
-            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeStream(stream, null, options)
-            if (options.outWidth > 0 && options.outHeight > 0) {
-                options.outWidth to options.outHeight
-            } else {
-                null
-            }
-        }
+        decodeImageBounds(appContext, uri, logger, TAG)?.let { it.width to it.height }
     }.onFailure { logger.w(TAG, "readImageBounds failed", it) }.getOrNull()
 
     private data class AvMetadata(val width: Int?, val height: Int?, val durationMs: Long?)
