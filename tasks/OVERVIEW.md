@@ -86,7 +86,7 @@
 | [TASK-01](./TASK-01.md) | 文件选择与识别（SAF/分享/元数据/分组/缩略图） | 00 | 已完成* |
 | [TASK-02](./TASK-02.md) | 参数页面（分组卡片 + 统一参数组件 + 动态显示） | 01 | 已完成* |
 | [TASK-03](./TASK-03.md) | 图片引擎（JPG/PNG/WebP + 质量/尺寸映射） | 00,02 | 已完成* |
-| [TASK-04](./TASK-04.md) | 音视频引擎（Media3 + 进度/取消/能力检查） | 00,02 | 未开始 |
+| [TASK-04](./TASK-04.md) | 音视频引擎（Media3 + 进度/取消/能力检查） | 00,02 | 已完成* |
 | [TASK-05](./TASK-05.md) | FFmpeg 兼容层（隔离模块/许可证/16KB/降级） | 03,04 | 未开始 |
 | [TASK-06](./TASK-06.md) | 后台任务与历史（前台服务/通知/Room/完成页） | 03,04 | 未开始 |
 | [TASK-07](./TASK-07.md) | 质量与发布（多设备/性能/i18n/无障碍/发布准备） | 全部 | 未开始 |
@@ -99,6 +99,9 @@
 > 设备编码能力检查为已知简化，留给 TASK-03/04 引擎接入时处理，不阻塞后续。
 > *TASK-03 功能性完成（构建/单元测试 26/26 通过）；引擎尚未接入 AppContainer/UI（无调用方，
 > 接线是 TASK-06 的工作）；输出位置解析（MediaStore/SAF）留给 TASK-06；实机运行未验证。
+> *TASK-04 功能性完成（构建/单元测试 39/39 通过，Media3 真实 API 已用 javap 反编译核实而非凭空记忆）；
+> 重要发现：①视频"短边"缩放与旋转无关，比图片引擎更简单；②Android MediaMuxer 不支持 WAV 容器，
+> 已修正任务描述，WAV 移交 TASK-05。设备能力→UI 动态显隐、静音/提取音频、WebM、并发策略均明确推迟。
 
 ### 依赖关系图
 ```
@@ -112,7 +115,7 @@
 
 ## 5. 当前进度
 
-- **总体阶段**：TASK-00～TASK-03 均功能性完成；准备进入 TASK-04。
+- **总体阶段**：TASK-00～TASK-04 均功能性完成；准备进入 TASK-05。
 - **已完成**：项目资料分析；任务目录创建；TASK-00（Compose 底座、DataStore 设置/主题/语言持久化、核心数据模型、
   Logger；KSP/AGP9 工具链冲突已探测并记录，Room/Hilt 移交后续）；
   TASK-01（SAF 多选 + Uri 权限持久化、分享 Intent 接收、媒体类型识别含单元测试、IO 线程元数据读取、
@@ -120,13 +123,17 @@
   TASK-02（统一参数模型 `GroupConversionSettings`/`OutputFormatCatalog`、分组卡片 + 统一设置行 +
   Modal Bottom Sheet 选择器、按格式动态显隐质量/尺寸、参数状态随分组持久化）；
   TASK-03（`engine/api` 抽象 + `ConversionEngineSelector`、`NativeImageEngine` 解码/EXIF 旋正/采样缩放/
-  压缩写出、质量与尺寸纯函数映射、输出命名规则），构建通过、26 个单元测试通过。
-- **下一步**：进入 [TASK-04](./TASK-04.md) 音视频引擎（Media3 Transformer + 进度/取消/能力检查）。
+  压缩写出、质量与尺寸纯函数映射、输出命名规则）；
+  TASK-04（`Media3Engine`：视频→MP4(H.264)/音频→AAC/M4A，`Presentation` 缩放、`VideoEncoderSettings`/
+  `AudioEncoderSettings` 码率控制、临时文件→目标 Uri 拷贝、进度轮询、取消、设备编码器能力检查），
+  构建通过、39 个单元测试通过。
+- **下一步**：进入 [TASK-05](./TASK-05.md) FFmpeg 兼容层（MP3/FLAC/WAV/Opus 等 Media3 不支持的格式）。
 - **遗留**：语言运行时 locale 应用；TASK-06 前需先解决 KSP/AGP9（Room）工具链问题；
-  TASK-01/02/03 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开）
-  待设备/模拟器环境；TASK-02/03 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、
-  设备编码能力检查、EXIF 完整标签保留）见各任务完成情况；输出位置解析（MediaStore/SAF）与引擎接线
-  到 UI/任务编排留给 TASK-06。
+  TASK-01~04 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
+  MP4/AAC 转换效果）待设备/模拟器环境；TASK-02/03/04 的已知简化项（自定义尺寸输入框、显隐动画、
+  WebP 有损/无损、设备编码能力检查未接入 UI 动态显隐、EXIF 完整标签保留、静音/提取音频、WebM 输出、
+  并发策略）见各任务完成情况；输出位置解析（MediaStore/SAF）与引擎接线到 UI/任务编排留给 TASK-06；
+  **WAV 输出实际需 FFmpeg**（Android MediaMuxer 不支持 WAV 容器，已在 TASK-04 中纠正并移交 TASK-05）。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。
   - **KSP 工具链阻塞**：AGP 9.2.1 + 内置 Kotlin 2.3.0 下 KSP 不可用，Room/Hilt 暂不可启用，
