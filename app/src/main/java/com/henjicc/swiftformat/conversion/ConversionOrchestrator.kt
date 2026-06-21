@@ -75,13 +75,17 @@ class ConversionOrchestrator(
                 throw e
             } catch (e: Exception) {
                 logger.e(TAG, "submit failed before queueing: $requestId", e)
-                historyTracker.recordSubmitFailure(
-                    input = input,
-                    outputFormat = outputFormat,
-                    quality = quality,
-                    size = size,
-                    exception = e,
-                )
+                runCatching {
+                    historyTracker.recordSubmitFailure(
+                        input = input,
+                        outputFormat = outputFormat,
+                        quality = quality,
+                        size = size,
+                        exception = e,
+                    )
+                }.onFailure { historyError ->
+                    logger.e(TAG, "failed to persist submit failure: $requestId", historyError)
+                }
             }
         }
         return requestId
@@ -150,12 +154,23 @@ class ConversionOrchestrator(
                     }
                 }
                 when (result) {
-                    is ConversionResult.Success -> completeTask(request.id, historyId, result)
-                    is ConversionResult.Failure -> failTask(request.id, historyId, result.error)
+                    is ConversionResult.Success -> safeCompleteTask(request.id, historyId, result)
+                    is ConversionResult.Failure -> safeFailTask(request.id, historyId, result.error)
                 }
             }
         } catch (e: CancellationException) {
-            cancelTask(request.id, historyId)
+            safeCancelTask(request.id, historyId)
+        } catch (e: Exception) {
+            logger.e(TAG, "task crashed unexpectedly: ${request.id}", e)
+            safeFailTask(
+                request.id,
+                historyId,
+                ConversionError(
+                    kind = ConversionError.Kind.ENGINE_CRASH,
+                    debugMessage = e.message ?: e.javaClass.simpleName,
+                    cause = e,
+                ),
+            )
         } finally {
             activeEngines.remove(request.id)
         }
@@ -210,6 +225,46 @@ class ConversionOrchestrator(
     private suspend fun cancelTask(id: String, historyId: Long) {
         updateTask(id) { it?.copy(status = ConversionStatus.CANCELLED) }
         historyTracker.markCancelled(historyId)
+    }
+
+    private suspend fun safeCompleteTask(id: String, historyId: Long, result: ConversionResult.Success) {
+        runCatching {
+            completeTask(id, historyId, result)
+        }.onFailure { error ->
+            logger.e(TAG, "complete task failed unexpectedly: $id", error)
+            safeFailTask(
+                id,
+                historyId,
+                ConversionError(
+                    kind = ConversionError.Kind.ENGINE_CRASH,
+                    debugMessage = error.message ?: error.javaClass.simpleName,
+                    cause = error,
+                ),
+            )
+        }
+    }
+
+    private suspend fun safeFailTask(id: String, historyId: Long, error: ConversionError) {
+        runCatching {
+            failTask(id, historyId, error)
+        }.onFailure { historyError ->
+            logger.e(TAG, "failed to persist task failure: $id", historyError)
+            val status = if (error.kind == ConversionError.Kind.CANCELLED) {
+                ConversionStatus.CANCELLED
+            } else {
+                ConversionStatus.FAILED
+            }
+            updateTask(id) { it?.copy(status = status, error = error) }
+        }
+    }
+
+    private suspend fun safeCancelTask(id: String, historyId: Long) {
+        runCatching {
+            cancelTask(id, historyId)
+        }.onFailure { historyError ->
+            logger.e(TAG, "failed to persist task cancellation: $id", historyError)
+            updateTask(id) { it?.copy(status = ConversionStatus.CANCELLED) }
+        }
     }
 
     private fun launchTask(taskId: String, block: suspend () -> Unit) {

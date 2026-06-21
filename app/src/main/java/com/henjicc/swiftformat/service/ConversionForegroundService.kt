@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -196,10 +197,16 @@ class ConversionForegroundService : Service() {
         private const val ACTION_CANCEL_ALL = "com.henjicc.swiftformat.action.CANCEL_ALL"
         private const val ACTION_CANCEL_TASK = "com.henjicc.swiftformat.action.CANCEL_TASK"
         private const val EXTRA_TASK_ID = "task_id"
+        private const val TAG = "ConversionService"
 
-        fun start(context: Context) {
-            ContextCompat.startForegroundService(context, Intent(context, ConversionForegroundService::class.java))
-        }
+        fun start(context: Context): Boolean =
+            runCatching {
+                ContextCompat.startForegroundService(context, Intent(context, ConversionForegroundService::class.java))
+                true
+            }.getOrElse { error ->
+                Log.e(TAG, "failed to start foreground service", error)
+                false
+            }
 
         fun cancelTaskIntent(context: Context, taskId: String): Intent =
             Intent(context, ConversionForegroundService::class.java)

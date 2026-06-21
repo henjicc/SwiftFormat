@@ -1,7 +1,6 @@
 package com.henjicc.swiftformat.conversion
 
 import android.content.Context
-import androidx.core.content.ContextCompat
 import com.henjicc.swiftformat.core.common.Logger
 import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
 import com.henjicc.swiftformat.core.file.FileMetadataReader
@@ -35,18 +34,33 @@ class ConversionRecoveryManager(
                 )
                 continue
             }
-            orchestrator.recover(
-                historyId = record.id,
-                input = input,
-                outputFormat = record.outputFormat,
-                quality = record.quality,
-                size = record.size,
-                existingOutputUri = record.outputUri,
-            )
-            recoveredCount += 1
+            val recovered = runCatching {
+                orchestrator.recover(
+                    historyId = record.id,
+                    input = input,
+                    outputFormat = record.outputFormat,
+                    quality = record.quality,
+                    size = record.size,
+                    existingOutputUri = record.outputUri,
+                )
+            }
+            recovered.onSuccess {
+                recoveredCount += 1
+            }.onFailure { error ->
+                logger.e(TAG, "recover task failed to queue: ${record.id}", error)
+                historyRepository.update(
+                    record.copy(
+                        endTime = System.currentTimeMillis(),
+                        status = ConversionStatus.FAILED,
+                        failureReason = error.message ?: "failed to queue recovered task",
+                    ),
+                )
+            }
         }
         if (recoveredCount > 0) {
-            ContextCompat.startForegroundService(appContext, android.content.Intent(appContext, ConversionForegroundService::class.java))
+            if (!ConversionForegroundService.start(appContext)) {
+                logger.w(TAG, "failed to start foreground service for recovered tasks")
+            }
         }
         return recoveredCount
     }

@@ -18,11 +18,19 @@ class SwiftFormatApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
         appScope.launch {
-            val settings = container.settingsRepository.settings.first()
-            if (settings.autoCleanupTempFiles) {
-                ResidualTempCleanupWorker.enqueue(this@SwiftFormatApplication)
+            runCatching {
+                val settings = container.settingsRepository.settings.first()
+                if (settings.autoCleanupTempFiles) {
+                    ResidualTempCleanupWorker.enqueue(this@SwiftFormatApplication)
+                }
+                container.conversionRecoveryManager.recoverActiveTasks()
+            }.onFailure { error ->
+                container.logger.e(TAG, "startup recovery failed", error)
             }
-            container.conversionRecoveryManager.recoverActiveTasks()
         }
+    }
+
+    private companion object {
+        const val TAG = "SwiftFormatApp"
     }
 }

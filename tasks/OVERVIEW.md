@@ -122,7 +122,7 @@
 
 ## 5. 当前进度
 
-- **总体阶段**：TASK-00～TASK-06 均功能性完成；TASK-07 已开始，正在补真机测试前的质量项。
+- **总体阶段**：TASK-00～TASK-06 均功能性完成；TASK-07 已开始，正在补真机测试中暴露出的稳定性与质量项。
 - **已完成**：项目资料分析；任务目录创建；TASK-00（Compose 底座、DataStore 设置/主题/语言持久化、核心数据模型、
   Logger；KSP/AGP9 工具链冲突已探测并记录，Room/Hilt 移交后续）；
   TASK-01（SAF 多选 + Uri 权限持久化、分享 Intent 接收、媒体类型识别含单元测试、IO 线程元数据读取、
@@ -174,6 +174,11 @@
   TASK-07 Stage G（按代码体量与职责密度拆分 4 个大 Screen：`SettingsScreen`/`HomeScreen`/
   `ConversionProgressScreen`/`HistoryScreen` 改为“路由 + 组件”结构；并把 `ConversionOrchestrator`
   的请求解析/历史同步、`Media3Engine` 的编码配置/Transformer 生命周期/错误映射抽到独立文件），
+  TASK-07 Stage H（根据真机反馈修复“开始转换即闪退、重启后因活跃任务恢复继续闪退”的致命链路：
+  `ConversionOrchestrator` 对引擎/历史收尾异常新增兜底并统一转为 `ENGINE_CRASH` 失败，
+  `ConversionRecoveryManager` 对单条恢复失败直接标记历史失败，`ConversionForegroundService.start()`
+  改为捕获启动异常后降级为仅无通知不崩溃，`SwiftFormatApplication` 启动恢复新增总兜底日志，并补
+  `ConversionCrashSafetyTest` 回归测试），
   FFmpeg 全媒体扩展第一阶段（图片组选项扩为 `JPG / PNG / WEBP / BMP / TIFF`，音频组选项扩为
   `MP3 / M4A / AAC / WAV / FLAC / OGG`，视频组选项扩为 `MP4 / MOV / WEBM / MKV / MP3 / M4A / WAV / FLAC`，
   其中 `MP3 / M4A / WAV / FLAC` 走“视频提取音频”链路，新增 `FfmpegStillImageEngine`、
@@ -182,10 +187,13 @@
   图片输出扩展第二步（新增 `HEIC / AVIF` 输出，接入 AndroidX `heifwriter`，新增
   `HeifAvifImageEngine`，图片组选项顺序扩为 `JPG / PNG / WEBP / BMP / TIFF / HEIC / AVIF`，
   并补齐 MIME、命名、路由与不支持错误映射），
+  TASK-07 Stage H（修复“点击开始转换后闪退 + 重启恢复继续闪退”的严重稳定性问题，恢复路径与前台服务启动
+  均改为有兜底、可失败但不致命，并新增 `ConversionCrashSafetyTest` 回归覆盖），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
-- **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先做真机/模拟器验证与多设备测试，
-  重点覆盖失败场景、前台服务恢复、分享/打开/查看位置、超大字体/TalkBack、横竖屏、4KB/16KB 页面设备，
-  以及 `HEIC / AVIF` 的实际编码可用性与系统互操作性，然后再决定是否补剩余设置项与发布收尾。
+- **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先回到真机/模拟器验证，重点复测
+  “开始转换 / 崩溃后重启恢复 / 取消 / 前台服务通知 / 分享打开查看位置”，确认这次止血后不再出现死循环闪退；
+  然后继续覆盖超大字体/TalkBack、横竖屏、4KB/16KB 页面设备，以及 `HEIC / AVIF` 的实际编码可用性与系统互操作性，
+  再决定是否补剩余设置项与发布收尾。
 - **遗留**：TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP/HEIC/AVIF 互转打开、
   MP4/AAC 转换效果、BMP/TIFF/MP3/M4A/OGG/FLAC/WAV/MOV/WEBM/MKV/视频→音频 转换效果、16KB 页面设备）待设备/模拟器环境；
   TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
@@ -206,6 +214,8 @@
   - **HEIC/AVIF 输出依赖系统编码能力**：当前实现通过 AndroidX `heifwriter` 接入，`HEIC` 需 API 28+、
     `AVIF` 需 API 31+；同时因库本身声明 `minSdk 28`，工程侧使用了 manifest `tools:overrideLibrary`
     并在运行时门控，构建已验证通过，但仍需真机确认设备互操作性与失败表现。
+  - **本次闪退已先从架构层止血**：未捕获的引擎/恢复/前台服务启动异常现在不应再直接导致整应用崩溃；
+    但最初触发真机闪退的“具体输入样本/具体引擎路径”还需要继续复测定位。
   - **任务恢复不是断点续转**：当前“进程恢复”实现是应用重启后重新提交未完成任务并沿用原历史记录/目标 Uri，
     不是从原编码进度继续；对第一版用户体验足够，但耗时会比真正断点续转更长。
   - design token 为 teal，与 SPEC 蓝色默认强调色冲突，已约定以 SPEC 为准。
