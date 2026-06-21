@@ -2,6 +2,7 @@ package com.henjicc.swiftformat.engine.ffmpeg
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Build
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
@@ -15,6 +16,7 @@ import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.OutputDestination
+import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.engine.api.ConversionEngine
 import com.henjicc.swiftformat.engine.api.ConversionProgress
 import com.henjicc.swiftformat.engine.api.ConversionResult
@@ -30,9 +32,11 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
 /**
- * 静态图片扩展格式引擎：负责 BMP/TIFF 输出。
+ * 静态图片扩展格式引擎：负责 BMP/TIFF/AVIF 输出。
  * 先复用原生位图链路完成解码、EXIF 旋正与尺寸缩放，再交给 FFmpeg 写出目标容器，
  * 避免直接走 FFmpeg 丢失 JPEG 方向修正等现有图片链路行为。
+ * AVIF 走 FFmpeg 的 libaom-av1 软件编码而非系统 `AvifWriter`：部分设备的硬件 AV1 编码器
+ * 产出的文件连系统自带解码器都读不回来（实机已验证），libaom 软编码不依赖设备硬件，更稳定。
  */
 class FfmpegStillImageEngine(
     context: Context,
@@ -43,10 +47,12 @@ class FfmpegStillImageEngine(
     private val activeJobs = ConcurrentHashMap<String, Job>()
     private val activeSessions = ConcurrentHashMap<String, FFmpegSession>()
 
-    override fun supports(request: ConversionRequest): Boolean =
-        request.input.mediaType == MediaType.IMAGE &&
-            request.targetMediaType == MediaType.IMAGE &&
-            request.outputFormat.uppercase() in SUPPORTED_OUTPUT_FORMATS
+    override fun supports(request: ConversionRequest): Boolean {
+        if (request.input.mediaType != MediaType.IMAGE || request.targetMediaType != MediaType.IMAGE) return false
+        val format = request.outputFormat.uppercase()
+        if (format !in SUPPORTED_OUTPUT_FORMATS) return false
+        return format != "AVIF" || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    }
 
     override suspend fun convert(
         request: ConversionRequest,
@@ -132,6 +138,7 @@ class FfmpegStillImageEngine(
                     inputPath = preprocessedTemp.absolutePath,
                     outputPath = outputTemp.absolutePath,
                     outputFormat = request.outputFormat,
+                    quality = request.quality ?: QualityPreset.HIGH,
                 ).toTypedArray(),
                 { completed -> sessionDeferred.complete(completed) },
             )
@@ -190,6 +197,6 @@ class FfmpegStillImageEngine(
     private companion object {
         const val TAG = "FfmpegStillImageEngine"
         const val MIN_FREE_BYTES_MARGIN = 16L * 1024 * 1024
-        val SUPPORTED_OUTPUT_FORMATS = setOf("BMP", "TIFF")
+        val SUPPORTED_OUTPUT_FORMATS = setOf("BMP", "TIFF", "AVIF")
     }
 }

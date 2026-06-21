@@ -105,6 +105,13 @@ class FfmpegCommandBuilderTest {
         assertEquals(listOf("-y", "-i", "in.png", "-frames:v", "1", "-c:v", "tiff", "out.tiff"), tiffArgs)
     }
 
+    @Test
+    fun avifStillImageTranscode_usesLibaomAv1WithCrf() {
+        val args = FfmpegCommandBuilder.buildStillImageTranscodeArgs("in.png", "out.avif", "AVIF", QualityPreset.HIGH)
+        assertTrue(args.containsAll(listOf("-c:v", "libaom-av1", "-crf", "24", "-still-picture", "1")))
+        assertEquals("out.avif", args.last())
+    }
+
     @Test(expected = IllegalStateException::class)
     fun unsupportedVideoFormat_throws() {
         FfmpegCommandBuilder.buildVideoTranscodeArgs(

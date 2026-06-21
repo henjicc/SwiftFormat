@@ -66,11 +66,11 @@ class ConversionEngineSelectorTest {
 
     @Test
     fun ffmpegVideoRoutes_canBeDistinguishedByFormatAndTargetType() {
-        val heifAvifEngine = FakeEngine { request ->
-            request.input.mediaType == MediaType.IMAGE && request.outputFormat in setOf("HEIC", "AVIF")
+        val heifEngine = FakeEngine { request ->
+            request.input.mediaType == MediaType.IMAGE && request.outputFormat == "HEIC"
         }
         val stillImageEngine = FakeEngine { request ->
-            request.input.mediaType == MediaType.IMAGE && request.outputFormat in setOf("BMP", "TIFF")
+            request.input.mediaType == MediaType.IMAGE && request.outputFormat in setOf("BMP", "TIFF", "AVIF")
         }
         val media3Engine = FakeEngine { request ->
             when (request.input.mediaType) {
@@ -100,10 +100,10 @@ class ConversionEngineSelectorTest {
                 else -> false
             }
         }
-        val selector = ConversionEngineSelector(listOf(heifAvifEngine, stillImageEngine, media3Engine, ffmpegEngine))
+        val selector = ConversionEngineSelector(listOf(heifEngine, stillImageEngine, media3Engine, ffmpegEngine))
 
-        assertSame(heifAvifEngine, selector.select(requestFor(MediaType.IMAGE, "HEIC")))
-        assertSame(heifAvifEngine, selector.select(requestFor(MediaType.IMAGE, "AVIF")))
+        assertSame(heifEngine, selector.select(requestFor(MediaType.IMAGE, "HEIC")))
+        assertSame(stillImageEngine, selector.select(requestFor(MediaType.IMAGE, "AVIF")))
         assertSame(stillImageEngine, selector.select(requestFor(MediaType.IMAGE, "BMP")))
         assertSame(stillImageEngine, selector.select(requestFor(MediaType.IMAGE, "TIFF")))
         assertSame(media3Engine, selector.select(requestFor(MediaType.VIDEO, "MP4")))

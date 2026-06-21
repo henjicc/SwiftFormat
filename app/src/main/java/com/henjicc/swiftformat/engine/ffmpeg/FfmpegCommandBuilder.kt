@@ -173,10 +173,20 @@ object FfmpegCommandBuilder {
         inputPath: String,
         outputPath: String,
         outputFormat: String,
+        quality: QualityPreset = QualityPreset.HIGH,
     ): List<String> {
         val codecArgs = when (outputFormat.uppercase()) {
             "BMP" -> listOf("-frames:v", "1", "-c:v", "bmp")
             "TIFF" -> listOf("-frames:v", "1", "-c:v", "tiff")
+            "AVIF" -> listOf(
+                "-frames:v", "1",
+                "-c:v", "libaom-av1",
+                "-crf", AvifCrfMapper.targetCrf(quality).toString(),
+                "-b:v", "0",
+                "-cpu-used", "6",
+                "-pix_fmt", "yuv420p",
+                "-still-picture", "1",
+            )
             else -> error("FfmpegStillImageEngine 不支持的图片输出格式: $outputFormat")
         }
         return listOf("-y", "-i", inputPath) + codecArgs + listOf(outputPath)

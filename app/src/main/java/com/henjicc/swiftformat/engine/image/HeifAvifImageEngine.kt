@@ -3,7 +3,6 @@ package com.henjicc.swiftformat.engine.image
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
-import androidx.heifwriter.AvifWriter
 import androidx.heifwriter.HeifWriter
 import com.henjicc.swiftformat.core.common.Logger
 import com.henjicc.swiftformat.core.common.toDebugMessage
@@ -29,8 +28,11 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
 /**
- * HEIC/AVIF 图片输出引擎。
- * 复用现有位图解码、EXIF 旋正与尺寸缩放链路，再使用 AndroidX HeifWriter / AvifWriter 编码到目标容器。
+ * HEIC 图片输出引擎。
+ * 复用现有位图解码、EXIF 旋正与尺寸缩放链路，再使用 AndroidX HeifWriter 编码到目标容器。
+ * AVIF 不在本引擎处理：AndroidX `AvifWriter` 依赖设备硬件 AV1 编码器，实机验证发现部分设备
+ * 编出的文件连系统自带解码器都读不回来，已改由 [com.henjicc.swiftformat.engine.ffmpeg.FfmpegStillImageEngine]
+ * 用 libaom-av1 软件编码处理。
  */
 class HeifAvifImageEngine(
     context: Context,
@@ -42,11 +44,7 @@ class HeifAvifImageEngine(
 
     override fun supports(request: ConversionRequest): Boolean {
         if (request.input.mediaType != MediaType.IMAGE || request.targetMediaType != MediaType.IMAGE) return false
-        return when (request.outputFormat.uppercase()) {
-            "HEIC" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-            "AVIF" -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            else -> false
-        }
+        return request.outputFormat.uppercase() == "HEIC" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
     }
 
     override suspend fun convert(
@@ -77,7 +75,7 @@ class HeifAvifImageEngine(
         val destinationUri = (request.destination as? OutputDestination.ResolvedUri)?.uri
             ?: return failure(ConversionError.Kind.OUTPUT_NOT_WRITABLE, "destination not resolved")
         if (!supports(request)) {
-            return failure(ConversionError.Kind.UNSUPPORTED_IMAGE_OUTPUT, "unsupported heif/avif request: ${request.outputFormat}")
+            return failure(ConversionError.Kind.UNSUPPORTED_IMAGE_OUTPUT, "unsupported heif request: ${request.outputFormat}")
         }
 
         onProgress(ConversionProgress(0f))
@@ -111,8 +109,7 @@ class HeifAvifImageEngine(
             val encodeResult = runCatching {
                 when (request.outputFormat.uppercase()) {
                     "HEIC" -> encodeHeic(tempFile, resized, quality)
-                    "AVIF" -> encodeAvif(tempFile, resized, quality)
-                    else -> error("unsupported heif/avif output: ${request.outputFormat}")
+                    else -> error("unsupported heif output: ${request.outputFormat}")
                 }
             }
             resized.recycle()
@@ -140,18 +137,6 @@ class HeifAvifImageEngine(
 
     private fun encodeHeic(file: File, bitmap: Bitmap, quality: Int) {
         val writer = HeifWriter.Builder(file.absolutePath, bitmap.width, bitmap.height, HeifWriter.INPUT_MODE_BITMAP)
-            .setQuality(quality)
-            .setMaxImages(1)
-            .build()
-        writer.use {
-            it.start()
-            it.addBitmap(bitmap)
-            it.stop(0)
-        }
-    }
-
-    private fun encodeAvif(file: File, bitmap: Bitmap, quality: Int) {
-        val writer = AvifWriter.Builder(file.absolutePath, bitmap.width, bitmap.height, AvifWriter.INPUT_MODE_BITMAP)
             .setQuality(quality)
             .setMaxImages(1)
             .build()
