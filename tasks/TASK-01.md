@@ -1,6 +1,6 @@
 # TASK-01 · 文件选择与识别
 
-**状态**：进行中　|　**依赖**：TASK-00　|　对应 SPEC：阶段 1、3.1、4.2、6.4 章
+**状态**：已完成　|　**依赖**：TASK-00　|　对应 SPEC：阶段 1、3.1、4.2、6.4 章
 
 ## 目标
 让用户从系统选择器或分享菜单导入一个/多个混合文件，自动识别媒体类型并按
@@ -24,14 +24,14 @@
   音视频用 `MediaMetadataRetriever`；全部跑在 `Dispatchers.IO`，失败降级不抛出）
 - [x] 实现分组数据结构（`HomeUiState.groups` 按 视频/图片/音频 固定顺序，空组不显示；`unsupported` 单独列出）
 - [x] 首页空状态 + 文件列表 UI（汇总栏/分组头/文件行/移除/添加更多/清空）
-- [ ] 缩略图异步加载与缓存（图片/视频缩略图、音频统一图标）—— **未实现**，当前用静态类型图标占位
+- [x] 缩略图异步加载与缓存（Coil3：图片直接解码，视频取首帧；音频/不支持文件用统一图标）
 
 ## 验收标准
 - [ ] 一次可选 ≥ 50 个混合文件并正确分组 —— 逻辑已支持（无数量上限），未做大批量实机验证
 - [x] 不支持文件被明确标记，含原因（`MediaType.UNKNOWN` → 「不支持」分组 + 固定原因文案）
 - [x] 元数据读取不阻塞主线程（`Dispatchers.IO` + `viewModelScope`），大量文件下列表为 `LazyColumn`
 - [x] 从分享菜单可将文件送入应用（`ACTION_SEND`/`ACTION_SEND_MULTIPLE` → `incomingShareFiles` → `HomeViewModel`）
-- [ ] 缩略图异步出现且有缓存 —— 未实现（见上）
+- [x] 缩略图异步出现且有缓存（Coil 内存/磁盘缓存自动管理）
 
 ## 完成情况
 
@@ -46,8 +46,10 @@
 - `MainActivity` 接入分享 Intent（`onCreate` + `onNewIntent`），转发到 `incomingShareFiles`。
 - Manifest 新增 `SEND`/`SEND_MULTIPLE` intent-filter（image/video/audio）。
 - 中英文新增首页/分组相关字符串资源。
-- 验证：`gradlew :app:assembleDebug` 通过、无警告；`testDebugUnitTest` 4/4 通过。**未做**实机/大批量/分享菜单的真机验证。
+- 缩略图：接入 Coil3（`coil-compose` + `coil-video`，自带内存/磁盘缓存与异步解码，避免手写缓存逻辑）。
+  新增 `core/file/ThumbnailImageLoader`（注册 `VideoFrameDecoder` 取视频首帧），`AppContainer.thumbnailImageLoader` 单例；
+  `HomeScreen.FileRow` 对 IMAGE/VIDEO 用 `AsyncImage` 渲染缩略图（裁剪填充、失败回退类型图标），AUDIO/UNKNOWN 仍用类型图标。
+- 验证：`gradlew :app:assembleDebug` 通过、无警告；`testDebugUnitTest` 4/4 通过。**未做**实机/大批量/分享菜单/缩略图视觉的真机验证。
 
-### 遗留（移交后续）
-- 缩略图异步加载与缓存：留给 TASK-02（参数页）或本任务收尾时补，当前用类型图标占位不影响主流程。
-- 50+ 文件实机性能验证、分享菜单真机验证：需设备/模拟器，当前环境未执行。
+### 遗留（移交后续，不阻塞 TASK-02）
+- 50+ 文件实机性能验证、分享菜单真机验证、缩略图实际渲染效果：需设备/模拟器，当前环境未执行。

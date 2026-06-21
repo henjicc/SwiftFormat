@@ -16,11 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.Button
@@ -34,7 +35,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -42,7 +46,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
 import com.henjicc.swiftformat.R
+import com.henjicc.swiftformat.SwiftFormatApplication
 import com.henjicc.swiftformat.core.model.InputFile
 import com.henjicc.swiftformat.core.model.MediaType
 
@@ -52,6 +59,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val imageLoader = (context.applicationContext as SwiftFormatApplication).container.thumbnailImageLoader
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
@@ -79,6 +87,7 @@ fun HomeScreen(
             onClear = viewModel::clear,
             onRemove = viewModel::removeFile,
             sizeFormatter = { Formatter.formatShortFileSize(context, it) },
+            imageLoader = imageLoader,
         )
     }
 }
@@ -117,6 +126,7 @@ private fun FileList(
     onClear: () -> Unit,
     onRemove: (String) -> Unit,
     sizeFormatter: (Long) -> String,
+    imageLoader: ImageLoader,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -148,7 +158,7 @@ private fun FileList(
                 GroupHeader(stringResource(groupLabel(type)), files.size)
             }
             items(files, key = { it.id }) { file ->
-                FileRow(file, sizeFormatter, onRemove)
+                FileRow(file, sizeFormatter, onRemove, imageLoader)
             }
         }
 
@@ -157,7 +167,7 @@ private fun FileList(
                 GroupHeader(stringResource(R.string.unsupported_title), state.unsupported.size)
             }
             items(state.unsupported, key = { it.id }) { file ->
-                FileRow(file, sizeFormatter, onRemove, unsupported = true)
+                FileRow(file, sizeFormatter, onRemove, imageLoader, unsupported = true)
             }
         }
     }
@@ -178,6 +188,7 @@ private fun FileRow(
     file: InputFile,
     sizeFormatter: (Long) -> String,
     onRemove: (String) -> Unit,
+    imageLoader: ImageLoader,
     unsupported: Boolean = false,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -188,14 +199,27 @@ private fun FileRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = mediaIcon(file.mediaType),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (!unsupported && file.mediaType in THUMBNAIL_TYPES) {
+                    AsyncImage(
+                        model = file.uri,
+                        contentDescription = null,
+                        imageLoader = imageLoader,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        error = rememberVectorPainter(mediaIcon(file.mediaType)),
+                    )
+                } else {
+                    Icon(
+                        imageVector = mediaIcon(file.mediaType),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -233,6 +257,9 @@ private fun FileRow(
         }
     }
 }
+
+/** 仅图片/视频可生成缩略图（见 SPEC 6.4）；音频统一用图标。 */
+private val THUMBNAIL_TYPES = setOf(MediaType.IMAGE, MediaType.VIDEO)
 
 private fun mediaIcon(type: MediaType): ImageVector = when (type) {
     MediaType.IMAGE -> Icons.Filled.Image
