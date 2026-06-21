@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.effect)
+    implementation(libs.ffmpeg.kit.main.full)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

@@ -87,7 +87,7 @@
 | [TASK-02](./TASK-02.md) | 参数页面（分组卡片 + 统一参数组件 + 动态显示） | 01 | 已完成* |
 | [TASK-03](./TASK-03.md) | 图片引擎（JPG/PNG/WebP + 质量/尺寸映射） | 00,02 | 已完成* |
 | [TASK-04](./TASK-04.md) | 音视频引擎（Media3 + 进度/取消/能力检查） | 00,02 | 已完成* |
-| [TASK-05](./TASK-05.md) | FFmpeg 兼容层（隔离模块/许可证/16KB/降级） | 03,04 | 未开始 |
+| [TASK-05](./TASK-05.md) | FFmpeg 兼容层（隔离模块/许可证/16KB/降级） | 03,04 | 已完成* |
 | [TASK-06](./TASK-06.md) | 后台任务与历史（前台服务/通知/Room/完成页） | 03,04 | 未开始 |
 | [TASK-07](./TASK-07.md) | 质量与发布（多设备/性能/i18n/无障碍/发布准备） | 全部 | 未开始 |
 
@@ -102,6 +102,11 @@
 > *TASK-04 功能性完成（构建/单元测试 39/39 通过，Media3 真实 API 已用 javap 反编译核实而非凭空记忆）；
 > 重要发现：①视频"短边"缩放与旋转无关，比图片引擎更简单；②Android MediaMuxer 不支持 WAV 容器，
 > 已修正任务描述，WAV 移交 TASK-05。设备能力→UI 动态显隐、静音/提取音频、WebM、并发策略均明确推迟。
+> *TASK-05 功能性完成（构建/单元测试 45/45 通过）；官方 ffmpeg-kit 已于 2025-04 退役下架，改用社区
+> 维护的 16KB fork（`JamaisMagic/ffmpeg-kit-16KB` non-GPL full 变体，LGPL-3.0，已用 javap 核实 API、
+> 解压 aar 确认四 ABI 原生库与许可证字段，非凭空采信）；`FfmpegEngine` 覆盖 MP3/FLAC/WAV 音频转码，
+> 命令构建收敛在纯函数 `FfmpegCommandBuilder`；范围未含"视频→MP3"/WebM（无 UI/模型支持）；
+> 16KB 真机验证、APK 体积评估、引擎接线（同 TASK-03/04）均推迟，详见 TASK-05「已知简化」。
 
 ### 依赖关系图
 ```
@@ -115,7 +120,7 @@
 
 ## 5. 当前进度
 
-- **总体阶段**：TASK-00～TASK-04 均功能性完成；准备进入 TASK-05。
+- **总体阶段**：TASK-00～TASK-05 均功能性完成；准备进入 TASK-06。
 - **已完成**：项目资料分析；任务目录创建；TASK-00（Compose 底座、DataStore 设置/主题/语言持久化、核心数据模型、
   Logger；KSP/AGP9 工具链冲突已探测并记录，Room/Hilt 移交后续）；
   TASK-01（SAF 多选 + Uri 权限持久化、分享 Intent 接收、媒体类型识别含单元测试、IO 线程元数据读取、
@@ -125,20 +130,26 @@
   TASK-03（`engine/api` 抽象 + `ConversionEngineSelector`、`NativeImageEngine` 解码/EXIF 旋正/采样缩放/
   压缩写出、质量与尺寸纯函数映射、输出命名规则）；
   TASK-04（`Media3Engine`：视频→MP4(H.264)/音频→AAC/M4A，`Presentation` 缩放、`VideoEncoderSettings`/
-  `AudioEncoderSettings` 码率控制、临时文件→目标 Uri 拷贝、进度轮询、取消、设备编码器能力检查），
-  构建通过、39 个单元测试通过。
-- **下一步**：进入 [TASK-05](./TASK-05.md) FFmpeg 兼容层（MP3/FLAC/WAV/Opus 等 Media3 不支持的格式）。
+  `AudioEncoderSettings` 码率控制、临时文件→目标 Uri 拷贝、进度轮询、取消、设备编码器能力检查）；
+  TASK-05（`FfmpegEngine`：音频→MP3/FLAC/WAV，社区维护的 16KB fork 替代已退役的官方 ffmpeg-kit，
+  命令构建收敛在纯函数 `FfmpegCommandBuilder`、临时文件流程+输出验证+失败降级+空间检查），
+  构建通过、45 个单元测试通过。
+- **下一步**：进入 [TASK-06](./TASK-06.md) 后台任务与历史（前台服务/通知/Room/完成页）。
+  开工前需先处理 KSP/AGP9（Room）工具链阻塞（见下方风险），以及把三个引擎
+  （`NativeImageEngine`/`Media3Engine`/`FfmpegEngine`）接入 `AppContainer`/`ConversionEngineSelector`。
 - **遗留**：语言运行时 locale 应用；TASK-06 前需先解决 KSP/AGP9（Room）工具链问题；
-  TASK-01~04 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
-  MP4/AAC 转换效果）待设备/模拟器环境；TASK-02/03/04 的已知简化项（自定义尺寸输入框、显隐动画、
-  WebP 有损/无损、设备编码能力检查未接入 UI 动态显隐、EXIF 完整标签保留、静音/提取音频、WebM 输出、
-  并发策略）见各任务完成情况；输出位置解析（MediaStore/SAF）与引擎接线到 UI/任务编排留给 TASK-06；
-  **WAV 输出实际需 FFmpeg**（Android MediaMuxer 不支持 WAV 容器，已在 TASK-04 中纠正并移交 TASK-05）。
+  TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
+  MP4/AAC 转换效果、MP3/FLAC/WAV 转换效果、16KB 页面设备）待设备/模拟器环境；
+  TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
+  UI 动态显隐、EXIF 完整标签保留、静音/提取音频、WebM 输出、并发策略、视频→MP3 链路、APK 体积/ABI
+  拆分评估）见各任务完成情况；输出位置解析（MediaStore/SAF）与引擎接线到 UI/任务编排留给 TASK-06。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。
   - **KSP 工具链阻塞**：AGP 9.2.1 + 内置 Kotlin 2.3.0 下 KSP 不可用，Room/Hilt 暂不可启用，
     TASK-06 前需解决（升级兼容版本 / 降 AGP 到 8.x / 第一版不用 Room）。详见 TASK-00「Stage C」。
-  - FFmpeg AAR 选型、许可证（LGPL/GPL）与 16KB 页面支持需在 TASK-05 前确认。
+  - **FFmpeg 依赖为社区维护 fork，非官方项目**：官方 `arthenica/ffmpeg-kit` 已退役下架，当前用的
+    `JamaisMagic/ffmpeg-kit-16KB` 缺乏长期生产验证记录，若后续出现兼容性/维护停滞问题需重新评估
+    替换（已通过 `ConversionEngine` 接口隔离，替换成本可控）。详见 TASK-05「选型决策」。
   - design token 为 teal，与 SPEC 蓝色默认强调色冲突，已约定以 SPEC 为准。
 
 ---

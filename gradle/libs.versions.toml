@@ -9,6 +9,7 @@ navigationCompose = "2.9.5"
 datastore = "1.1.7"
 coil = "3.5.0"
 media3 = "1.10.1"
+ffmpegKit = "6.1.4"
 mockitoKotlin = "6.3.0"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -27,6 +28,7 @@ coil-video = { group = "io.coil-kt.coil3", name = "coil-video", version.ref = "c
 androidx-media3-transformer = { group = "androidx.media3", name = "media3-transformer", version.ref = "media3" }
 androidx-media3-common = { group = "androidx.media3", name = "media3-common", version.ref = "media3" }
 androidx-media3-effect = { group = "androidx.media3", name = "media3-effect", version.ref = "media3" }
+ffmpeg-kit-main-full = { group = "io.github.jamaismagic.ffmpeg", name = "ffmpeg-kit-main-full-16kb", version.ref = "ffmpegKit" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
