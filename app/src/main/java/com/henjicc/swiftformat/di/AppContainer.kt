@@ -6,11 +6,17 @@ import androidx.room.Room
 import coil3.ImageLoader
 import com.henjicc.swiftformat.core.common.AndroidLogger
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.conversion.ConversionOrchestrator
+import com.henjicc.swiftformat.conversion.OutputLocationResolver
 import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
 import com.henjicc.swiftformat.core.database.SwiftFormatDatabase
 import com.henjicc.swiftformat.core.datastore.SettingsRepository
 import com.henjicc.swiftformat.core.file.FileMetadataReader
 import com.henjicc.swiftformat.core.file.ThumbnailImageLoader
+import com.henjicc.swiftformat.engine.api.ConversionEngineSelector
+import com.henjicc.swiftformat.engine.ffmpeg.FfmpegEngine
+import com.henjicc.swiftformat.engine.image.NativeImageEngine
+import com.henjicc.swiftformat.engine.media.Media3Engine
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 /**
@@ -30,6 +36,21 @@ class AppContainer(context: Context) {
     }
     val conversionHistoryRepository: ConversionHistoryRepository by lazy {
         ConversionHistoryRepository(database.conversionHistoryDao())
+    }
+
+    /** 引擎注册顺序即优先级：原生图片 → Media3（常用音视频）→ FFmpeg（兼容层，见 SPEC 10.1）。 */
+    val conversionEngineSelector: ConversionEngineSelector by lazy {
+        ConversionEngineSelector(
+            listOf(
+                NativeImageEngine(appContext, logger),
+                Media3Engine(appContext, logger),
+                FfmpegEngine(appContext, logger),
+            ),
+        )
+    }
+    private val outputLocationResolver: OutputLocationResolver by lazy { OutputLocationResolver(appContext) }
+    val conversionOrchestrator: ConversionOrchestrator by lazy {
+        ConversionOrchestrator(conversionEngineSelector, outputLocationResolver, conversionHistoryRepository, logger)
     }
 
     /** 来自系统分享菜单的文件 Uri；replay=1 让稍后创建的 HomeViewModel 仍能收到。 */

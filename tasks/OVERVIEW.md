@@ -137,18 +137,25 @@
   TASK-06 Stage A（**解决 KSP/AGP9 工具链阻塞**——升级 KSP 到 2.3.9 后与 AGP9 内置 Kotlin 兼容，
   已用真实 Room `@Database`/`@Dao` 验证注解处理可生成代码；新增 `core/database` 历史数据层
   `ConversionHistoryEntity`/`Dao`/`Database`/`Repository` 接入 `AppContainer`，新增
-  `ConversionStatus`/`ConversionHistoryRecord`/`SizePresetCodec`），构建通过、53 个单元测试通过。
-- **下一步**：继续 [TASK-06](./TASK-06.md) 后续 Stage——任务编排层（队列/并发/状态机）、
-  Foreground Service + 通知、输出写入 MediaStore、转换进度/完成页面 UI、历史页面 UI、进程恢复，
-  以及把三个引擎（`NativeImageEngine`/`Media3Engine`/`FfmpegEngine`）接入
-  `ConversionEngineSelector`/编排层。
+  `ConversionStatus`/`ConversionHistoryRecord`/`SizePresetCodec`）；
+  TASK-06 Stage B（新增 `conversion` 任务编排层 `ConversionOrchestrator`：队列/按媒体类型并发限流
+  `Semaphore`/状态机推导/批量汇总/取消/重试，全部回写 Room 历史；新增 `OutputLocationResolver`
+  统一写入 `Download/转个格式` 并用 `Mutex` 串行化解决同批次重名竞态；**三个引擎首次接入
+  `AppContainer`/`ConversionEngineSelector`**，收尾 TASK-03/04/05 长期标注的"引擎尚未接入"遗留项），
+  构建通过、65 个单元测试通过。
+- **下一步**：继续 [TASK-06](./TASK-06.md) 后续 Stage——Foreground Service + 通知、转换进度页面 UI
+  （含取消/重试/失败原因）、完成页面与操作、历史页面 UI（读 `ConversionHistoryRepository`）、
+  进程恢复与残留临时文件清理（WorkManager）、`HomeScreen`「开始转换」按钮接线到
+  `ConversionOrchestrator`。
 - **遗留**：语言运行时 locale 应用；
   TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
   MP4/AAC 转换效果、MP3/FLAC/WAV 转换效果、16KB 页面设备）待设备/模拟器环境；
   TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
-  UI 动态显隐、EXIF 完整标签保留、静音/提取音频、WebM 输出、并发策略、视频→MP3 链路、APK 体积/ABI
-  拆分评估）见各任务完成情况；输出位置解析（MediaStore/SAF）、引擎接线到 UI/任务编排、Foreground
-  Service/通知/进度页/完成页/历史页 UI、进程恢复均在 TASK-06 后续 Stage 中完成。
+  UI 动态显隐、EXIF 完整标签保留、静音/提取音频、WebM 输出、视频→MP3 链路、APK 体积/ABI
+  拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
+  判定逻辑拆成纯函数单测，编排本身运行时行为待 Robolectric/插桩或真机验证）；输出统一写入
+  `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消为"双重保证"非事务性保证；
+  Foreground Service/通知/进度页/完成页/历史页 UI/进程恢复均在 TASK-06 后续 Stage 中完成。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。
   - **KSP/AGP9 工具链阻塞已解决**（TASK-06 Stage A）：升级 `com.google.devtools.ksp` 到 `2.3.9`
