@@ -95,6 +95,18 @@
   依赖，**尚未做 GPL 合规处理**（GPL 要求随应用提供对应版本的完整源码或书面提供源码的渠道等义务）。
   后续需要：①确认应用分发方式是否触发 GPL 义务、②寻找真正不含 x264 的干净构建或自建 NDK 交叉编译、
   ③或正式接受 GPL 并补齐合规要求（许可证文件、源码提供渠道等）。
+  **2026-06-22 决策**：用户明确表示当前优先级是"先能用"，许可证合规问题暂不处理，留待后续单独评估。
+
+### AVIF 输出改用 FFmpeg（2026-06-22）
+
+真机反馈 `HEIC -> AVIF` 报 `encoded image cannot be decoded`，而 `PNG`/`WEBP` 等输出正常。
+排查确认是 `HeifAvifImageEngine` 用的 AndroidX `AvifWriter` 依赖设备硬件 AV1 编码器，
+该 vivo 机型编出的文件连系统自带解码器（`BitmapFactory`/`ImageDecoder`）都读不回来——是
+设备硬件编码器兼容性问题，不是本项目代码逻辑问题。
+
+修复：AVIF 改由 `FfmpegStillImageEngine` 处理（复用其已有的解码/EXIF 旋正/缩放管线），
+用 `libaom-av1` 软件编码写出（不依赖设备硬件，新增 `AvifCrfMapper` 做质量→CRF 映射）；
+`HeifAvifImageEngine` 收窄为只负责 `HEIC`。API 门控不变（仍要求 API 31+）。
 
 ### 范围收敛
 - 本阶段保持 **Media3 负责主流稳定链路 `VIDEO -> MP4(H.264/AAC)`**，FFmpeg 只承接扩展格式，
