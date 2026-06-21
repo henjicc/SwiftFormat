@@ -70,8 +70,20 @@
   `MainActivity` 观察 settings 实时应用主题。
 - 验证：`gradlew :app:assembleDebug` BUILD SUCCESSFUL；无编译警告。**未做**实机运行验证。
 
+### Stage C（KSP 探测：当前工具链阻塞，已回退）
+尝试接入 Room（需 KSP 注解处理），实测在本项目工具链（**AGP 9.2.1 + 内置 Kotlin 2.3.0**）下 KSP 不可用：
+- 内置 Kotlin 模式：`KSP is not compatible with Android Gradle Plugin's built-in Kotlin`。
+- 关闭内置 Kotlin（`android.builtInKotlin=false`）改用外置 `org.jetbrains.kotlin.android:2.3.0`：
+  该插件与 AGP 9 扩展模型不兼容（`ApplicationExtensionImpl cannot be cast to BaseExtension`）。
+- 结论：当前 AGP/Kotlin 组合下 KSP（→ Room/Hilt）无法启用。已**完整回退** Stage C 改动，保持 Stage B 绿色状态。
+- 影响：**Room 推迟到 [[TASK-06]]**（其真正消费点）；**Hilt 推迟到需要时**（手动 `AppContainer` 已满足第一版）。
+- 解决候选（择一，待 TASK-06 决策）：① 升级到兼容 AGP 9 的 KGP/KSP 版本组合；② 将 AGP 降到 8.x + Kotlin 2.x
+  （KSP 成熟稳定）；③ 第一版历史改用非 KSP 方案（如手写 SQLite 或序列化存储）暂不上 Room。
+
 ### 待续
-- Stage C：Room 数据库骨架（历史表，需 KSP，先验证 KSP/AGP9 兼容）。
-- Stage D：Hilt 替换手动容器（需 KSP）。
-- 语言运行时切换：当前仅持久化选择，实际 locale 应用（不重启刷新）待实现（候选：AppCompatDelegate.setApplicationLocales 或 API33 LocaleManager）。
-- 验收标准中「语言手动切换即时刷新」「Room 读写样例」仍待上述项；其余（主题/强调色即时生效与重启保留、构建通过、无硬编码文案）已满足（构建层面，未实机）。
+- 语言运行时切换：当前仅持久化选择，实际 locale 应用（不重启刷新）待实现
+  （候选：AppCompatDelegate.setApplicationLocales 或 API33 LocaleManager）。
+- 验收标准中「语言手动切换即时刷新」「Room/DataStore 读写样例」中的 Room 部分依赖上面的 KSP 决策；
+  DataStore 读写已具备；其余（主题/强调色即时生效与重启保留、构建通过、无硬编码文案）已满足（构建层面，未实机）。
+
+> TASK-00 视为**功能性完成**（工程底座可用、构建通过）；Room/Hilt 因工具链限制显式移交 TASK-06/按需，不阻塞 TASK-01。

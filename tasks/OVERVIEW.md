@@ -82,7 +82,7 @@
 
 | 编号 | 任务 | 依赖 | 状态 |
 |---|---|---|---|
-| [TASK-00](./TASK-00.md) | 工程基础（Compose/主题/导航/DataStore/Room/日志） | — | 进行中 |
+| [TASK-00](./TASK-00.md) | 工程基础（Compose/主题/导航/DataStore/日志） | — | 已完成* |
 | [TASK-01](./TASK-01.md) | 文件选择与识别（SAF/分享/元数据/分组/缩略图） | 00 | 未开始 |
 | [TASK-02](./TASK-02.md) | 参数页面（分组卡片 + 统一参数组件 + 动态显示） | 01 | 未开始 |
 | [TASK-03](./TASK-03.md) | 图片引擎（JPG/PNG/WebP + 质量/尺寸映射） | 00,02 | 未开始 |
@@ -92,6 +92,8 @@
 | [TASK-07](./TASK-07.md) | 质量与发布（多设备/性能/i18n/无障碍/发布准备） | 全部 | 未开始 |
 
 状态取值：`未开始` / `进行中` / `阻塞` / `已完成`。
+> *TASK-00 功能性完成（Compose 底座、DataStore 设置、构建通过）；Room/Hilt 因 KSP 与 AGP9 工具链冲突
+> 显式移交 TASK-06/按需，不阻塞后续。详见 TASK-00「Stage C」。
 
 ### 依赖关系图
 ```
@@ -105,14 +107,16 @@
 
 ## 5. 当前进度
 
-- **总体阶段**：TASK-00 进行中（Stage A、B 已完成）。
+- **总体阶段**：TASK-00 功能性完成，准备进入 TASK-01。
 - **已完成**：项目资料分析；任务目录创建；TASK-00 Stage A（Compose/主题/导航底座）；
-  TASK-00 Stage B —— DataStore 设置仓库与主题/7 强调色/动态配色/语言持久化、核心数据模型、Logger、
-  设置页可视控件，`assembleDebug` 构建通过。
-- **下一步**：TASK-00 Stage C —— Room 历史表骨架（需先验证 KSP/AGP9 兼容）；随后 Stage D Hilt 替换手动容器；
-  语言运行时 locale 应用待实现。
+  TASK-00 Stage B（DataStore 设置 + 主题/7 强调色/动态配色/语言持久化、核心数据模型、Logger、设置页控件，构建通过）；
+  TASK-00 Stage C 探测确认 KSP/AGP9 工具链冲突并回退（Room/Hilt 移交后续）。
+- **下一步**：进入 [TASK-01](./TASK-01.md) 文件选择与识别（不依赖 Room/Hilt）。
+- **遗留**：语言运行时 locale 应用；TASK-06 前需先解决 KSP/AGP9（Room）工具链问题。
 - **未解决问题 / 风险**：
-  - minSdk 24 vs 26 待用户确认（见 TASK-00）。
+  - minSdk 已定为 26（已决策）。
+  - **KSP 工具链阻塞**：AGP 9.2.1 + 内置 Kotlin 2.3.0 下 KSP 不可用，Room/Hilt 暂不可启用，
+    TASK-06 前需解决（升级兼容版本 / 降 AGP 到 8.x / 第一版不用 Room）。详见 TASK-00「Stage C」。
   - FFmpeg AAR 选型、许可证（LGPL/GPL）与 16KB 页面支持需在 TASK-05 前确认。
   - design token 为 teal，与 SPEC 蓝色默认强调色冲突，已约定以 SPEC 为准。
 
