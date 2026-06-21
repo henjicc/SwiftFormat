@@ -1,6 +1,6 @@
 # TASK-06 · 后台任务与历史
 
-**状态**：进行中（Stage A/B 已完成）　|　**依赖**：TASK-03, TASK-04　|　对应 SPEC：阶段 6、4.5/4.6、13、14 章
+**状态**：进行中（Stage A/B/C 已完成）　|　**依赖**：TASK-03, TASK-04　|　对应 SPEC：阶段 6、4.5/4.6、13、14 章
 
 ## 目标
 实现转换的后台执行、进度通知、转换/完成页面、Room 历史与进程恢复、临时文件清理。
@@ -29,7 +29,7 @@
 - [x] 解决 KSP/AGP9 工具链阻塞（升级 KSP 到 2.3.9，验证 Room 注解处理可用）
 - [x] Room 历史数据层：`ConversionHistoryEntity`/`Dao`/`Database`/`Repository`，接入 `AppContainer`
 - [x] 任务编排层：队列、并发策略、状态机、批量汇总（`ConversionOrchestrator`，已接入三引擎到 `AppContainer`）
-- [ ] 实现 Foreground Service + 通知（进度/取消/返回）
+- [x] 实现 Foreground Service + 通知（进度/取消/返回）
 - [ ] 转换进度页面 UI（含取消/重试/失败原因）
 - [x] 输出写入 MediaStore + 重名处理（`OutputLocationResolver`，统一写入 `Download/转个格式`）
 - [ ] 完成页面与操作（打开/分享/查看位置/再次转换/删除）
@@ -147,3 +147,45 @@
   缩小了未覆盖的范围，但编排本身的运行时行为仍未验证。
 - 尚未实现：Foreground Service、转换进度/完成页面 UI、历史页面 UI、进程恢复与残留临时文件清理、
   HomeScreen「开始转换」按钮接线——见上方执行步骤未勾选项，留给本任务后续 Stage。
+
+### Stage C（已完成，已验证）—— Foreground Service + 通知
+- 新增 `service/ConversionForegroundService`（SPEC 13.1）：
+  - **只做"保活 + 展示通知 + 处理取消"**，不重新实现调度逻辑——真正的任务执行在
+    `ConversionOrchestrator`（由 `SwiftFormatApplication.container` 持有，生命周期独立于本 Service），
+    本服务只是 `orchestrator.tasks` 的一个观察者。这样即使 Service 被系统杀掉，已入队任务的最终状态
+    仍会被编排层写入 Room 历史，不会丢失，只是用户会暂时失去通知和"保活"效果。
+  - `onCreate()` 创建通知渠道（`IMPORTANCE_LOW`，避免每次进度更新都提示音/震动）并开始收集
+    `orchestrator.tasks`；`onStartCommand()` 处理 `ACTION_CANCEL_ALL`/`ACTION_CANCEL_TASK`
+    （来自通知按钮的 `PendingIntent`），并立即 `startForeground(...)`；当活跃任务数归零时
+    `stopForeground` + `stopSelf()` 自动停止，不需要外部显式停止。
+  - 通知内容：标题为"正在转换 N 个文件"，正文为当前文件名 + 总体百分比（按已完成任务记 100%、
+    进行中任务按自身进度折算后取平均），带进度条；点击通知跳转 `MainActivity`；带"取消全部"按钮。
+    `cancelTaskIntent()` 预留了单任务取消的 `Intent` 构建方法，供后续转换进度页面 UI
+    （执行步骤里仍未实现的那一项）在文件行的取消按钮里复用，目前没有调用方。
+  - **API 35+ 超时处理**：覆写 `Service.onTimeout(startId, fgsType)` 立即 `stopSelf()`
+    （系统对 `mediaProcessing` 类型前台服务有 24 小时内累计 6 小时的运行时间配额，超时不在几秒内
+    停止会触发 ANR；本应用单次转换批量任务远低于此配额，但仍按官方最佳实践实现该回调）。
+    用 `gradlew :app:compileDebugKotlin` 验证了 `Service.onTimeout(Int, Int)` 在 compileSdk 36 的
+    SDK stub 中确实存在（核实而非凭空假设这个较新 API 的存在与签名）。
+  - manifest：声明 `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_MEDIA_PROCESSING`/`POST_NOTIFICATIONS`
+    三个权限，`<service>` 标签 `foregroundServiceType="mediaProcessing"`（Android 15 新增的专用类型，
+    语义就是"转码媒体文件"，比通用的 `dataSync` 更贴切）。
+  - 新增通知用的 `res/drawable/ic_notification.xml`（单色 sync 图标）与中英文通知文案字符串。
+- 验证：`gradlew :app:assembleDebug` 通过（确认 manifest 正确合并了权限与 service 声明）；
+  `testDebugUnitTest` 65/65 通过（无新增——本 Stage 全部是 Android `Service`/通知 API，
+  与其余引擎/Service 类一致的已知测试 gap，逻辑已尽量薄、可读性核查为主）。
+
+### 已知简化（Stage C 范围内）
+- **没有任何调用方启动这个 Service**：`ConversionForegroundService.start(context)` 已就绪，
+  但 `ConversionOrchestrator.submit()` 故意不持有 `Context`（Stage B 的设计决定），
+  谁来调用 `start()` 留给"HomeScreen「开始转换」按钮接线"这一步去做（仍是未勾选的执行步骤）。
+  也就是说本 Stage 交付的是基础设施，端到端效果（真正退后台还能继续转换并看到通知）
+  要等按钮接线完成才能验证。
+- **未请求 `POST_NOTIFICATIONS` 运行时权限**：只在 manifest 声明了，Android 13+ 需要运行时弹窗授权，
+  目前没有 UI 触发这个请求；未授权时服务仍能正常前台运行（系统层面 startForeground 不要求该权限），
+  只是通知本身不会显示给用户，等于看不到进度——这是一个会影响实际体验的真实缺口，需要在按钮接线或
+  设置页时一并处理（请求时机选在用户第一次点「开始转换」比较自然）。
+- **当前文件名只取第一个活跃任务**：并发档位允许图片/音频同时跑 2 个，通知正文目前只显示其中一个
+  文件名，不会轮流展示或合并展示多个文件名；可接受的简化，完整体验留给转换进度页面 UI。
+- **未做实机验证**：前台服务在退后台、锁屏、Doze 模式下的真实行为（通知是否准时刷新、
+  `onTimeout` 是否被正确触发、被系统杀掉后 `stopForeground`/历史一致性）均未在真机/模拟器验证。
