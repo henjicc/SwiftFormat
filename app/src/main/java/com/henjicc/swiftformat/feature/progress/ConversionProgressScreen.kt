@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.SwiftFormatApplication
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.feature.common.errorKindLabelRes
 import com.henjicc.swiftformat.feature.common.statusLabelRes
 import com.henjicc.swiftformat.service.ConversionForegroundService
 
@@ -183,6 +184,7 @@ private fun ConversionTaskRow(
     var outputDeleted by rememberSaveable(item.taskId) { mutableStateOf(false) }
     var originalDeleted by rememberSaveable(item.taskId) { mutableStateOf(false) }
     var confirmDeleteOriginal by rememberSaveable(item.taskId) { mutableStateOf(false) }
+    var showFailureDetails by rememberSaveable(item.taskId) { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -216,13 +218,18 @@ private fun ConversionTaskRow(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
             }
-            if (item.status == ConversionStatus.FAILED && item.failureReason != null) {
+            if (item.status == ConversionStatus.FAILED && item.failureKind != null) {
                 Text(
-                    text = item.failureReason,
+                    text = stringResource(errorKindLabelRes(item.failureKind)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 4.dp),
                 )
+                if (item.hasFailureDetails) {
+                    TextButton(onClick = { showFailureDetails = true }) {
+                        Text(stringResource(R.string.action_view_details))
+                    }
+                }
             }
             if (item.isActive || item.canRetry || item.canConvertAgain) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -298,6 +305,19 @@ private fun ConversionTaskRow(
             dismissButton = {
                 TextButton(onClick = { confirmDeleteOriginal = false }) {
                     Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (showFailureDetails && item.failureDetails != null) {
+        AlertDialog(
+            onDismissRequest = { showFailureDetails = false },
+            title = { Text(stringResource(R.string.error_details_title)) },
+            text = { Text(item.failureDetails) },
+            confirmButton = {
+                TextButton(onClick = { showFailureDetails = false }) {
+                    Text(stringResource(android.R.string.ok))
                 }
             },
         )

@@ -1,5 +1,6 @@
 package com.henjicc.swiftformat.feature.settings
 
+import android.content.Intent
 import android.text.format.Formatter
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -22,11 +23,15 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +57,17 @@ fun SettingsScreen(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val cacheBytes by viewModel.cacheBytes.collectAsStateWithLifecycle()
+    val logs by viewModel.logs.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var infoDialog by rememberSaveable { mutableStateOf<InfoDialogKind?>(null) }
+    val versionLabel = stringResource(R.string.settings_version)
+    val languageLabel = stringResource(R.string.settings_language)
+    val themeLabel = stringResource(R.string.settings_theme)
+    val feedbackHeader = stringResource(R.string.settings_feedback_header)
+    val feedbackLogs = stringResource(R.string.settings_feedback_logs)
+    val emptyLogsText = stringResource(R.string.settings_logs_empty)
+    val selectedLanguageLabel = stringResource(languageLabel(settings.language))
+    val selectedThemeLabel = stringResource(themeModeLabel(settings.themeMode))
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { messageRes ->
@@ -156,6 +171,34 @@ fun SettingsScreen(
         )
 
         SectionHeader(stringResource(R.string.settings_files))
+        SettingSummary(
+            title = stringResource(R.string.settings_save_location),
+            value = stringResource(R.string.settings_save_location_value),
+        )
+        SettingSummary(
+            title = stringResource(R.string.settings_name_collision),
+            value = stringResource(R.string.settings_name_collision_value),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.settings_completion_notification),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.settings_completion_notification_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = settings.showCompletionNotification,
+                onCheckedChange = viewModel::setShowCompletionNotification,
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -203,6 +246,82 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        TextButton(onClick = { infoDialog = InfoDialogKind.PRIVACY }) {
+            Text(stringResource(R.string.settings_privacy))
+        }
+        TextButton(onClick = { infoDialog = InfoDialogKind.OPEN_SOURCE }) {
+            Text(stringResource(R.string.settings_open_source))
+        }
+        TextButton(
+            onClick = {
+                viewModel.refreshLogs()
+                infoDialog = InfoDialogKind.LOGS
+            },
+        ) {
+            Text(stringResource(R.string.settings_view_logs))
+        }
+        TextButton(
+            onClick = {
+                viewModel.refreshLogs()
+                val payload = buildString {
+                    appendLine(feedbackHeader)
+                    appendLine("$versionLabel: ${viewModel.appVersion}")
+                    appendLine("$languageLabel: $selectedLanguageLabel")
+                    appendLine("$themeLabel: $selectedThemeLabel")
+                    appendLine()
+                    appendLine(feedbackLogs)
+                    append(
+                        if (logs.isEmpty()) {
+                            emptyLogsText
+                        } else {
+                            logs.takeLast(40).joinToString(separator = "\n")
+                        },
+                    )
+                }
+                val shareIntent = Intent(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, payload)
+                context.startActivity(Intent.createChooser(shareIntent, null))
+            },
+        ) {
+            Text(stringResource(R.string.settings_feedback))
+        }
+    }
+
+    if (infoDialog != null) {
+        val kind = infoDialog ?: InfoDialogKind.PRIVACY
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { infoDialog = null },
+            title = {
+                Text(
+                    stringResource(
+                        when (kind) {
+                            InfoDialogKind.PRIVACY -> R.string.settings_privacy
+                            InfoDialogKind.OPEN_SOURCE -> R.string.settings_open_source
+                            InfoDialogKind.LOGS -> R.string.settings_view_logs
+                        },
+                    ),
+                )
+            },
+            text = {
+                when (kind) {
+                    InfoDialogKind.PRIVACY -> Text(stringResource(R.string.settings_privacy_content))
+                    InfoDialogKind.OPEN_SOURCE -> Text(stringResource(R.string.settings_open_source_content))
+                    InfoDialogKind.LOGS -> Text(
+                        if (logs.isEmpty()) {
+                            stringResource(R.string.settings_logs_empty)
+                        } else {
+                            logs.joinToString(separator = "\n")
+                        },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { infoDialog = null }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+        )
     }
 }
 
@@ -213,6 +332,18 @@ private fun SectionHeader(text: String) {
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
     )
+}
+
+@Composable
+private fun SettingSummary(title: String, value: String) {
+    Column {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable
@@ -293,4 +424,10 @@ private fun qualityLabel(preset: QualityPreset): Int = when (preset) {
     QualityPreset.HIGH -> R.string.quality_high
     QualityPreset.STANDARD -> R.string.quality_standard
     QualityPreset.SMALL_SIZE -> R.string.quality_small_size
+}
+
+private enum class InfoDialogKind {
+    PRIVACY,
+    OPEN_SOURCE,
+    LOGS,
 }

@@ -21,7 +21,8 @@ class ConversionProgressUiStateTest {
         outputUri = null,
         status = status,
         progress = progress,
-        failureReason = null,
+        failureKind = null,
+        failureDetails = null,
     )
 
     @Test

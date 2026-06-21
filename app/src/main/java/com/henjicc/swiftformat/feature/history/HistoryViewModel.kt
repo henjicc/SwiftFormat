@@ -15,7 +15,9 @@ import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
 import com.henjicc.swiftformat.core.file.FileMetadataReader
 import com.henjicc.swiftformat.core.file.ResultFileActions
 import com.henjicc.swiftformat.core.model.ConversionHistoryRecord
+import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.core.model.FailureReasonCodec
 import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.SizePreset
@@ -37,7 +39,8 @@ data class HistoryUiItem(
     val endTime: Long?,
     val status: ConversionStatus,
     val outputSizeBytes: Long?,
-    val failureReason: String?,
+    val failureKind: ConversionError.Kind?,
+    val failureDetails: String?,
     val outputUri: Uri?,
     val quality: QualityPreset?,
     val size: SizePreset?,
@@ -124,18 +127,22 @@ private val ACTIVE_STATUSES = setOf(
     ConversionStatus.SAVING,
 )
 
-private fun ConversionHistoryRecord.toUiItem() = HistoryUiItem(
-    id = id,
-    displayName = originalDisplayName,
-    originalFormat = originalFormat,
-    outputFormat = outputFormat,
-    mediaType = mediaType,
-    startTime = startTime,
-    endTime = endTime,
-    status = status,
-    outputSizeBytes = outputSizeBytes,
-    failureReason = failureReason,
-    outputUri = outputUri,
-    quality = quality,
-    size = size,
-)
+private fun ConversionHistoryRecord.toUiItem(): HistoryUiItem {
+    val decodedFailure = FailureReasonCodec.decode(failureReason)
+    return HistoryUiItem(
+        id = id,
+        displayName = originalDisplayName,
+        originalFormat = originalFormat,
+        outputFormat = outputFormat,
+        mediaType = mediaType,
+        startTime = startTime,
+        endTime = endTime,
+        status = status,
+        outputSizeBytes = outputSizeBytes,
+        failureKind = decodedFailure?.kind,
+        failureDetails = decodedFailure?.details ?: failureReason,
+        outputUri = outputUri,
+        quality = quality,
+        size = size,
+    )
+}

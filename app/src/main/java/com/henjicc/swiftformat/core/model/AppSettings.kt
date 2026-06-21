@@ -38,4 +38,5 @@ data class AppSettings(
     val defaultVideoQuality: QualityPreset = QualityPreset.HIGH,
     val defaultAudioQuality: QualityPreset = QualityPreset.HIGH,
     val autoCleanupTempFiles: Boolean = true,
+    val showCompletionNotification: Boolean = true,
 )

@@ -64,6 +64,7 @@ import com.henjicc.swiftformat.service.ConversionForegroundService
 @Composable
 fun HomeScreen(
     onConversionStarted: () -> Unit = {},
+    onOpenActiveTask: () -> Unit = onConversionStarted,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -103,7 +104,12 @@ fun HomeScreen(
     }
 
     if (!state.hasFiles) {
-        EmptyState(onPick = launchPicker, modifier = Modifier.fillMaxSize())
+        EmptyState(
+            state = state,
+            onPick = launchPicker,
+            onOpenActiveTask = onOpenActiveTask,
+            modifier = Modifier.fillMaxSize(),
+        )
     } else {
         FileList(
             state = state,
@@ -114,6 +120,7 @@ fun HomeScreen(
             onQualityChange = viewModel::setQuality,
             onSizeChange = viewModel::setSize,
             onStartConversion = onStartConversion,
+            onOpenActiveTask = onOpenActiveTask,
             sizeFormatter = { Formatter.formatShortFileSize(context, it) },
             imageLoader = imageLoader,
         )
@@ -121,12 +128,26 @@ fun HomeScreen(
 }
 
 @Composable
-private fun EmptyState(onPick: () -> Unit, modifier: Modifier = Modifier) {
+private fun EmptyState(
+    state: HomeUiState,
+    onPick: () -> Unit,
+    onOpenActiveTask: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier.padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        if (state.hasActiveTasks) {
+            ActiveTaskCard(
+                state = state,
+                onOpen = onOpenActiveTask,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+            )
+        }
         Text(
             text = stringResource(R.string.home_empty_title),
             style = MaterialTheme.typography.headlineSmall,
@@ -157,6 +178,7 @@ private fun FileList(
     onQualityChange: (MediaType, QualityPreset) -> Unit,
     onSizeChange: (MediaType, SizePreset) -> Unit,
     onStartConversion: () -> Unit,
+    onOpenActiveTask: () -> Unit,
     sizeFormatter: (Long) -> String,
     imageLoader: ImageLoader,
 ) {
@@ -166,6 +188,16 @@ private fun FileList(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            item {
+                if (state.hasActiveTasks) {
+                    ActiveTaskCard(
+                        state = state,
+                        onOpen = onOpenActiveTask,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
+                }
+            }
+
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -221,6 +253,45 @@ private fun FileList(
                 .padding(16.dp),
         ) {
             Text(stringResource(R.string.convert_start))
+        }
+    }
+}
+
+@Composable
+private fun ActiveTaskCard(
+    state: HomeUiState,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.home_active_tasks_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = stringResource(
+                    R.string.home_active_tasks_summary,
+                    state.activeTaskSummary.completed,
+                    state.activeTaskSummary.total,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            state.activeTaskDisplayName?.let { name ->
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            Button(onClick = onOpen, modifier = Modifier.padding(top = 12.dp)) {
+                Text(stringResource(R.string.home_active_tasks_open))
+            }
         }
     }
 }

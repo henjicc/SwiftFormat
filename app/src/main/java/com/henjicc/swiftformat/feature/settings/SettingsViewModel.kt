@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.henjicc.swiftformat.SwiftFormatApplication
+import com.henjicc.swiftformat.core.common.InMemoryLogStore
 import com.henjicc.swiftformat.conversion.ConversionOrchestrator
 import com.henjicc.swiftformat.core.datastore.SettingsRepository
 import com.henjicc.swiftformat.core.file.CacheMaintenance
@@ -42,6 +43,8 @@ class SettingsViewModel(
 
     private val _events = MutableSharedFlow<Int>()
     val events = _events.asSharedFlow()
+    private val _logs = MutableStateFlow(InMemoryLogStore.snapshot())
+    val logs: StateFlow<List<String>> = _logs.asStateFlow()
 
     @Suppress("DEPRECATION")
     val appVersion: String = runCatching {
@@ -56,6 +59,7 @@ class SettingsViewModel(
     fun setDefaultVideoQuality(quality: QualityPreset) = viewModelScope.launch { repository.setDefaultVideoQuality(quality) }
     fun setDefaultAudioQuality(quality: QualityPreset) = viewModelScope.launch { repository.setDefaultAudioQuality(quality) }
     fun setAutoCleanupTempFiles(enabled: Boolean) = viewModelScope.launch { repository.setAutoCleanupTempFiles(enabled) }
+    fun setShowCompletionNotification(enabled: Boolean) = viewModelScope.launch { repository.setShowCompletionNotification(enabled) }
 
     fun clearCache() = viewModelScope.launch {
         if (orchestrator.summary().inProgress > 0) {
@@ -65,6 +69,10 @@ class SettingsViewModel(
         cacheMaintenance.clearAppCache()
         _cacheBytes.value = cacheMaintenance.cacheSizeBytes()
         _events.emit(com.henjicc.swiftformat.R.string.settings_cache_cleared)
+    }
+
+    fun refreshLogs() {
+        _logs.value = InMemoryLogStore.snapshot()
     }
 
     companion object {

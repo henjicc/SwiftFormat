@@ -24,6 +24,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -34,6 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.SwiftFormatApplication
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.feature.common.errorKindLabelRes
 import com.henjicc.swiftformat.feature.common.qualityLabel
 import com.henjicc.swiftformat.feature.common.sizeLabel
 import com.henjicc.swiftformat.feature.common.statusLabelRes
@@ -176,6 +180,7 @@ private fun HistoryRecordCard(
     onConvertAgain: (Long) -> Unit,
     onOpenProgress: () -> Unit,
 ) {
+    var showFailureDetails by rememberSaveable(item.id) { mutableStateOf(false) }
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -240,13 +245,18 @@ private fun HistoryRecordCard(
                     }
                 }
             }
-            if (item.failureReason != null) {
+            if (item.failureKind != null) {
                 Text(
-                    text = item.failureReason,
+                    text = stringResource(errorKindLabelRes(item.failureKind)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 8.dp),
                 )
+                if (!item.failureDetails.isNullOrBlank()) {
+                    TextButton(onClick = { showFailureDetails = true }) {
+                        Text(stringResource(R.string.action_view_details))
+                    }
+                }
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
             if (item.isActive) {
@@ -283,5 +293,18 @@ private fun HistoryRecordCard(
                 }
             }
         }
+    }
+
+    if (showFailureDetails && item.failureDetails != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showFailureDetails = false },
+            title = { Text(stringResource(R.string.error_details_title)) },
+            text = { Text(item.failureDetails) },
+            confirmButton = {
+                TextButton(onClick = { showFailureDetails = false }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+        )
     }
 }

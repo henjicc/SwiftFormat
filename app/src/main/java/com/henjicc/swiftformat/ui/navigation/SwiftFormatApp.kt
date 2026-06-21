@@ -66,7 +66,10 @@ fun SwiftFormatApp() {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(TopLevelDestination.CONVERT.route) {
-                HomeScreen(onConversionStarted = { navController.navigate(CONVERSION_PROGRESS_ROUTE) })
+                HomeScreen(
+                    onConversionStarted = { navController.navigate(CONVERSION_PROGRESS_ROUTE) },
+                    onOpenActiveTask = { navController.navigate(CONVERSION_PROGRESS_ROUTE) },
+                )
             }
             composable(TopLevelDestination.HISTORY.route) {
                 HistoryScreen(onOpenProgress = { navController.navigate(CONVERSION_PROGRESS_ROUTE) })

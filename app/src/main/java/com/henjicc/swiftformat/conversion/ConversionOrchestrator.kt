@@ -6,6 +6,7 @@ import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionHistoryRecord
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.core.model.FailureReasonCodec
 import com.henjicc.swiftformat.core.model.InputFile
 import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.OutputDestination
@@ -92,7 +93,7 @@ class ConversionOrchestrator(
                         status = ConversionStatus.FAILED,
                         outputUri = null,
                         outputSizeBytes = null,
-                        failureReason = e.message,
+                        failureReason = FailureReasonCodec.encode(ConversionError.Kind.UNKNOWN, e.message),
                         quality = quality,
                         size = size,
                     ),
@@ -236,7 +237,13 @@ class ConversionOrchestrator(
     private suspend fun failTask(id: String, historyId: Long, error: ConversionError) {
         val status = if (error.kind == ConversionError.Kind.CANCELLED) ConversionStatus.CANCELLED else ConversionStatus.FAILED
         updateTask(id) { it?.copy(status = status, error = error) }
-        updateHistory(historyId) { it.copy(status = status, endTime = System.currentTimeMillis(), failureReason = error.debugMessage) }
+        updateHistory(historyId) {
+            it.copy(
+                status = status,
+                endTime = System.currentTimeMillis(),
+                failureReason = FailureReasonCodec.encode(error.kind, error.debugMessage),
+            )
+        }
     }
 
     private suspend fun cancelTask(id: String, historyId: Long) {

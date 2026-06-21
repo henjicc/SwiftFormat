@@ -13,9 +13,11 @@ import androidx.core.content.ContextCompat
 import com.henjicc.swiftformat.MainActivity
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.SwiftFormatApplication
+import com.henjicc.swiftformat.conversion.ConversionBatchSummary
 import com.henjicc.swiftformat.conversion.ConversionOrchestrator
 import com.henjicc.swiftformat.conversion.ConversionTask
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,6 +34,8 @@ class ConversionForegroundService : Service() {
 
     private val orchestrator: ConversionOrchestrator
         get() = (application as SwiftFormatApplication).container.conversionOrchestrator
+    private val settingsRepository
+        get() = (application as SwiftFormatApplication).container.settingsRepository
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var hasStartedForeground = false
@@ -76,6 +80,15 @@ class ConversionForegroundService : Service() {
             // 忽略服务启动后的第一帧空任务，避免在 startForeground() 之前就 stopSelf()
             // 触发“startForegroundService 后未及时进入前台”的系统崩溃。
             if (!hasStartedForeground || !hasObservedActiveTask) return
+            serviceScope.launch {
+                val settings = settingsRepository.settings.first()
+                if (settings.showCompletionNotification) {
+                    NotificationManagerCompat.from(this@ConversionForegroundService).notify(
+                        COMPLETION_NOTIFICATION_ID,
+                        buildCompletionNotification(ConversionBatchSummary.from(tasks)),
+                    )
+                }
+            }
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
@@ -113,6 +126,37 @@ class ConversionForegroundService : Service() {
             .build()
     }
 
+    private fun buildCompletionNotification(summary: ConversionBatchSummary): android.app.Notification {
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            1,
+            Intent(this, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(
+                getString(
+                    if (summary.failed == 0 && summary.cancelled == 0) {
+                        R.string.notification_complete_title_success
+                    } else {
+                        R.string.notification_complete_title_mixed
+                    },
+                ),
+            )
+            .setContentText(
+                getString(
+                    R.string.notification_complete_text,
+                    summary.completed,
+                    summary.failed,
+                    summary.cancelled,
+                ),
+            )
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+    }
+
     /** 已完成任务记 100%，进行中任务按自身 [ConversionTask.progress] 折算，取整体均值。 */
     private fun overallPercent(tasks: Collection<ConversionTask>): Int {
         if (tasks.isEmpty()) return 0
@@ -134,6 +178,7 @@ class ConversionForegroundService : Service() {
     companion object {
         private const val CHANNEL_ID = "conversion_progress"
         private const val NOTIFICATION_ID = 1
+        private const val COMPLETION_NOTIFICATION_ID = 2
         private const val ACTION_CANCEL_ALL = "com.henjicc.swiftformat.action.CANCEL_ALL"
         private const val ACTION_CANCEL_TASK = "com.henjicc.swiftformat.action.CANCEL_TASK"
         private const val EXTRA_TASK_ID = "task_id"

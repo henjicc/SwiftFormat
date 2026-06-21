@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.henjicc.swiftformat.SwiftFormatApplication
 import com.henjicc.swiftformat.conversion.ConversionOrchestrator
 import com.henjicc.swiftformat.conversion.ConversionTask
+import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionStatus
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,11 +27,13 @@ data class ConversionTaskUiItem(
     val outputUri: Uri?,
     val status: ConversionStatus,
     val progress: Float,
-    val failureReason: String?,
+    val failureKind: ConversionError.Kind?,
+    val failureDetails: String?,
 ) {
     val isActive: Boolean = status in ACTIVE_STATUSES
     val canRetry: Boolean = status == ConversionStatus.FAILED
     val canConvertAgain: Boolean = status == ConversionStatus.COMPLETED
+    val hasFailureDetails: Boolean = !failureDetails.isNullOrBlank()
 }
 
 data class ConversionProgressUiState(
@@ -88,5 +91,6 @@ private fun ConversionTask.toUiItem() = ConversionTaskUiItem(
     outputUri = outputUri,
     status = status,
     progress = progress,
-    failureReason = error?.debugMessage,
+    failureKind = error?.kind,
+    failureDetails = error?.debugMessage,
 )

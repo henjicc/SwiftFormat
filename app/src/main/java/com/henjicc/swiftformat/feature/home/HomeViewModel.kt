@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.henjicc.swiftformat.SwiftFormatApplication
+import com.henjicc.swiftformat.conversion.ConversionBatchSummary
 import com.henjicc.swiftformat.conversion.ConversionOrchestrator
+import com.henjicc.swiftformat.core.model.ConversionStatus
 import com.henjicc.swiftformat.core.datastore.SettingsRepository
 import com.henjicc.swiftformat.core.file.FileMetadataReader
 import com.henjicc.swiftformat.core.model.AppSettings
@@ -32,6 +34,8 @@ data class HomeUiState(
     val files: List<InputFile> = emptyList(),
     val settings: Map<MediaType, GroupConversionSettings> = emptyMap(),
     val isLoading: Boolean = false,
+    val activeTaskSummary: ConversionBatchSummary = ConversionBatchSummary(0, 0, 0, 0, 0),
+    val activeTaskDisplayName: String? = null,
 ) {
     val unsupported: List<InputFile> = files.filter { it.mediaType == MediaType.UNKNOWN }
 
@@ -44,6 +48,7 @@ data class HomeUiState(
     val totalCount: Int = files.size
     val totalSizeBytes: Long = files.sumOf { it.sizeBytes ?: 0L }
     val hasFiles: Boolean = files.isNotEmpty()
+    val hasActiveTasks: Boolean = activeTaskSummary.total > 0 && activeTaskSummary.inProgress > 0
 }
 
 class HomeViewModel(
@@ -63,6 +68,26 @@ class HomeViewModel(
         }
         viewModelScope.launch {
             settingsRepository.settings.collect { settings -> currentAppSettings = settings }
+        }
+        viewModelScope.launch {
+            orchestrator.tasks.collect { tasks ->
+                val values = tasks.values
+                val summary = ConversionBatchSummary.from(values)
+                val currentName = values.firstOrNull {
+                    it.status in setOf(
+                        ConversionStatus.PENDING,
+                        ConversionStatus.PREPARING,
+                        ConversionStatus.CONVERTING,
+                        ConversionStatus.SAVING,
+                    )
+                }?.request?.input?.displayName
+                _uiState.update {
+                    it.copy(
+                        activeTaskSummary = summary,
+                        activeTaskDisplayName = currentName,
+                    )
+                }
+            }
         }
     }
 
@@ -97,7 +122,13 @@ class HomeViewModel(
     }
 
     fun clear() {
-        _uiState.update { HomeUiState() }
+        _uiState.update { state ->
+            state.copy(
+                files = emptyList(),
+                settings = emptyMap(),
+                isLoading = false,
+            )
+        }
     }
 
     /**
