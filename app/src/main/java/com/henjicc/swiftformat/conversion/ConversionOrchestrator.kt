@@ -73,7 +73,7 @@ class ConversionOrchestrator(
                 runTask(resolvedRequest, historyId)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 logger.e(TAG, "submit failed before queueing: $requestId", e)
                 runCatching {
                     historyTracker.recordSubmitFailure(
@@ -160,7 +160,7 @@ class ConversionOrchestrator(
             }
         } catch (e: CancellationException) {
             safeCancelTask(request.id, historyId)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.e(TAG, "task crashed unexpectedly: ${request.id}", e)
             safeFailTask(
                 request.id,

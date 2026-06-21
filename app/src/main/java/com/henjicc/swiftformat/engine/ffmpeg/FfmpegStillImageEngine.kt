@@ -56,7 +56,7 @@ class FfmpegStillImageEngine(
             doConvert(request, onProgress)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.e(TAG, "convert failed: ${request.id}", e)
             ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.message, e))
         } finally {

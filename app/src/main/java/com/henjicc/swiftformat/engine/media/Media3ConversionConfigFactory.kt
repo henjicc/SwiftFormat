@@ -106,7 +106,7 @@ internal class Media3ConversionConfigFactory(
                 return VideoTrackInfo(frameRate, bitrate)
             }
             null
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             logger.w(TAG, "probeVideoTrack failed", e)
             null
         } finally {

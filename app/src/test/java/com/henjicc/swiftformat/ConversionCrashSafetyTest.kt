@@ -31,7 +31,7 @@ import org.mockito.kotlin.whenever
 class ConversionCrashSafetyTest {
 
     @Test
-    fun submit_engineThrows_marksTaskFailedInsteadOfCrashing() = runBlocking {
+    fun submit_engineThrowsError_marksTaskFailedInsteadOfCrashing() = runBlocking {
         val outputResolver = mock<OutputLocationResolver>()
         val historyRepository = mock<ConversionHistoryRepository>()
         val logger = mock<Logger>()
@@ -46,7 +46,7 @@ class ConversionCrashSafetyTest {
                 request: com.henjicc.swiftformat.core.model.ConversionRequest,
                 onProgress: (ConversionProgress) -> Unit,
             ): ConversionResult {
-                throw IllegalStateException("boom")
+                throw UnsatisfiedLinkError("native ffmpeg load failed")
             }
 
             override suspend fun cancel(taskId: String) = Unit
@@ -78,6 +78,7 @@ class ConversionCrashSafetyTest {
         val task = orchestrator.tasks.value.getValue(taskId)
         assertEquals(ConversionStatus.FAILED, task.status)
         assertEquals(ConversionError.Kind.ENGINE_CRASH, task.error?.kind)
+        assertTrue(task.error?.debugMessage?.contains("native ffmpeg load failed") == true)
     }
 
     @Test

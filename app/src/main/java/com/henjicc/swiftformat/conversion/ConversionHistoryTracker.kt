@@ -23,7 +23,7 @@ internal class ConversionHistoryTracker(
         outputFormat: String,
         quality: QualityPreset?,
         size: SizePreset?,
-        exception: Exception,
+        exception: Throwable,
     ) {
         historyRepository.insert(
             ConversionHistoryRecord(
