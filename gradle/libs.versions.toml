@@ -1,6 +1,7 @@
 [versions]
 agp = "9.2.1"
 kotlin = "2.3.0"
+ksp = "2.3.9"
 coreKtx = "1.17.0"
 activityCompose = "1.11.0"
 composeBom = "2025.10.00"
@@ -10,6 +11,7 @@ datastore = "1.1.7"
 coil = "3.5.0"
 media3 = "1.10.1"
 ffmpegKit = "6.1.4"
+room = "2.8.4"
 mockitoKotlin = "6.3.0"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -29,6 +31,9 @@ androidx-media3-transformer = { group = "androidx.media3", name = "media3-transf
 androidx-media3-common = { group = "androidx.media3", name = "media3-common", version.ref = "media3" }
 androidx-media3-effect = { group = "androidx.media3", name = "media3-effect", version.ref = "media3" }
 ffmpeg-kit-main-full = { group = "io.github.jamaismagic.ffmpeg", name = "ffmpeg-kit-main-full-16kb", version.ref = "ffmpegKit" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -48,3 +53,4 @@ material = { group = "com.google.android.material", name = "material", version.r
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

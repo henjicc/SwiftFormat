@@ -88,12 +88,12 @@
 | [TASK-03](./TASK-03.md) | 图片引擎（JPG/PNG/WebP + 质量/尺寸映射） | 00,02 | 已完成* |
 | [TASK-04](./TASK-04.md) | 音视频引擎（Media3 + 进度/取消/能力检查） | 00,02 | 已完成* |
 | [TASK-05](./TASK-05.md) | FFmpeg 兼容层（隔离模块/许可证/16KB/降级） | 03,04 | 已完成* |
-| [TASK-06](./TASK-06.md) | 后台任务与历史（前台服务/通知/Room/完成页） | 03,04 | 未开始 |
+| [TASK-06](./TASK-06.md) | 后台任务与历史（前台服务/通知/Room/完成页） | 03,04 | 进行中 |
 | [TASK-07](./TASK-07.md) | 质量与发布（多设备/性能/i18n/无障碍/发布准备） | 全部 | 未开始 |
 
 状态取值：`未开始` / `进行中` / `阻塞` / `已完成`。
-> *TASK-00 功能性完成（Compose 底座、DataStore 设置、构建通过）；Room/Hilt 因 KSP 与 AGP9 工具链冲突
-> 显式移交 TASK-06/按需，不阻塞后续。详见 TASK-00「Stage C」。
+> *TASK-00 功能性完成（Compose 底座、DataStore 设置、构建通过）；当时 Room/Hilt 因 KSP 与 AGP9 工具链
+> 冲突显式移交 TASK-06，该冲突已在 TASK-06 Stage A 解决（升级 KSP 至 2.3.9）。详见 TASK-00「Stage C」。
 > *TASK-01 功能性完成（构建/单元测试通过）；50+ 文件、分享菜单、缩略图视觉效果待实机验证，不阻塞 TASK-02。
 > *TASK-02 功能性完成（构建/单元测试通过）；自定义尺寸输入框、显隐过渡动画、WebP 有损/无损区分、
 > 设备编码能力检查为已知简化，留给 TASK-03/04 引擎接入时处理，不阻塞后续。
@@ -133,20 +133,27 @@
   `AudioEncoderSettings` 码率控制、临时文件→目标 Uri 拷贝、进度轮询、取消、设备编码器能力检查）；
   TASK-05（`FfmpegEngine`：音频→MP3/FLAC/WAV，社区维护的 16KB fork 替代已退役的官方 ffmpeg-kit，
   命令构建收敛在纯函数 `FfmpegCommandBuilder`、临时文件流程+输出验证+失败降级+空间检查），
-  构建通过、45 个单元测试通过。
-- **下一步**：进入 [TASK-06](./TASK-06.md) 后台任务与历史（前台服务/通知/Room/完成页）。
-  开工前需先处理 KSP/AGP9（Room）工具链阻塞（见下方风险），以及把三个引擎
-  （`NativeImageEngine`/`Media3Engine`/`FfmpegEngine`）接入 `AppContainer`/`ConversionEngineSelector`。
-- **遗留**：语言运行时 locale 应用；TASK-06 前需先解决 KSP/AGP9（Room）工具链问题；
+  构建通过、45 个单元测试通过；
+  TASK-06 Stage A（**解决 KSP/AGP9 工具链阻塞**——升级 KSP 到 2.3.9 后与 AGP9 内置 Kotlin 兼容，
+  已用真实 Room `@Database`/`@Dao` 验证注解处理可生成代码；新增 `core/database` 历史数据层
+  `ConversionHistoryEntity`/`Dao`/`Database`/`Repository` 接入 `AppContainer`，新增
+  `ConversionStatus`/`ConversionHistoryRecord`/`SizePresetCodec`），构建通过、53 个单元测试通过。
+- **下一步**：继续 [TASK-06](./TASK-06.md) 后续 Stage——任务编排层（队列/并发/状态机）、
+  Foreground Service + 通知、输出写入 MediaStore、转换进度/完成页面 UI、历史页面 UI、进程恢复，
+  以及把三个引擎（`NativeImageEngine`/`Media3Engine`/`FfmpegEngine`）接入
+  `ConversionEngineSelector`/编排层。
+- **遗留**：语言运行时 locale 应用；
   TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
   MP4/AAC 转换效果、MP3/FLAC/WAV 转换效果、16KB 页面设备）待设备/模拟器环境；
   TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
   UI 动态显隐、EXIF 完整标签保留、静音/提取音频、WebM 输出、并发策略、视频→MP3 链路、APK 体积/ABI
-  拆分评估）见各任务完成情况；输出位置解析（MediaStore/SAF）与引擎接线到 UI/任务编排留给 TASK-06。
+  拆分评估）见各任务完成情况；输出位置解析（MediaStore/SAF）、引擎接线到 UI/任务编排、Foreground
+  Service/通知/进度页/完成页/历史页 UI、进程恢复均在 TASK-06 后续 Stage 中完成。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。
-  - **KSP 工具链阻塞**：AGP 9.2.1 + 内置 Kotlin 2.3.0 下 KSP 不可用，Room/Hilt 暂不可启用，
-    TASK-06 前需解决（升级兼容版本 / 降 AGP 到 8.x / 第一版不用 Room）。详见 TASK-00「Stage C」。
+  - **KSP/AGP9 工具链阻塞已解决**（TASK-06 Stage A）：升级 `com.google.devtools.ksp` 到 `2.3.9`
+    后与 AGP 9.2.1 内置 Kotlin 兼容，Room 已接入并验证可用；Hilt 同理不再受阻，但暂无新增必要性，
+    继续用手动 `AppContainer`。详见 TASK-00「Stage C」更新与 TASK-06「Stage A」。
   - **FFmpeg 依赖为社区维护 fork，非官方项目**：官方 `arthenica/ffmpeg-kit` 已退役下架，当前用的
     `JamaisMagic/ffmpeg-kit-16KB` 缺乏长期生产验证记录，若后续出现兼容性/维护停滞问题需重新评估
     替换（已通过 `ConversionEngine` 接口隔离，替换成本可控）。详见 TASK-05「选型决策」。

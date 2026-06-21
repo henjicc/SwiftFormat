@@ -70,15 +70,19 @@
   `MainActivity` 观察 settings 实时应用主题。
 - 验证：`gradlew :app:assembleDebug` BUILD SUCCESSFUL；无编译警告。**未做**实机运行验证。
 
-### Stage C（KSP 探测：当前工具链阻塞，已回退）
+### Stage C（KSP 探测：当时阻塞，已在 TASK-06 解决）
 尝试接入 Room（需 KSP 注解处理），实测在本项目工具链（**AGP 9.2.1 + 内置 Kotlin 2.3.0**）下 KSP 不可用：
 - 内置 Kotlin 模式：`KSP is not compatible with Android Gradle Plugin's built-in Kotlin`。
 - 关闭内置 Kotlin（`android.builtInKotlin=false`）改用外置 `org.jetbrains.kotlin.android:2.3.0`：
   该插件与 AGP 9 扩展模型不兼容（`ApplicationExtensionImpl cannot be cast to BaseExtension`）。
-- 结论：当前 AGP/Kotlin 组合下 KSP（→ Room/Hilt）无法启用。已**完整回退** Stage C 改动，保持 Stage B 绿色状态。
+- 结论（**当时**）：该 AGP/Kotlin/KSP 版本组合下 KSP（→ Room/Hilt）无法启用。已**完整回退** Stage C 改动，
+  保持 Stage B 绿色状态。
 - 影响：**Room 推迟到 [[TASK-06]]**（其真正消费点）；**Hilt 推迟到需要时**（手动 `AppContainer` 已满足第一版）。
-- 解决候选（择一，待 TASK-06 决策）：① 升级到兼容 AGP 9 的 KGP/KSP 版本组合；② 将 AGP 降到 8.x + Kotlin 2.x
-  （KSP 成熟稳定）；③ 第一版历史改用非 KSP 方案（如手写 SQLite 或序列化存储）暂不上 Room。
+- **后续更新（TASK-06 开工时复测，已解决）**：KSP 上游已发布 2.3.1+ 版本支持 AGP 9 内置 Kotlin
+  （AGP 会自动把过低的 KSP 版本对齐到与内置 KGP 匹配的版本）。升级到 `com.google.devtools.ksp:2.3.9`
+  后实测 `kspDebugKotlin` 正常生成代码（验证用 Room `@Database`/`@Dao` 跑通，生成了
+  `SwiftFormatDatabase_Impl`/`ConversionHistoryDao_Impl`，非仅插件加载不报错），原"内置 Kotlin 与外置
+  Kotlin 插件二选一都不兼容"的阻塞已不存在，**不需要**降级 AGP 或放弃 Room。详见 [[TASK-06]] 完成情况。
 
 ### 待续
 - 语言运行时切换：当前仅持久化选择，实际 locale 应用（不重启刷新）待实现

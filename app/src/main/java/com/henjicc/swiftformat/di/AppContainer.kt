@@ -2,9 +2,12 @@ package com.henjicc.swiftformat.di
 
 import android.content.Context
 import android.net.Uri
+import androidx.room.Room
 import coil3.ImageLoader
 import com.henjicc.swiftformat.core.common.AndroidLogger
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
+import com.henjicc.swiftformat.core.database.SwiftFormatDatabase
 import com.henjicc.swiftformat.core.datastore.SettingsRepository
 import com.henjicc.swiftformat.core.file.FileMetadataReader
 import com.henjicc.swiftformat.core.file.ThumbnailImageLoader
@@ -21,6 +24,13 @@ class AppContainer(context: Context) {
     val settingsRepository: SettingsRepository by lazy { SettingsRepository(appContext) }
     val fileMetadataReader: FileMetadataReader by lazy { FileMetadataReader(appContext, logger) }
     val thumbnailImageLoader: ImageLoader by lazy { ThumbnailImageLoader.build(appContext) }
+
+    private val database: SwiftFormatDatabase by lazy {
+        Room.databaseBuilder(appContext, SwiftFormatDatabase::class.java, "swiftformat.db").build()
+    }
+    val conversionHistoryRepository: ConversionHistoryRepository by lazy {
+        ConversionHistoryRepository(database.conversionHistoryDao())
+    }
 
     /** 来自系统分享菜单的文件 Uri；replay=1 让稍后创建的 HomeViewModel 仍能收到。 */
     val incomingShareFiles = MutableSharedFlow<List<Uri>>(replay = 1)
