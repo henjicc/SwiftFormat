@@ -1,11 +1,14 @@
 package com.henjicc.swiftformat.service
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -83,7 +86,7 @@ class ConversionForegroundService : Service() {
             serviceScope.launch {
                 val settings = settingsRepository.settings.first()
                 if (settings.showCompletionNotification) {
-                    NotificationManagerCompat.from(this@ConversionForegroundService).notify(
+                    notifySafely(
                         COMPLETION_NOTIFICATION_ID,
                         buildCompletionNotification(ConversionBatchSummary.from(tasks)),
                     )
@@ -93,7 +96,7 @@ class ConversionForegroundService : Service() {
             stopSelf()
             return
         }
-        NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, buildNotification(tasks))
+        notifySafely(NOTIFICATION_ID, buildNotification(tasks))
     }
 
     private fun buildNotification(tasks: Collection<ConversionTask>): android.app.Notification {
@@ -173,6 +176,17 @@ class ConversionForegroundService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(CHANNEL_ID, getString(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    private fun notifySafely(notificationId: Int, notification: android.app.Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        runCatching {
+            NotificationManagerCompat.from(this).notify(notificationId, notification)
+        }
     }
 
     companion object {

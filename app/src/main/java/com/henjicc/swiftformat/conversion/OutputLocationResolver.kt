@@ -3,11 +3,13 @@ package com.henjicc.swiftformat.conversion
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import com.henjicc.swiftformat.core.file.OutputMimeTypes
 import com.henjicc.swiftformat.core.file.OutputNaming
 import com.henjicc.swiftformat.core.model.MediaType
+import java.io.File
 
 /**
  * 输出位置解析（见 SPEC 12.3/12.4）：统一写入 `Download/转个格式`（不按媒体类型拆分 MediaStore 分类，
@@ -31,19 +33,27 @@ class OutputLocationResolver(context: Context) {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, finalName)
             put(MediaStore.MediaColumns.MIME_TYPE, OutputMimeTypes.forFormat(outputFormat))
-            put(MediaStore.MediaColumns.RELATIVE_PATH, RELATIVE_PATH)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, RELATIVE_PATH)
+            } else {
+                put(MediaStore.MediaColumns.DATA, File(legacyDownloadsDir(), finalName).absolutePath)
+            }
         }
-        return appContext.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+        return appContext.contentResolver.insert(targetCollection(), values)
             ?: error("MediaStore insert failed for $finalName")
     }
 
+    @Suppress("DEPRECATION")
     private fun queryExistingNames(): Set<String> {
         val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
-        val selection = "${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
-        val selectionArgs = arrayOf(RELATIVE_PATH)
+        val (selection, selectionArgs) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            "${MediaStore.MediaColumns.RELATIVE_PATH} = ?" to arrayOf(RELATIVE_PATH)
+        } else {
+            "${MediaStore.MediaColumns.DATA} LIKE ?" to arrayOf("${legacyDownloadsDir().absolutePath}%")
+        }
         val names = mutableSetOf<String>()
         appContext.contentResolver.query(
-            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            targetCollection(),
             projection,
             selection,
             selectionArgs,
@@ -57,7 +67,20 @@ class OutputLocationResolver(context: Context) {
         return names
     }
 
+    @Suppress("DEPRECATION")
+    private fun targetCollection(): Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        MediaStore.Downloads.EXTERNAL_CONTENT_URI
+    } else {
+        MediaStore.Files.getContentUri("external")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun legacyDownloadsDir(): File =
+        File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), APP_DIRECTORY)
+            .apply { mkdirs() }
+
     private companion object {
-        val RELATIVE_PATH = "${Environment.DIRECTORY_DOWNLOADS}/转个格式/"
+        const val APP_DIRECTORY = "转个格式"
+        val RELATIVE_PATH = "${Environment.DIRECTORY_DOWNLOADS}/$APP_DIRECTORY/"
     }
 }

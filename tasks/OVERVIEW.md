@@ -163,8 +163,10 @@
   设置页新增基础日志查看入口）；
   TASK-07 Stage D（设置页新增“分享反馈信息”，可把版本/主题/语言/最近日志通过系统分享面板导出）；
   TASK-07 Stage E（失败原因结构化：进度页/历史页显示友好失败文案并保留“查看详情”；首页新增“有任务正在转换”
-  卡片，可直接回到进度页；补 `FailureReasonCodecTest` 覆盖多行详情与旧数据兼容），
-  `assembleDebug` 与 `testDebugUnitTest` 通过。
+  卡片，可直接回到进度页；补 `FailureReasonCodecTest` 覆盖多行详情与旧数据兼容）；
+  TASK-07 Stage F（补齐前台服务通知权限检查、`OutputLocationResolver` 低版本 MediaStore 兼容分支、
+  Media3 `UnstableApi` 的 lint opt-in，`lintDebug` 恢复通过），
+  `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先做真机/模拟器验证与多设备测试，
   重点覆盖失败场景、前台服务恢复、分享/打开/查看位置、超大字体/TalkBack、横竖屏和 4KB/16KB 页面设备，
   然后再决定是否补剩余设置项与发布收尾。

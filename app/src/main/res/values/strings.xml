@@ -130,7 +130,6 @@
     <string name="delete_original_title">Delete original file?</string>
     <string name="delete_original_message">Delete the original file “%1$s”? This cannot be undone.</string>
     <string name="file_action_failed">Action unavailable right now</string>
-    <string name="error_conversion_failed">Conversion failed</string>
     <string name="error_file_not_found">File not found</string>
     <string name="error_permission_denied">Permission lost or denied</string>
     <string name="error_unsupported_format">This file format is not supported</string>

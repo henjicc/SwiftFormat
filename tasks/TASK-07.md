@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A/B/C/D/E 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A/B/C/D/E/F 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -107,6 +107,21 @@
 - **回归测试补充**：
   - 新增 `FailureReasonCodecTest`，覆盖结构化失败原因的编解码与旧数据兼容。
 - 验证：`gradlew.bat testDebugUnitTest assembleDebug` 通过。
+
+### Stage F（已完成，已验证）—— 静态质量门禁补强
+- **`lintDebug` 从硬失败恢复到可通过**：
+  - `ConversionForegroundService` 对 `POST_NOTIFICATIONS` 增加显式权限检查，避免 Android 13+ 在通知被拒后
+    仍直接 `notify()` 的 Lint 硬错误。
+  - `OutputLocationResolver` 增加 API 29 以下的 MediaStore 兼容分支：Android 10+ 继续用 `Downloads` +
+    `RELATIVE_PATH`，更低版本改走 `MediaStore.Files` + 目标文件路径，消除 `NewApi` 静态错误。
+  - `Media3Engine` 明确标注 `@UnstableApi`，并新增项目级 `lint.xml` opt-in，避免 Media3 Transformer 的
+    不稳定 API 在 Lint 中持续报错。
+- **顺手清理一项无效资源**：
+  - 旧的 `error_conversion_failed` 字符串已不再使用，已从中英文资源中移除。
+- **当前结果**：
+  - `gradlew.bat lintDebug` 已通过。
+  - 仍有 35 条 warning，主要是模板残留未使用资源、依赖可升级提示、以及 `android.media.ExifInterface`
+    的替换建议；这些不阻塞当前真机测试，但仍属于后续发布前收尾项。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15**：目前已补到“外观 + 部分转换默认值 + 文件行为说明 + 完成通知开关 +

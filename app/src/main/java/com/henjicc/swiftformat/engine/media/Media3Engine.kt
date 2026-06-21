@@ -6,6 +6,7 @@ import android.media.MediaFormat
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Presentation
 import androidx.media3.transformer.AudioEncoderSettings
 import androidx.media3.transformer.Composition
@@ -46,6 +47,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 再把字节流写入已解析好的目标 Uri（见 SPEC 12.2），最后清理临时文件。
  * Transformer 的创建、`start`、`getProgress`、`cancel` 必须在同一个有 Looper 的线程调用，统一固定在 [Dispatchers.Main]。
  */
+@UnstableApi
 class Media3Engine(
     context: Context,
     private val logger: Logger,

@@ -2,6 +2,7 @@ package com.henjicc.swiftformat.di
 
 import android.content.Context
 import android.net.Uri
+import androidx.media3.common.util.UnstableApi
 import androidx.room.Room
 import coil3.ImageLoader
 import com.henjicc.swiftformat.core.common.AndroidLogger
@@ -44,14 +45,9 @@ class AppContainer(context: Context) {
     }
 
     /** 引擎注册顺序即优先级：原生图片 → Media3（常用音视频）→ FFmpeg（兼容层，见 SPEC 10.1）。 */
+    @get:UnstableApi
     val conversionEngineSelector: ConversionEngineSelector by lazy {
-        ConversionEngineSelector(
-            listOf(
-                NativeImageEngine(appContext, logger),
-                Media3Engine(appContext, logger),
-                FfmpegEngine(appContext, logger),
-            ),
-        )
+        buildConversionEngineSelector()
     }
     private val outputLocationResolver: OutputLocationResolver by lazy { OutputLocationResolver(appContext) }
     val conversionOrchestrator: ConversionOrchestrator by lazy {
@@ -69,4 +65,14 @@ class AppContainer(context: Context) {
 
     /** 来自系统分享菜单的文件 Uri；replay=1 让稍后创建的 HomeViewModel 仍能收到。 */
     val incomingShareFiles = MutableSharedFlow<List<Uri>>(replay = 1)
+
+    @UnstableApi
+    private fun buildConversionEngineSelector(): ConversionEngineSelector =
+        ConversionEngineSelector(
+            listOf(
+                NativeImageEngine(appContext, logger),
+                Media3Engine(appContext, logger),
+                FfmpegEngine(appContext, logger),
+            ),
+        )
 }

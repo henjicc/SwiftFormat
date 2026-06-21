@@ -130,7 +130,6 @@
     <string name="delete_original_title">删除原文件？</string>
     <string name="delete_original_message">确定删除原文件“%1$s”？此操作不可撤销。</string>
     <string name="file_action_failed">当前无法执行该操作</string>
-    <string name="error_conversion_failed">转换失败</string>
     <string name="error_file_not_found">找不到文件</string>
     <string name="error_permission_denied">文件权限已失效或被拒绝</string>
     <string name="error_unsupported_format">暂不支持这种文件格式</string>
