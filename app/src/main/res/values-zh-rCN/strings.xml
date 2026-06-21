@@ -23,6 +23,29 @@
     <string name="unsupported_reason">无法识别或暂不支持的格式</string>
     <string name="file_remove">移除</string>
 
+    <!-- 分组参数行 -->
+    <string name="row_output_format">输出格式</string>
+    <string name="row_quality">质量</string>
+    <string name="row_size">尺寸</string>
+    <string name="files_show_all">查看全部（%1$d）</string>
+    <string name="files_collapse">收起</string>
+    <string name="convert_start">开始转换</string>
+
+    <!-- 质量档位（见 SPEC 7.3） -->
+    <string name="quality_best">最佳</string>
+    <string name="quality_high">高</string>
+    <string name="quality_standard">标准</string>
+    <string name="quality_small_size">省空间</string>
+
+    <!-- 尺寸档位 -->
+    <string name="size_original">保持原始</string>
+    <string name="size_4k">4K</string>
+    <string name="size_2k">2K</string>
+    <string name="size_1080p">1080P</string>
+    <string name="size_720p">720P</string>
+    <string name="size_480p">480P</string>
+    <string name="size_image_edge">%1$d 像素</string>
+
     <!-- 占位页面标题 -->
     <string name="history_title">历史</string>
     <string name="settings_title">设置</string>

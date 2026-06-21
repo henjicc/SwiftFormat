@@ -52,6 +52,9 @@ import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.SwiftFormatApplication
 import com.henjicc.swiftformat.core.model.InputFile
 import com.henjicc.swiftformat.core.model.MediaType
+import com.henjicc.swiftformat.core.model.OutputFormatCatalog
+import com.henjicc.swiftformat.core.model.QualityPreset
+import com.henjicc.swiftformat.core.model.SizePreset
 
 @Composable
 fun HomeScreen(
@@ -86,6 +89,9 @@ fun HomeScreen(
             onAddMore = launchPicker,
             onClear = viewModel::clear,
             onRemove = viewModel::removeFile,
+            onFormatChange = viewModel::setOutputFormat,
+            onQualityChange = viewModel::setQuality,
+            onSizeChange = viewModel::setSize,
             sizeFormatter = { Formatter.formatShortFileSize(context, it) },
             imageLoader = imageLoader,
         )
@@ -125,56 +131,79 @@ private fun FileList(
     onAddMore: () -> Unit,
     onClear: () -> Unit,
     onRemove: (String) -> Unit,
+    onFormatChange: (MediaType, String) -> Unit,
+    onQualityChange: (MediaType, QualityPreset) -> Unit,
+    onSizeChange: (MediaType, SizePreset) -> Unit,
     sizeFormatter: (Long) -> String,
     imageLoader: ImageLoader,
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(
-                        R.string.home_summary,
-                        state.totalCount,
-                        sizeFormatter(state.totalSizeBytes),
-                    ),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                OutlinedButton(onClick = onClear) { Text(stringResource(R.string.home_clear)) }
-                Spacer(Modifier.size(8.dp))
-                Button(onClick = onAddMore) { Text(stringResource(R.string.home_add_more)) }
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.home_summary,
+                            state.totalCount,
+                            sizeFormatter(state.totalSizeBytes),
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedButton(onClick = onClear) { Text(stringResource(R.string.home_clear)) }
+                    Spacer(Modifier.size(8.dp))
+                    Button(onClick = onAddMore) { Text(stringResource(R.string.home_add_more)) }
+                }
+            }
+
+            state.groups.forEach { (type, files) ->
+                item(key = "group-$type") {
+                    val settings = state.settings[type] ?: OutputFormatCatalog.defaultSettings(type)
+                    GroupCard(
+                        mediaType = type,
+                        files = files,
+                        settings = settings,
+                        onFormatChange = { onFormatChange(type, it) },
+                        onQualityChange = { onQualityChange(type, it) },
+                        onSizeChange = { onSizeChange(type, it) },
+                        onRemove = onRemove,
+                        sizeFormatter = sizeFormatter,
+                        imageLoader = imageLoader,
+                    )
+                }
+            }
+
+            if (state.unsupported.isNotEmpty()) {
+                item(key = "header-unsupported") {
+                    GroupHeader(stringResource(R.string.unsupported_title), state.unsupported.size)
+                }
+                items(state.unsupported, key = { it.id }) { file ->
+                    FileRow(file, sizeFormatter, onRemove, imageLoader, unsupported = true)
+                }
             }
         }
 
-        state.groups.forEach { (type, files) ->
-            item(key = "header-$type") {
-                GroupHeader(stringResource(groupLabel(type)), files.size)
-            }
-            items(files, key = { it.id }) { file ->
-                FileRow(file, sizeFormatter, onRemove, imageLoader)
-            }
-        }
-
-        if (state.unsupported.isNotEmpty()) {
-            item(key = "header-unsupported") {
-                GroupHeader(stringResource(R.string.unsupported_title), state.unsupported.size)
-            }
-            items(state.unsupported, key = { it.id }) { file ->
-                FileRow(file, sizeFormatter, onRemove, imageLoader, unsupported = true)
-            }
+        Button(
+            onClick = {},
+            enabled = false, // 转换引擎见 TASK-03/04，本任务仅落地入口按钮
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Text(stringResource(R.string.convert_start))
         }
     }
 }
 
 @Composable
-private fun GroupHeader(label: String, count: Int) {
+internal fun GroupHeader(label: String, count: Int) {
     Text(
         text = stringResource(R.string.group_count, label, count),
         style = MaterialTheme.typography.labelLarge,
@@ -184,7 +213,7 @@ private fun GroupHeader(label: String, count: Int) {
 }
 
 @Composable
-private fun FileRow(
+internal fun FileRow(
     file: InputFile,
     sizeFormatter: (Long) -> String,
     onRemove: (String) -> Unit,
@@ -259,16 +288,16 @@ private fun FileRow(
 }
 
 /** 仅图片/视频可生成缩略图（见 SPEC 6.4）；音频统一用图标。 */
-private val THUMBNAIL_TYPES = setOf(MediaType.IMAGE, MediaType.VIDEO)
+internal val THUMBNAIL_TYPES = setOf(MediaType.IMAGE, MediaType.VIDEO)
 
-private fun mediaIcon(type: MediaType): ImageVector = when (type) {
+internal fun mediaIcon(type: MediaType): ImageVector = when (type) {
     MediaType.IMAGE -> Icons.Filled.Image
     MediaType.VIDEO -> Icons.Filled.Movie
     MediaType.AUDIO -> Icons.Filled.Audiotrack
     MediaType.UNKNOWN -> Icons.AutoMirrored.Filled.InsertDriveFile
 }
 
-private fun groupLabel(type: MediaType): Int = when (type) {
+internal fun groupLabel(type: MediaType): Int = when (type) {
     MediaType.VIDEO -> R.string.group_video
     MediaType.IMAGE -> R.string.group_image
     MediaType.AUDIO -> R.string.group_audio

@@ -23,6 +23,29 @@
     <string name="unsupported_reason">Unrecognized or unsupported format</string>
     <string name="file_remove">Remove</string>
 
+    <!-- Group settings rows -->
+    <string name="row_output_format">Output format</string>
+    <string name="row_quality">Quality</string>
+    <string name="row_size">Size</string>
+    <string name="files_show_all">Show all (%1$d)</string>
+    <string name="files_collapse">Collapse</string>
+    <string name="convert_start">Convert</string>
+
+    <!-- Quality presets (see SPEC 7.3) -->
+    <string name="quality_best">Best</string>
+    <string name="quality_high">High</string>
+    <string name="quality_standard">Standard</string>
+    <string name="quality_small_size">Smaller file</string>
+
+    <!-- Size presets -->
+    <string name="size_original">Original</string>
+    <string name="size_4k">4K</string>
+    <string name="size_2k">2K</string>
+    <string name="size_1080p">1080P</string>
+    <string name="size_720p">720P</string>
+    <string name="size_480p">480P</string>
+    <string name="size_image_edge">%1$d px</string>
+
     <!-- Placeholder screen titles -->
     <string name="history_title">History</string>
     <string name="settings_title">Settings</string>

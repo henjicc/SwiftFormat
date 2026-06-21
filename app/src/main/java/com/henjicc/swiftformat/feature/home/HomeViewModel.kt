@@ -3,14 +3,18 @@ package com.henjicc.swiftformat.feature.home
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.henjicc.swiftformat.SwiftFormatApplication
 import com.henjicc.swiftformat.core.file.FileMetadataReader
+import com.henjicc.swiftformat.core.model.GroupConversionSettings
 import com.henjicc.swiftformat.core.model.InputFile
 import com.henjicc.swiftformat.core.model.MediaType
+import com.henjicc.swiftformat.core.model.OutputFormatCatalog
+import com.henjicc.swiftformat.core.model.QualityPreset
+import com.henjicc.swiftformat.core.model.SizePreset
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +27,7 @@ private val GROUP_ORDER = listOf(MediaType.VIDEO, MediaType.IMAGE, MediaType.AUD
 
 data class HomeUiState(
     val files: List<InputFile> = emptyList(),
+    val settings: Map<MediaType, GroupConversionSettings> = emptyMap(),
     val isLoading: Boolean = false,
 ) {
     val unsupported: List<InputFile> = files.filter { it.mediaType == MediaType.UNKNOWN }
@@ -52,7 +57,10 @@ class HomeViewModel(
         }
     }
 
-    /** 读取元数据并追加（按 id 去重），读取在 IO 线程，不阻塞主线程。 */
+    /**
+     * 读取元数据并追加（按 id 去重），读取在 IO 线程，不阻塞主线程。
+     * 为新出现的分组补齐默认参数设置；已有分组的设置保持不变（见 SPEC 4.4「添加更多文件后原设置不会无故丢失」）。
+     */
     fun addFiles(uris: List<Uri>) {
         if (uris.isEmpty()) return
         viewModelScope.launch {
@@ -64,7 +72,13 @@ class HomeViewModel(
                 if (existingIds.add(file.id)) added += file
             }
             _uiState.update { state ->
-                state.copy(files = state.files + added, isLoading = false)
+                val newFiles = state.files + added
+                val activeTypes = newFiles.mapTo(HashSet()) { it.mediaType } - MediaType.UNKNOWN
+                val newSettings = state.settings.toMutableMap()
+                activeTypes.forEach { type ->
+                    newSettings.getOrPut(type) { OutputFormatCatalog.defaultSettings(type) }
+                }
+                state.copy(files = newFiles, settings = newSettings, isLoading = false)
             }
         }
     }
@@ -75,6 +89,28 @@ class HomeViewModel(
 
     fun clear() {
         _uiState.update { HomeUiState() }
+    }
+
+    fun setOutputFormat(mediaType: MediaType, format: String) {
+        updateSettings(mediaType) { it.copy(outputFormat = format) }
+    }
+
+    fun setQuality(mediaType: MediaType, quality: QualityPreset) {
+        updateSettings(mediaType) { it.copy(quality = quality) }
+    }
+
+    fun setSize(mediaType: MediaType, size: SizePreset) {
+        updateSettings(mediaType) { it.copy(size = size) }
+    }
+
+    private inline fun updateSettings(
+        mediaType: MediaType,
+        transform: (GroupConversionSettings) -> GroupConversionSettings,
+    ) {
+        _uiState.update { state ->
+            val current = state.settings[mediaType] ?: OutputFormatCatalog.defaultSettings(mediaType)
+            state.copy(settings = state.settings + (mediaType to transform(current)))
+        }
     }
 
     companion object {
