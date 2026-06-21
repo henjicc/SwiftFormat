@@ -67,6 +67,35 @@
 - **已知风险（明确记录，非隐藏）**：该 fork 为个人维护、未经长期生产验证，与已退役的官方项目相比
   缺乏大规模使用track record；后续若发现兼容性/稳定性问题或维护停滞，需重新评估替换。
 
+### 选型决策更新（2026-06-22，真机暴露问题后重新评估）
+
+真机测试发现添加文件转换后报 `FFmpegKit failed to start on brand: vivo ...`，根因排查如下：
+
+- **`JamaisMagic/ffmpeg-kit-main-full-16kb:6.1.4` 的 `libavdevice.so` 在所有变体上都无法加载**：
+  用 `readelf --dyn-syms` 核实，`libavdevice.so` 引用了 `PLATFORM_hid_init/write/read/...` 等
+  一整套符号，但该 AAR 内没有任何库提供这些符号（NEEDED 列表里没有对应依赖）；同时用 `javap` 反编译
+  `NativeLoader.class` 确认 `loadFFmpeg()` 对 `FFMPEG_LIBRARIES = [avutil, swscale, swresample,
+  avcodec, avformat, avfilter, avdevice]` 是无条件顺序加载、无 try/catch 降级（除 armv7a NEON 特例），
+  一旦某个库 `dlopen` 失败就直接 `throw new Error(...)`，导致 `FFmpegKitConfig` 静态初始化永久失败。
+  同时验证了 `lts-full-16kb:6.1.4`（同 fork 的另一分支）有**完全相同**的缺失符号——**这是该 fork 全系列
+  的打包 bug，不是设备/变体问题**，意味着此依赖接入以来在任何设备上都从未真正跑通过 FFmpeg 转换链路。
+- **换源为 `com.moizhassan.ffmpeg:ffmpeg-kit-16kb:6.1.1`**：下载 AAR 解压核实 `libavdevice.so`
+  无上述缺失符号；用 `javap` 反编译 `FFmpegKit`/`FFmpegKitConfig`/`FFprobeKit`/`FFmpegSession`/
+  `AbstractSession`/`MediaInformationSession`/`StreamInformation`/`MediaInformation`/`Statistics`/
+  `ReturnCode` 等类核实 API 签名与原依赖（`com.arthenica.ffmpegkit.*`）完全一致，`FfmpegEngine`/
+  `FfmpegStillImageEngine`/`FfmpegProbe`/`FfmpegRuntimeSupport` **零代码改动**；4 ABI 齐全
+  （arm64-v8a/armeabi-v7a/x86/x86_64）；`testDebugUnitTest`/`assembleDebug` 通过，并解压打包后的
+  APK 二次核实 `libavdevice.so` 确实是新版本、符号干净。
+- **新发现的合规风险（未解决，需后续单独评估）**：排查替代依赖时用 `strings` 检查
+  `libavcodec.so`，发现 `com.mrljdx:ffmpeg-kit-full`、`com.moizhassan.ffmpeg:ffmpeg-kit-16kb`
+  **以及原来的 `JamaisMagic/ffmpeg-kit-main-full-16kb`** 都含有 `x264_build`/`x264 - core` 等
+  字符串，说明都静态链接了 x264（GPL 许可），但三者的 `.pom` 均只声明 LGPL-3.0——**许可证标注与
+  实际二进制内容不符**。也就是说 TASK-05 当初"已实测验证"只核实了 `.pom` 字段和 Java API，没有
+  反编译检查 native 二进制是否混入 GPL 代码，存在遗漏。当前为恢复转换功能，临时接受这一现状切换
+  依赖，**尚未做 GPL 合规处理**（GPL 要求随应用提供对应版本的完整源码或书面提供源码的渠道等义务）。
+  后续需要：①确认应用分发方式是否触发 GPL 义务、②寻找真正不含 x264 的干净构建或自建 NDK 交叉编译、
+  ③或正式接受 GPL 并补齐合规要求（许可证文件、源码提供渠道等）。
+
 ### 范围收敛
 - 本阶段保持 **Media3 负责主流稳定链路 `VIDEO -> MP4(H.264/AAC)`**，FFmpeg 只承接扩展格式，
   当前范围收敛为 **IMAGE -> BMP/TIFF**、**AUDIO -> MP3/OGG/FLAC/WAV**、

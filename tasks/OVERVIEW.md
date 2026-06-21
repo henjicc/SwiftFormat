@@ -213,17 +213,22 @@
   - **KSP/AGP9 工具链阻塞已解决**（TASK-06 Stage A）：升级 `com.google.devtools.ksp` 到 `2.3.9`
     后与 AGP 9.2.1 内置 Kotlin 兼容，Room 已接入并验证可用；Hilt 同理不再受阻，但暂无新增必要性，
     继续用手动 `AppContainer`。详见 TASK-00「Stage C」更新与 TASK-06「Stage A」。
-  - **FFmpeg 依赖为社区维护 fork，非官方项目**：官方 `arthenica/ffmpeg-kit` 已退役下架，当前用的
-    `JamaisMagic/ffmpeg-kit-16KB` 缺乏长期生产验证记录，若后续出现兼容性/维护停滞问题需重新评估
-    替换（已通过 `ConversionEngine` 接口隔离，替换成本可控）。详见 TASK-05「选型决策」。
+  - **FFmpeg 依赖为社区维护 fork，非官方项目**：官方 `arthenica/ffmpeg-kit` 已退役下架。原选型
+    `JamaisMagic/ffmpeg-kit-16KB`（main-full-16kb）已确认 **`libavdevice.so` 在其所有变体上都
+    引用了不存在的 `PLATFORM_hid_*` 符号**，`NativeLoader` 无条件加载 avdevice 且无降级路径，
+    导致 `FFmpegKitConfig` 在任何设备上都必然初始化失败——已换用 `com.moizhassan.ffmpeg:ffmpeg-kit-16kb`
+    （API 与 `com.arthenica.ffmpegkit.*` 完全一致，零代码改动）。详见 TASK-05「选型决策」更新。
+  - **新换上的 FFmpeg 依赖同样静态链接了 x264（GPL）**：排查替代依赖时发现，包括原依赖和新依赖在内的
+    多个社区 16KB fork 的 `libavcodec.so` 都含 x264 符号，但 `.pom` 仅声明 LGPL-3.0——许可证标注与
+    实际二进制内容不符。当前为恢复功能临时接受 GPL 引入，**尚未做 GPL 合规处理**（如源码公开义务、
+    许可证声明更新），需后续单独评估。详见 TASK-05「已知风险」。
   - **HEIC/AVIF 输出依赖系统编码能力**：当前实现通过 AndroidX `heifwriter` 接入，`HEIC` 需 API 28+、
     `AVIF` 需 API 31+；同时因库本身声明 `minSdk 28`，工程侧使用了 manifest `tools:overrideLibrary`
     并在运行时门控，构建已验证通过，但仍需真机确认设备互操作性与失败表现。
   - **本次闪退已先从架构层止血**：未捕获的引擎/恢复/前台服务启动异常现在不应再直接导致整应用崩溃；
     但最初触发真机闪退的“具体输入样本/具体引擎路径”还需要继续复测定位。
-  - **当前更像 FFmpegKit fork 与特定设备 linker 的 native 兼容性问题**：vivo / API 36 上出现的
-    `FFmpegKit failed to start on brand ...` 已确认属于库启动阶段错误而非 MKV 参数错误；现在应用会尽量保留
-    cause 链用于定位，但如果底层 so 本身与设备不兼容，最终仍需要更换 fork 或自建二进制。
+  - **`FFmpegKit failed to start on brand ...` 根因已确认并修复**：不是设备兼容性问题，而是原 fork
+    `libavdevice.so` 本身缺符号、在所有设备上必然失败；已通过更换依赖坐标解决（见上方风险条目）。
   - **任务恢复不是断点续转**：当前“进程恢复”实现是应用重启后重新提交未完成任务并沿用原历史记录/目标 Uri，
     不是从原编码进度继续；对第一版用户体验足够，但耗时会比真正断点续转更长。
   - design token 为 teal，与 SPEC 蓝色默认强调色冲突，已约定以 SPEC 为准。
