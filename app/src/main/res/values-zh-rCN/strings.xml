@@ -9,6 +9,19 @@
     <!-- 首页 / 空状态 -->
     <string name="home_empty_title">选择要转换的文件</string>
     <string name="home_empty_subtitle">支持图片、视频和音频，可一次选择多个文件</string>
+    <string name="home_select_files">选择文件</string>
+    <string name="home_add_more">添加更多文件</string>
+    <string name="home_clear">清空全部</string>
+    <string name="home_summary">已选 %1$d 个 · %2$s</string>
+
+    <!-- 文件分组 -->
+    <string name="group_video">视频</string>
+    <string name="group_image">图片</string>
+    <string name="group_audio">音频</string>
+    <string name="group_count">%1$s · %2$d</string>
+    <string name="unsupported_title">不支持</string>
+    <string name="unsupported_reason">无法识别或暂不支持的格式</string>
+    <string name="file_remove">移除</string>
 
     <!-- 占位页面标题 -->
     <string name="history_title">历史</string>

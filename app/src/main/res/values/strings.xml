@@ -9,6 +9,19 @@
     <!-- Home / empty state -->
     <string name="home_empty_title">Choose files to convert</string>
     <string name="home_empty_subtitle">Images, videos, and audio are supported</string>
+    <string name="home_select_files">Select files</string>
+    <string name="home_add_more">Add more files</string>
+    <string name="home_clear">Clear all</string>
+    <string name="home_summary">%1$d files · %2$s</string>
+
+    <!-- File groups -->
+    <string name="group_video">Video</string>
+    <string name="group_image">Image</string>
+    <string name="group_audio">Audio</string>
+    <string name="group_count">%1$s · %2$d</string>
+    <string name="unsupported_title">Unsupported</string>
+    <string name="unsupported_reason">Unrecognized or unsupported format</string>
+    <string name="file_remove">Remove</string>
 
     <!-- Placeholder screen titles -->
     <string name="history_title">History</string>
