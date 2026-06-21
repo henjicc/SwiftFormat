@@ -3,13 +3,10 @@ package com.henjicc.swiftformat.conversion
 import com.henjicc.swiftformat.core.common.Logger
 import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
 import com.henjicc.swiftformat.core.model.ConversionError
-import com.henjicc.swiftformat.core.model.ConversionHistoryRecord
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.ConversionStatus
-import com.henjicc.swiftformat.core.model.FailureReasonCodec
 import com.henjicc.swiftformat.core.model.InputFile
 import com.henjicc.swiftformat.core.model.MediaType
-import com.henjicc.swiftformat.core.model.OutputDestination
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.SizePreset
 import com.henjicc.swiftformat.engine.api.ConversionEngine
@@ -25,11 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -41,15 +35,14 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class ConversionOrchestrator(
     private val engineSelector: ConversionEngineSelector,
-    private val outputLocationResolver: OutputLocationResolver,
-    private val historyRepository: ConversionHistoryRepository,
+    outputLocationResolver: OutputLocationResolver,
+    historyRepository: ConversionHistoryRepository,
     private val logger: Logger,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val semaphores = MediaType.entries.associateWith { Semaphore(ConversionConcurrencyPolicy.maxConcurrency(it)) }
-
-    /** 同批次提交的文件可能重名，输出位置解析必须串行化，否则会算出相同的"无冲突"文件名（见 [OutputLocationResolver]）。 */
-    private val outputResolutionMutex = Mutex()
+    private val requestFactory = ConversionRequestFactory(outputLocationResolver)
+    private val historyTracker = ConversionHistoryTracker(historyRepository)
 
     private val activeEngines = ConcurrentHashMap<String, ConversionEngine>()
     private val activeJobs = ConcurrentHashMap<String, Job>()
@@ -59,50 +52,25 @@ class ConversionOrchestrator(
 
     /** 提交单个文件转换；返回任务 id（即 [ConversionRequest.id]）。 */
     fun submit(input: InputFile, outputFormat: String, quality: QualityPreset?, size: SizePreset?): String {
-        val requestId = UUID.randomUUID().toString()
-        val job = scope.launch {
+        val requestId = requestFactory.newRequestId()
+        launchTask(requestId) {
             try {
-                val destinationUri = outputResolutionMutex.withLock {
-                    outputLocationResolver.resolve(input.displayName, outputFormat, input.mediaType)
-                }
-                val request = ConversionRequest(
-                    id = requestId,
+                val resolvedRequest = requestFactory.createResolvedRequest(requestId, input, outputFormat, quality, size)
+                val historyId = historyTracker.insertPending(resolvedRequest)
+                runTask(resolvedRequest, historyId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.e(TAG, "submit failed before queueing: $requestId", e)
+                historyTracker.recordSubmitFailure(
                     input = input,
                     outputFormat = outputFormat,
                     quality = quality,
                     size = size,
-                    destination = OutputDestination.ResolvedUri(destinationUri),
+                    exception = e,
                 )
-                val historyId = historyRepository.insert(newPendingRecord(request))
-                runTask(request, historyId)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // 此时尚未进入 runTask，_tasks 里还没有这个任务的条目，没有任务可更新；
-                // 仍写一条失败历史，避免用户提交的文件在历史里完全消失，只是不会出现在实时任务列表中。
-                logger.e(TAG, "submit failed before queueing: $requestId", e)
-                historyRepository.insert(
-                    ConversionHistoryRecord(
-                        originalDisplayName = input.displayName,
-                        originalFormat = input.extension,
-                        outputFormat = outputFormat,
-                        mediaType = input.mediaType,
-                        inputUri = input.uri,
-                        startTime = System.currentTimeMillis(),
-                        endTime = System.currentTimeMillis(),
-                        status = ConversionStatus.FAILED,
-                        outputUri = null,
-                        outputSizeBytes = null,
-                        failureReason = FailureReasonCodec.encode(ConversionError.Kind.UNKNOWN, e.message),
-                        quality = quality,
-                        size = size,
-                    ),
-                )
-            } finally {
-                activeJobs.remove(requestId)
             }
         }
-        activeJobs[requestId] = job
         return requestId
     }
 
@@ -121,40 +89,20 @@ class ConversionOrchestrator(
         size: SizePreset?,
         existingOutputUri: android.net.Uri?,
     ): String {
-        val requestId = UUID.randomUUID().toString()
-        val destinationUri = existingOutputUri ?: outputResolutionMutex.withLock {
-            outputLocationResolver.resolve(input.displayName, outputFormat, input.mediaType)
-        }
-        val request = ConversionRequest(
+        val requestId = requestFactory.newRequestId()
+        val request = requestFactory.createResolvedRequest(
             id = requestId,
             input = input,
             outputFormat = outputFormat,
             quality = quality,
             size = size,
-            destination = OutputDestination.ResolvedUri(destinationUri),
+            existingOutputUri = existingOutputUri,
         )
-        val existing = historyRepository.getById(historyId)
-        if (existing != null) {
-            historyRepository.update(
-                existing.copy(
-                    startTime = System.currentTimeMillis(),
-                    endTime = null,
-                    status = ConversionStatus.PENDING,
-                    outputUri = destinationUri,
-                    outputSizeBytes = null,
-                    failureReason = null,
-                ),
-            )
+        historyTracker.resetForRecovery(historyId, request)
+        launchTask(request.id) {
+            runTask(request, historyId)
         }
-        val job = scope.launch {
-            try {
-                runTask(request, historyId)
-            } finally {
-                activeJobs.remove(requestId)
-            }
-        }
-        activeJobs[requestId] = job
-        return requestId
+        return request.id
     }
 
     private suspend fun runTask(request: ConversionRequest, historyId: Long) {
@@ -165,7 +113,11 @@ class ConversionOrchestrator(
                 updateTaskStatus(request.id, ConversionStatus.PREPARING)
                 val engine = engineSelector.select(request)
                 if (engine == null) {
-                    failTask(request.id, historyId, ConversionError(ConversionError.Kind.UNSUPPORTED_OUTPUT, "no engine supports this request"))
+                    failTask(
+                        request.id,
+                        historyId,
+                        ConversionError(ConversionError.Kind.UNSUPPORTED_OUTPUT, "no engine supports this request"),
+                    )
                     return@withPermit
                 }
                 activeEngines[request.id] = engine
@@ -204,14 +156,10 @@ class ConversionOrchestrator(
     /** 重试沿用原始请求（含已解析的目标 Uri），避免在同一批次内产生重名的新文件。 */
     fun retry(taskId: String) {
         val task = _tasks.value[taskId] ?: return
-        val job = scope.launch {
-            val existing = historyRepository.getById(task.historyId)
-            if (existing != null) {
-                historyRepository.update(existing.copy(status = ConversionStatus.PENDING, endTime = null, failureReason = null))
-            }
+        launchTask(taskId) {
+            historyTracker.resetForRetry(task.historyId)
             runTask(task.request, task.historyId)
         }
-        activeJobs[taskId] = job
     }
 
     /** 再次转换会新建任务与历史记录，并重新解析输出位置，避免覆写既有结果。 */
@@ -224,36 +172,29 @@ class ConversionOrchestrator(
 
     private suspend fun completeTask(id: String, historyId: Long, result: ConversionResult.Success) {
         updateTask(id) { it?.copy(status = ConversionStatus.COMPLETED, progress = 1f, outputUri = result.outputUri) }
-        updateHistory(historyId) {
-            it.copy(
-                status = ConversionStatus.COMPLETED,
-                endTime = System.currentTimeMillis(),
-                outputUri = result.outputUri,
-                outputSizeBytes = result.outputSizeBytes,
-            )
-        }
+        historyTracker.markCompleted(historyId, result)
     }
 
     private suspend fun failTask(id: String, historyId: Long, error: ConversionError) {
         val status = if (error.kind == ConversionError.Kind.CANCELLED) ConversionStatus.CANCELLED else ConversionStatus.FAILED
         updateTask(id) { it?.copy(status = status, error = error) }
-        updateHistory(historyId) {
-            it.copy(
-                status = status,
-                endTime = System.currentTimeMillis(),
-                failureReason = FailureReasonCodec.encode(error.kind, error.debugMessage),
-            )
-        }
+        historyTracker.markFailed(historyId, error, status)
     }
 
     private suspend fun cancelTask(id: String, historyId: Long) {
         updateTask(id) { it?.copy(status = ConversionStatus.CANCELLED) }
-        updateHistory(historyId) { it.copy(status = ConversionStatus.CANCELLED, endTime = System.currentTimeMillis()) }
+        historyTracker.markCancelled(historyId)
     }
 
-    private suspend fun updateHistory(historyId: Long, transform: (ConversionHistoryRecord) -> ConversionHistoryRecord) {
-        val record = historyRepository.getById(historyId) ?: return
-        historyRepository.update(transform(record))
+    private fun launchTask(taskId: String, block: suspend () -> Unit) {
+        val job = scope.launch {
+            try {
+                block()
+            } finally {
+                activeJobs.remove(taskId)
+            }
+        }
+        activeJobs[taskId] = job
     }
 
     private fun updateTaskStatus(id: String, status: ConversionStatus) {
@@ -270,22 +211,6 @@ class ConversionOrchestrator(
             current + (id to updated)
         }
     }
-
-    private fun newPendingRecord(request: ConversionRequest) = ConversionHistoryRecord(
-        originalDisplayName = request.input.displayName,
-        originalFormat = request.input.extension,
-        outputFormat = request.outputFormat,
-        mediaType = request.input.mediaType,
-        inputUri = request.input.uri,
-        startTime = System.currentTimeMillis(),
-        endTime = null,
-        status = ConversionStatus.PENDING,
-        outputUri = (request.destination as? OutputDestination.ResolvedUri)?.uri,
-        outputSizeBytes = null,
-        failureReason = null,
-        quality = request.quality,
-        size = request.size,
-    )
 
     private companion object {
         const val TAG = "ConversionOrchestrator"

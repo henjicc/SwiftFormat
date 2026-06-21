@@ -166,6 +166,9 @@
   卡片，可直接回到进度页；补 `FailureReasonCodecTest` 覆盖多行详情与旧数据兼容）；
   TASK-07 Stage F（补齐前台服务通知权限检查、`OutputLocationResolver` 低版本 MediaStore 兼容分支、
   Media3 `UnstableApi` 的 lint opt-in，`lintDebug` 恢复通过），
+  TASK-07 Stage G（按代码体量与职责密度拆分 4 个大 Screen：`SettingsScreen`/`HomeScreen`/
+  `ConversionProgressScreen`/`HistoryScreen` 改为“路由 + 组件”结构；并把 `ConversionOrchestrator`
+  的请求解析/历史同步、`Media3Engine` 的编码配置/Transformer 生命周期/错误映射抽到独立文件），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先做真机/模拟器验证与多设备测试，
   重点覆盖失败场景、前台服务恢复、分享/打开/查看位置、超大字体/TalkBack、横竖屏和 4KB/16KB 页面设备，

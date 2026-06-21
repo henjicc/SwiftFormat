@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A/B/C/D/E/F 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A/B/C/D/E/F/G 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -122,6 +122,23 @@
   - `gradlew.bat lintDebug` 已通过。
   - 仍有 35 条 warning，主要是模板残留未使用资源、依赖可升级提示、以及 `android.media.ExifInterface`
     的替换建议；这些不阻塞当前真机测试，但仍属于后续发布前收尾项。
+
+### Stage G（已完成，已验证）—— 大文件拆分与代码结构整理
+- **优先拆分的 4 个大 Screen 已拆为“路由 + 组件”结构**：
+  - `feature/settings/SettingsScreen.kt` 仅保留状态订阅、事件收集与反馈分享入口，具体 section/dialog 拆到
+    `SettingsSections.kt`、`SettingsDialogs.kt`。
+  - `feature/home/HomeScreen.kt` 仅保留文件选择器、通知权限与启动转换链路，列表/空态/文件行拆到
+    `HomeContent.kt`、`HomeFileRows.kt`。
+  - `feature/progress/ConversionProgressScreen.kt` 与 `feature/history/HistoryScreen.kt` 仅保留页面级 scaffold，
+    明细卡片、头部、动作区、详情弹窗拆到独立组件文件，减少单文件状态和分支密度。
+- **第二梯队的编排/引擎文件已抽辅助职责**：
+  - `conversion/ConversionOrchestrator.kt` 抽出 `ConversionRequestFactory` 与 `ConversionHistoryTracker`，
+    把“请求解析”和“历史记录同步”从主编排器里拿出去，保留原有外部接口不变。
+  - `engine/media/Media3Engine.kt` 抽出 `Media3ConversionConfigFactory`、`Media3TransformerRunner`、
+    `Media3ErrorMapper`，把编码配置、Transformer 生命周期和错误映射与页面/UI 彻底解耦。
+- **本次调整的目标**：
+  - 不改用户可见行为，只降低单文件体积和职责混杂度，为后续真机测试、错误路径补齐和继续扩展设置项提供更稳的落点。
+- 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest` 通过（使用本机 JDK 17 设置 `JAVA_HOME` 执行）。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15**：目前已补到“外观 + 部分转换默认值 + 文件行为说明 + 完成通知开关 +
