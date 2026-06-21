@@ -19,9 +19,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.model.ConversionStatus
 import com.henjicc.swiftformat.feature.common.errorKindLabelRes
@@ -174,6 +178,8 @@ internal fun ConversionTaskRow(
     }
 
     if (showFailureDetails && item.failureDetails != null) {
+        val clipboardManager = LocalClipboardManager.current
+        val context = LocalContext.current
         AlertDialog(
             onDismissRequest = { showFailureDetails = false },
             title = { Text(stringResource(R.string.error_details_title)) },
@@ -181,6 +187,16 @@ internal fun ConversionTaskRow(
             confirmButton = {
                 TextButton(onClick = { showFailureDetails = false }) {
                     Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(item.failureDetails))
+                        Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text("复制")
                 }
             },
         )
