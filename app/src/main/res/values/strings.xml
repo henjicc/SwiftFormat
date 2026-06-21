@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">转个格式</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_convert">Convert</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Home / empty state -->
+    <string name="home_empty_title">Choose files to convert</string>
+    <string name="home_empty_subtitle">Images, videos, and audio are supported</string>
+
+    <!-- Placeholder screen titles -->
+    <string name="history_title">History</string>
+    <string name="settings_title">Settings</string>
 </resources>

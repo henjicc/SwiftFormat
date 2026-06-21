@@ -82,7 +82,7 @@
 
 | 编号 | 任务 | 依赖 | 状态 |
 |---|---|---|---|
-| [TASK-00](./TASK-00.md) | 工程基础（Compose/主题/导航/DataStore/Room/日志） | — | 未开始 |
+| [TASK-00](./TASK-00.md) | 工程基础（Compose/主题/导航/DataStore/Room/日志） | — | 进行中 |
 | [TASK-01](./TASK-01.md) | 文件选择与识别（SAF/分享/元数据/分组/缩略图） | 00 | 未开始 |
 | [TASK-02](./TASK-02.md) | 参数页面（分组卡片 + 统一参数组件 + 动态显示） | 01 | 未开始 |
 | [TASK-03](./TASK-03.md) | 图片引擎（JPG/PNG/WebP + 质量/尺寸映射） | 00,02 | 未开始 |
@@ -105,9 +105,10 @@
 
 ## 5. 当前进度
 
-- **总体阶段**：任务规划完成，尚未进入开发。
-- **已完成**：项目资料分析；任务目录与任务文件创建。
-- **下一步**：从 [TASK-00](./TASK-00.md) 开始，先解决 `minSdk` 决策与 Compose 改造。
+- **总体阶段**：TASK-00 进行中（Stage A 已完成）。
+- **已完成**：项目资料分析；任务目录创建；TASK-00 Stage A —— minSdk=26，appcompat 骨架改造为
+  Compose + Material3，蓝色默认主题、三页底部导航、中英文资源，`assembleDebug` 构建通过。
+- **下一步**：TASK-00 Stage B —— DataStore 设置仓库与主题/强调色/语言持久化；随后 Room、Hilt、Logger 与核心数据模型。
 - **未解决问题 / 风险**：
   - minSdk 24 vs 26 待用户确认（见 TASK-00）。
   - FFmpeg AAR 选型、许可证（LGPL/GPL）与 16KB 页面支持需在 TASK-05 前确认。

@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">转个格式</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_convert">转换</string>
+    <string name="nav_history">历史</string>
+    <string name="nav_settings">设置</string>
+
+    <!-- 首页 / 空状态 -->
+    <string name="home_empty_title">选择要转换的文件</string>
+    <string name="home_empty_subtitle">支持图片、视频和音频，可一次选择多个文件</string>
+
+    <!-- 占位页面标题 -->
+    <string name="history_title">历史</string>
+    <string name="settings_title">设置</string>
+</resources>
