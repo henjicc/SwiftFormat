@@ -6,6 +6,7 @@ import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.core.common.toDebugMessage
 import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.MediaType
@@ -64,7 +65,7 @@ class FfmpegEngine(
             throw e
         } catch (e: Throwable) {
             logger.e(TAG, "convert failed: ${request.id}", e)
-            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.message, e))
+            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.toDebugMessage(), e))
         } finally {
             activeSessions.remove(request.id)
         }
@@ -78,6 +79,10 @@ class FfmpegEngine(
         request: ConversionRequest,
         onProgress: (ConversionProgress) -> Unit,
     ): ConversionResult {
+        FfmpegRuntimeSupport.unavailableReason(logger)?.let { debugMessage ->
+            return failure(ConversionError.Kind.ENGINE_CRASH, debugMessage)
+        }
+
         val destinationUri = (request.destination as? OutputDestination.ResolvedUri)?.uri
             ?: return failure(ConversionError.Kind.OUTPUT_NOT_WRITABLE, "destination not resolved")
         val mode = try {

@@ -1,6 +1,7 @@
 package com.henjicc.swiftformat.conversion
 
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.core.common.toDebugMessage
 import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
 import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionRequest
@@ -167,7 +168,7 @@ class ConversionOrchestrator(
                 historyId,
                 ConversionError(
                     kind = ConversionError.Kind.ENGINE_CRASH,
-                    debugMessage = e.message ?: e.javaClass.simpleName,
+                    debugMessage = e.toDebugMessage(),
                     cause = e,
                 ),
             )
@@ -237,7 +238,7 @@ class ConversionOrchestrator(
                 historyId,
                 ConversionError(
                     kind = ConversionError.Kind.ENGINE_CRASH,
-                    debugMessage = error.message ?: error.javaClass.simpleName,
+                    debugMessage = error.toDebugMessage(),
                     cause = error,
                 ),
             )

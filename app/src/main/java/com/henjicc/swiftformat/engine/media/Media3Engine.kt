@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.core.common.toDebugMessage
 import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.MediaType
@@ -54,7 +55,7 @@ class Media3Engine(
             throw e
         } catch (e: Throwable) {
             logger.e(TAG, "convert failed: ${request.id}", e)
-            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.message, e))
+            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.toDebugMessage(), e))
         }
     }
 

@@ -6,6 +6,7 @@ import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegSession
 import com.arthenica.ffmpegkit.ReturnCode
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.core.common.toDebugMessage
 import com.henjicc.swiftformat.core.file.applyExifOrientation
 import com.henjicc.swiftformat.core.file.decodeImageBounds
 import com.henjicc.swiftformat.core.file.decodeSampledBitmap
@@ -58,7 +59,7 @@ class FfmpegStillImageEngine(
             throw e
         } catch (e: Throwable) {
             logger.e(TAG, "convert failed: ${request.id}", e)
-            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.message, e))
+            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.toDebugMessage(), e))
         } finally {
             activeJobs.remove(request.id)
             activeSessions.remove(request.id)
@@ -74,6 +75,10 @@ class FfmpegStillImageEngine(
         request: ConversionRequest,
         onProgress: (ConversionProgress) -> Unit,
     ): ConversionResult {
+        FfmpegRuntimeSupport.unavailableReason(logger)?.let { debugMessage ->
+            return failure(ConversionError.Kind.ENGINE_CRASH, debugMessage)
+        }
+
         val destinationUri = (request.destination as? OutputDestination.ResolvedUri)?.uri
             ?: return failure(ConversionError.Kind.OUTPUT_NOT_WRITABLE, "destination not resolved")
         if (request.outputFormat.uppercase() !in SUPPORTED_OUTPUT_FORMATS) {

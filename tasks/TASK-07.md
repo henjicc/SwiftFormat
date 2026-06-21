@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A/B/C/D/E/F/G/H 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A/B/C/D/E/F/G/H/I 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -159,6 +159,24 @@
 - 验证：`gradlew.bat testDebugUnitTest`、`gradlew.bat lintDebug`、`gradlew.bat assembleDebug` 通过
   （使用本机 JDK 17 设置 `JAVA_HOME` 执行）。
 
+### Stage I（已完成，已验证）—— FFmpegKit 启动失败诊断增强
+- **确认问题层级在 FFmpegKit native 启动，而不是 MKV 命令参数**：
+  - 结合本地反查的 `NativeLoader.java` 可确认：`FFmpegKit failed to start on brand ...` 这句并不是业务层报错，
+    而是 FFmpegKit 在 `System.loadLibrary(...)` 失败时，把底层 `UnsatisfiedLinkError` 包成 `Error` 后抛出的摘要。
+  - 这意味着 `VIDEO -> MKV` 场景里如果连库都没起起来，真正有价值的信息通常在它的 `cause` 里，而不是顶层那句机型摘要。
+- **补充 FFmpeg 运行时启动探测**：
+  - 新增 `engine/ffmpeg/FfmpegRuntimeSupport`，首次进入 FFmpeg 引擎前会先调用 `FFmpegKitConfig.getVersion()`
+    做一次启动探测；若 native 初始化失败，直接返回 `ENGINE_CRASH` 失败并附带完整调试信息，不再等到命令执行阶段才暴露。
+  - `FfmpegEngine` 与 `FfmpegStillImageEngine` 现在都会在真正执行命令前检查这层可用性。
+- **补充异常详情格式化**：
+  - 新增 `core/common/ThrowableDebugFormatter`，把顶层异常、cause 链和前几行关键栈帧整理成单段文本。
+  - `FfmpegEngine` / `FfmpegStillImageEngine` / `Media3Engine` / `NativeImageEngine` / `HeifAvifImageEngine`
+    以及 `ConversionOrchestrator` 现在统一使用该格式化文本写入 `ConversionError.debugMessage`，让“查看详情”能看到
+    类似 `UnsatisfiedLinkError: dlopen failed ...` 这类真正的底层原因，而不再只有一句“failed to start on brand ...”。
+- **回归测试补充**：
+  - 新增 `ThrowableDebugFormatterTest`，验证嵌套 `Error -> UnsatisfiedLinkError` 时详情文本会保留两层信息。
+- 验证：`gradlew.bat testDebugUnitTest`、`gradlew.bat assembleDebug` 通过（使用本机 JDK 17 设置 `JAVA_HOME` 执行）。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15**：目前已补到“外观 + 部分转换默认值 + 文件行为说明 + 完成通知开关 +
   临时清理 + 关于版本/隐私/开源说明 + 基础日志查看 + 反馈信息分享”；还缺可自定义默认目录、可配置重名策略、
@@ -168,6 +186,8 @@
 - **日志查看是进程内临时日志**：重启应用后会丢失，不是持久日志系统；足够支撑真机测试排错，但还不是最终发布态方案。
 - **当前这次修复的重点是“避免崩溃与恢复死循环”**：即便某个具体格式/引擎后续仍存在单任务异常，现在也应表现为
   某条任务失败而不是整应用闪退；后续仍需继续定位最初触发这次实机崩溃的具体引擎/输入组合。
+- **FFmpegKit 在个别 Android 15/16 设备上仍可能存在 native 兼容性问题**：当前已把这类问题从“黑盒闪退”提升为
+  “可见的 startup probe/Throwable 详情”，但库本身是否与特定厂商 linker 完整兼容，仍取决于所用 fork 的二进制质量。
 - **国际化与无障碍主要做了基础修正**：运行时语言、FlowRow、防溢出、强调色可读性已补，但还没做系统级
   TalkBack、超大字体、对比度、横竖屏逐项验收。
 - **多设备/真机验证仍待执行**：这一步现在已经更适合上手验证，建议优先测：

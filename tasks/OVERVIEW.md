@@ -179,6 +179,9 @@
   `ConversionRecoveryManager` 对单条恢复失败直接标记历史失败，`ConversionForegroundService.start()`
   改为捕获启动异常后降级为仅无通知不崩溃，`SwiftFormatApplication` 启动恢复新增总兜底日志，并补
   `ConversionCrashSafetyTest` 回归测试），
+  TASK-07 Stage I（针对 vivo / Android 16 上 `FFmpegKit failed to start on brand ...` 这类 native 启动失败，
+  新增 `FfmpegRuntimeSupport` 启动探测与 `ThrowableDebugFormatter`，让 FFmpeg native 初始化失败能提前降级为
+  明确任务失败，并在“查看详情”里保留 `Error -> UnsatisfiedLinkError/dlopen failed` 的 cause 链），
   FFmpeg 全媒体扩展第一阶段（图片组选项扩为 `JPG / PNG / WEBP / BMP / TIFF`，音频组选项扩为
   `MP3 / M4A / AAC / WAV / FLAC / OGG`，视频组选项扩为 `MP4 / MOV / WEBM / MKV / MP3 / M4A / WAV / FLAC`，
   其中 `MP3 / M4A / WAV / FLAC` 走“视频提取音频”链路，新增 `FfmpegStillImageEngine`、
@@ -189,6 +192,8 @@
   并补齐 MIME、命名、路由与不支持错误映射），
   TASK-07 Stage H（修复“点击开始转换后闪退 + 重启恢复继续闪退”的严重稳定性问题，恢复路径与前台服务启动
   均改为有兜底、可失败但不致命，并新增 `ConversionCrashSafetyTest` 回归覆盖），
+  TASK-07 Stage I（FFmpeg 运行时启动失败诊断增强：新增 startup probe 与 cause 链格式化，让
+  `FFmpegKit failed to start on brand ...` 能进一步看到底层 `UnsatisfiedLinkError/dlopen failed` 详情），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先回到真机/模拟器验证，重点复测
   “开始转换 / 崩溃后重启恢复 / 取消 / 前台服务通知 / 分享打开查看位置”，确认这次止血后不再出现死循环闪退；
@@ -216,6 +221,9 @@
     并在运行时门控，构建已验证通过，但仍需真机确认设备互操作性与失败表现。
   - **本次闪退已先从架构层止血**：未捕获的引擎/恢复/前台服务启动异常现在不应再直接导致整应用崩溃；
     但最初触发真机闪退的“具体输入样本/具体引擎路径”还需要继续复测定位。
+  - **当前更像 FFmpegKit fork 与特定设备 linker 的 native 兼容性问题**：vivo / API 36 上出现的
+    `FFmpegKit failed to start on brand ...` 已确认属于库启动阶段错误而非 MKV 参数错误；现在应用会尽量保留
+    cause 链用于定位，但如果底层 so 本身与设备不兼容，最终仍需要更换 fork 或自建二进制。
   - **任务恢复不是断点续转**：当前“进程恢复”实现是应用重启后重新提交未完成任务并沿用原历史记录/目标 Uri，
     不是从原编码进度继续；对第一版用户体验足够，但耗时会比真正断点续转更长。
   - design token 为 teal，与 SPEC 蓝色默认强调色冲突，已约定以 SPEC 为准。

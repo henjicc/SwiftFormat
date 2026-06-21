@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import com.henjicc.swiftformat.core.common.Logger
+import com.henjicc.swiftformat.core.common.toDebugMessage
 import com.henjicc.swiftformat.core.file.applyExifOrientation
 import com.henjicc.swiftformat.core.file.decodeImageBounds
 import com.henjicc.swiftformat.core.file.decodeSampledBitmap
@@ -52,7 +53,7 @@ class NativeImageEngine(
             throw e
         } catch (e: Throwable) {
             logger.e(TAG, "convert failed: ${request.id}", e)
-            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.message, e))
+            ConversionResult.Failure(ConversionError(ConversionError.Kind.ENGINE_CRASH, e.toDebugMessage(), e))
         } finally {
             activeJobs.remove(request.id)
         }
