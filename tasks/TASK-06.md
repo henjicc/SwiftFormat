@@ -1,6 +1,6 @@
 # TASK-06 · 后台任务与历史
 
-**状态**：进行中（Stage A/B/C/D 已完成）　|　**依赖**：TASK-03, TASK-04　|　对应 SPEC：阶段 6、4.5/4.6、13、14 章
+**状态**：已完成*（Stage A/B/C/D/E/F/G 已完成）　|　**依赖**：TASK-03, TASK-04　|　对应 SPEC：阶段 6、4.5/4.6、13、14 章
 
 ## 目标
 实现转换的后台执行、进度通知、转换/完成页面、Room 历史与进程恢复、临时文件清理。
@@ -31,11 +31,11 @@
 - [x] 任务编排层：队列、并发策略、状态机、批量汇总（`ConversionOrchestrator`，已接入三引擎到 `AppContainer`）
 - [x] 实现 Foreground Service + 通知（进度/取消/返回）
 - [x] `HomeScreen`「开始转换」按钮接线到 `ConversionOrchestrator` + 启动 `ConversionForegroundService`
-- [ ] 转换进度页面 UI（含取消/重试/失败原因）
+- [x] 转换进度页面 UI（含取消/重试/失败原因）
 - [x] 输出写入 MediaStore + 重名处理（`OutputLocationResolver`，统一写入 `Download/转个格式`）
-- [ ] 完成页面与操作（打开/分享/查看位置/再次转换/删除）
-- [ ] 历史页面（UI，读 `ConversionHistoryRepository`）
-- [ ] 进程恢复与残留临时文件清理（WorkManager）
+- [x] 完成页面与操作（打开/分享/查看位置/再次转换/删除）
+- [x] 历史页面（UI，读 `ConversionHistoryRepository`）
+- [x] 进程恢复与残留临时文件清理（WorkManager）
 
 ## 验收标准
 - 退后台仍继续转换，通知显示进度并可取消。
@@ -224,3 +224,69 @@
   实际验证多组文件混合批量转换的端到端结果。
 - **未做实机验证**：点击按钮到收到系统通知、到 `Download/转个格式` 出现转换产物的完整链路，
   在当前环境（无 Android 设备）下只验证了"代码逻辑正确、编译与单元测试通过"，未验证真实运行效果。
+
+### Stage E（已完成，已验证）—— 转换进度页 + 完成态操作
+- 新增 `feature/progress/ConversionProgressScreen.kt` / `ConversionProgressViewModel.kt`：
+  - 进度页改为真正接 `ConversionOrchestrator.tasks` 的实时界面，而不是只靠系统通知查看（对应 SPEC 4.5）。
+  - 顶部显示总体完成数、总体进度、当前文件；全部结束后补充成功/失败/取消统计。
+  - 文件行显示：文件名、原格式→目标格式、状态、单文件进度、失败原因、取消、重试。
+  - 完成态文件新增主操作：`打开 / 分享 / 查看位置 / 再次转换`；次操作：`删除结果 / 删除原文件`
+    （删除原文件带二次确认，满足 SPEC 4.6 的风险约束）。
+- 新增 `core/file/ResultFileActions`：统一封装结果文件的 `Intent` / `ContentResolver` 平台细节，
+  供进度页与历史页复用，避免页面层自己拼装 `ACTION_VIEW` / `ACTION_SEND`。
+- `ConversionTask` 运行态补充 `outputUri`；`ConversionOrchestrator.completeTask()` 回填成功输出 Uri，
+  供完成态 UI 直接执行打开/分享等动作。
+- `ConversionOrchestrator` 新增 `convertAgain(taskId)`：再次转换会新建任务与历史记录，并重新解析输出位置，
+  不直接覆写当前记录。
+- 验证：`gradlew.bat testDebugUnitTest` 通过；`gradlew.bat assembleDebug` 通过。
+
+### Stage F（已完成，已验证）—— 历史页面 UI
+- 新增 `feature/history/HistoryViewModel.kt`，`HistoryScreen.kt` 从占位页改为真正读取
+  `ConversionHistoryRepository.observeAll()`。
+- 历史页支持：
+  - 展示历史记录列表（状态、时间、输出大小、质量/尺寸标签、失败原因）。
+  - 记录存在输出文件时执行 `打开 / 分享 / 查看位置 / 删除结果`。
+  - 对终态记录执行 `再次转换`（重新读取原始 `inputUri` 元数据后重新提交到编排层，并导航回进度页）。
+  - 删除历史记录（默认不删文件，符合 SPEC 14）。
+  - 顶部在存在活跃任务时显示“查看进度”卡片，连接到底部导航的历史页与单独进度页。
+- 导航更新：`HistoryScreen` 现在可推入 `conversion_progress` 路由，不再是纯只读页面。
+- 验证：`gradlew.bat testDebugUnitTest` 通过；`gradlew.bat assembleDebug` 通过。
+
+### 已知简化（Stage E/F 范围内）
+- **“查看位置”仍统一打开系统 Downloads 界面**：因为当前输出统一写到 `Download/转个格式`，
+  尚未按媒体类型分别写到 Pictures / Movies / Music，也未实现精确定位到单个目录项。
+- **进度页删除结果是会话内 UI 状态**：删除后会隐藏当前行的结果操作，但不会同步把
+  `ConversionOrchestrator.tasks` 中已完成任务移除；完整持久一致性以历史页为准。
+- **历史页“再次转换”依赖重新读取原始 `inputUri`**：若来源 Uri 权限失效、文件已被移动或删除，
+  会提示失败，不能像内存中的进行中任务那样无条件重放。
+- **仍未做实机验证**：打开/分享/查看位置等 `Intent` 动作，以及删除原文件在只读 Uri/受限提供方上的真实表现，
+  只做了编译与代码路径核查，未在真机/模拟器上逐项走通。
+
+### Stage G（已完成，已验证）—— 进程恢复 + 残留临时文件清理
+- 新增 `conversion/ConversionRecoveryManager`：
+  - 应用启动时读取 `ConversionHistoryRepository.getActiveRecords()`，把状态仍为
+    `PENDING / PREPARING / CONVERTING / SAVING` 的历史记录重新接回 `ConversionOrchestrator`。
+  - 恢复时优先复用历史记录里已保存的目标 `outputUri`；若旧记录尚无目标 Uri（兼容早期版本/旧记录），
+    再重新走 `OutputLocationResolver` 解析输出位置。
+  - 恢复成功后沿用**同一条历史记录**继续执行，不额外插入重复记录；若原始 `inputUri` 已失效或元数据无法读取，
+    则把该记录标记为 `FAILED` 并写入失败原因，而不是永远停留在“进行中”。
+  - 若恢复出至少一个活跃任务，自动启动 `ConversionForegroundService`，让恢复后的批量转换重新获得保活与通知。
+- `ConversionOrchestrator` 新增 `recover(...)`：
+  - 恢复任务会重建 `ConversionRequest`，重置同一条历史记录为 `PENDING`，清空结束时间/失败原因/旧输出大小，
+    然后继续走现有 `runTask()` 调度链路。
+  - 新提交任务的 pending 历史记录现在会立即记录解析好的目标 `outputUri`，为后续恢复和查看位置提供锚点。
+- 新增 `service/ResidualTempCleanupWorker` + WorkManager 依赖：
+  - 启动时通过 `WorkManager.enqueueUniqueWork(...)` 触发一次残留清理。
+  - Worker 只删除缓存目录中已知命名规则的中间文件：`media3_*`、`ffmpeg_in_*`、`ffmpeg_out_*`；
+    **不会**删除 `Download/转个格式` 下的正式输出，满足“缓存清理不删已完成输出”的约束。
+- `SwiftFormatApplication`：`onCreate()` 里统一调度“残留清理 + 活跃任务恢复”。
+- 验证：`gradlew.bat assembleDebug testDebugUnitTest` 通过。
+
+### 已知简化（Stage G 范围内）
+- **恢复是“重新提交该任务”，不是字节级断点续转**：图片/音视频转换会从头重新开始，但对用户来说，
+  应用进程被系统回收后再次打开时，未完成任务会重新出现在进度页并继续处理；这是第一版选择的更稳实现。
+- **恢复逻辑仅在应用再次启动后触发**：如果用户从未重新打开应用，已被系统回收的任务不会在纯后台自行恢复。
+- **清理 Worker 只扫应用缓存目录**：不会清理 MediaStore 中已创建但未完成的占位输出项；这类文件当前主要靠
+  恢复时复用同一目标 Uri 覆写，或由用户在历史/完成页中手动删除。
+- **仍未做真机杀进程验证**：当前只验证了编译、单测和代码路径，没有在真实设备上做
+  “转换中强杀进程 → 重新启动应用 → 自动恢复并继续转换”的端到端回归。

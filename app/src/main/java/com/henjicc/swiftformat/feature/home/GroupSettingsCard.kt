@@ -37,6 +37,8 @@ import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.OutputFormatCatalog
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.SizePreset
+import com.henjicc.swiftformat.feature.common.qualityLabel
+import com.henjicc.swiftformat.feature.common.sizeLabel
 
 /** 折叠状态下每组默认展示的文件数（见 SPEC 4.4「默认只展示前几个」）。 */
 private const val COLLAPSED_VISIBLE_COUNT = 3
@@ -196,31 +198,4 @@ private fun <T> OptionsBottomSheet(
             }
         }
     }
-}
-
-@Composable
-private fun qualityLabel(preset: QualityPreset): String = stringResource(
-    when (preset) {
-        QualityPreset.BEST -> R.string.quality_best
-        QualityPreset.HIGH -> R.string.quality_high
-        QualityPreset.STANDARD -> R.string.quality_standard
-        QualityPreset.SMALL_SIZE -> R.string.quality_small_size
-    },
-)
-
-@Composable
-private fun sizeLabel(preset: SizePreset): String = when (preset) {
-    SizePreset.Original -> stringResource(R.string.size_original)
-    is SizePreset.VideoResolution -> stringResource(videoResolutionLabelRes(preset.height))
-    is SizePreset.ImageLongestEdge -> stringResource(R.string.size_image_edge, preset.pixels)
-    is SizePreset.Custom -> stringResource(R.string.size_original) // 自定义尺寸留待后续任务实现输入框
-}
-
-private fun videoResolutionLabelRes(height: Int): Int = when (height) {
-    2160 -> R.string.size_4k
-    1440 -> R.string.size_2k
-    1080 -> R.string.size_1080p
-    720 -> R.string.size_720p
-    480 -> R.string.size_480p
-    else -> R.string.size_original
 }

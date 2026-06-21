@@ -18,3 +18,6 @@ enum class TopLevelDestination(
     HISTORY("history", R.string.nav_history, Icons.Filled.History),
     SETTINGS("settings", R.string.nav_settings, Icons.Filled.Settings),
 }
+
+/** 转换进度页面（见 SPEC 4.5）：从首页「开始转换」推入，不属于底部导航三个顶层目的地。 */
+const val CONVERSION_PROGRESS_ROUTE = "conversion_progress"

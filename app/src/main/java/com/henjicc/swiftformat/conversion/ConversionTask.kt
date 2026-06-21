@@ -1,5 +1,6 @@
 package com.henjicc.swiftformat.conversion
 
+import android.net.Uri
 import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionRequest
 import com.henjicc.swiftformat.core.model.ConversionStatus
@@ -13,5 +14,6 @@ data class ConversionTask(
     val historyId: Long,
     val status: ConversionStatus,
     val progress: Float = 0f,
+    val outputUri: Uri? = null,
     val error: ConversionError? = null,
 )

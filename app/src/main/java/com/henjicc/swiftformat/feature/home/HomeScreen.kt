@@ -63,6 +63,7 @@ import com.henjicc.swiftformat.service.ConversionForegroundService
 
 @Composable
 fun HomeScreen(
+    onConversionStarted: () -> Unit = {},
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -98,6 +99,7 @@ fun HomeScreen(
         }
         viewModel.startConversion()
         ConversionForegroundService.start(context)
+        onConversionStarted()
     }
 
     if (!state.hasFiles) {

@@ -88,7 +88,7 @@
 | [TASK-03](./TASK-03.md) | 图片引擎（JPG/PNG/WebP + 质量/尺寸映射） | 00,02 | 已完成* |
 | [TASK-04](./TASK-04.md) | 音视频引擎（Media3 + 进度/取消/能力检查） | 00,02 | 已完成* |
 | [TASK-05](./TASK-05.md) | FFmpeg 兼容层（隔离模块/许可证/16KB/降级） | 03,04 | 已完成* |
-| [TASK-06](./TASK-06.md) | 后台任务与历史（前台服务/通知/Room/完成页） | 03,04 | 进行中 |
+| [TASK-06](./TASK-06.md) | 后台任务与历史（前台服务/通知/Room/完成页） | 03,04 | 已完成* |
 | [TASK-07](./TASK-07.md) | 质量与发布（多设备/性能/i18n/无障碍/发布准备） | 全部 | 未开始 |
 
 状态取值：`未开始` / `进行中` / `阻塞` / `已完成`。
@@ -120,7 +120,7 @@
 
 ## 5. 当前进度
 
-- **总体阶段**：TASK-00～TASK-05 均功能性完成；准备进入 TASK-06。
+- **总体阶段**：TASK-00～TASK-06 均功能性完成；准备进入 TASK-07 质量与发布。
 - **已完成**：项目资料分析；任务目录创建；TASK-00（Compose 底座、DataStore 设置/主题/语言持久化、核心数据模型、
   Logger；KSP/AGP9 工具链冲突已探测并记录，Room/Hilt 移交后续）；
   TASK-01（SAF 多选 + Uri 权限持久化、分享 Intent 接收、媒体类型识别含单元测试、IO 线程元数据读取、
@@ -147,11 +147,16 @@
   manifest 声明 `mediaProcessing` 前台服务类型与三个权限）；
   TASK-06 Stage D（`HomeScreen`「开始转换」按钮接线：`HomeViewModel.startConversion()` 按分组提交到
   `ConversionOrchestrator`，按钮点击同时启动 `ConversionForegroundService` 并按需请求
-  `POST_NOTIFICATIONS` 运行时权限——首页 → 编排 → 历史落库 → 通知的链路首次打通），
-  构建通过、65 个单元测试通过。
-- **下一步**：继续 [TASK-06](./TASK-06.md) 后续 Stage——转换进度页面 UI（含取消/重试/失败原因，
-  当前点击「开始转换」后用户只能靠系统通知看进度，没有应用内页面）、完成页面与操作、历史页面 UI
-  （读 `ConversionHistoryRepository`）、进程恢复与残留临时文件清理（WorkManager）。
+  `POST_NOTIFICATIONS` 运行时权限——首页 → 编排 → 历史落库 → 通知的链路首次打通）；
+  TASK-06 Stage E（应用内转换进度页 `feature/progress`：总体进度、当前文件、单文件状态/进度、取消/重试，
+  并在全部结束后提供 `打开 / 分享 / 查看位置 / 再次转换 / 删除结果 / 删除原文件` 完成态操作）；
+  TASK-06 Stage F（历史页 `feature/history`：读取 `ConversionHistoryRepository` 展示状态/时间/输出大小/
+  质量尺寸标签/失败原因，支持 `打开 / 分享 / 查看位置 / 再次转换 / 删除结果 / 删除记录`，且有活跃任务时
+  提供“查看进度”入口）；
+  TASK-06 Stage G（应用启动时基于 Room 活跃历史记录做任务恢复、恢复后自动拉起前台服务、WorkManager 清理
+  `media3_*`/`ffmpeg_*` 缓存残留文件），`assembleDebug` 与 `testDebugUnitTest` 通过。
+- **下一步**：进入 [TASK-07](./TASK-07.md) 质量与发布；优先做真机/模拟器验证、国际化/无障碍检查、
+  大文件与多设备测试，并回补 TASK-01~06 累积的“代码已通但未实机验证”项。
 - **遗留**：语言运行时 locale 应用；
   TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP 互转打开、
   MP4/AAC 转换效果、MP3/FLAC/WAV 转换效果、16KB 页面设备）待设备/模拟器环境；
@@ -160,8 +165,8 @@
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
   判定逻辑拆成纯函数单测，编排本身运行时行为待 Robolectric/插桩或真机验证）；输出统一写入
   `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消为"双重保证"非事务性保证；
-  点击「开始转换」后无应用内进度页面，只能靠系统通知查看进度；
-  进度页/完成页/历史页 UI/进程恢复均在 TASK-06 后续 Stage 中完成。
+  TASK-06 已功能性完成，但多项关键路径仍缺真实设备验证：前台服务恢复、分享/打开/查看位置、
+  删除原文件、WorkManager 清理以及 16KB 页面设备。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。
   - **KSP/AGP9 工具链阻塞已解决**（TASK-06 Stage A）：升级 `com.google.devtools.ksp` 到 `2.3.9`
@@ -170,6 +175,8 @@
   - **FFmpeg 依赖为社区维护 fork，非官方项目**：官方 `arthenica/ffmpeg-kit` 已退役下架，当前用的
     `JamaisMagic/ffmpeg-kit-16KB` 缺乏长期生产验证记录，若后续出现兼容性/维护停滞问题需重新评估
     替换（已通过 `ConversionEngine` 接口隔离，替换成本可控）。详见 TASK-05「选型决策」。
+  - **任务恢复不是断点续转**：当前“进程恢复”实现是应用重启后重新提交未完成任务并沿用原历史记录/目标 Uri，
+    不是从原编码进度继续；对第一版用户体验足够，但耗时会比真正断点续转更长。
   - design token 为 teal，与 SPEC 蓝色默认强调色冲突，已约定以 SPEC 为准。
 
 ---

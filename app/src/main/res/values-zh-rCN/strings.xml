@@ -76,4 +76,40 @@
     <string name="notification_title">正在转换 %1$d 个文件</string>
     <string name="notification_text">%1$s · %2$d%%</string>
     <string name="notification_action_cancel_all">取消全部</string>
+
+    <!-- 转换进度页面（见 SPEC 4.5） -->
+    <string name="progress_title_active">正在转换</string>
+    <string name="progress_title_done">转换完成</string>
+    <string name="progress_summary">已完成 %1$d / %2$d</string>
+    <string name="progress_breakdown">成功 %1$d · 失败 %2$d · 已取消 %3$d</string>
+    <string name="progress_format_transition">%1$s → %2$s</string>
+    <string name="progress_cancel_all">取消全部</string>
+    <string name="progress_done">完成</string>
+    <string name="action_open">打开</string>
+    <string name="action_share">分享</string>
+    <string name="action_show_in_folder">查看位置</string>
+    <string name="action_convert_again">再次转换</string>
+    <string name="action_delete_result">删除结果</string>
+    <string name="action_delete_original">删除原文件</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_retry">重试</string>
+    <string name="delete_original_title">删除原文件？</string>
+    <string name="delete_original_message">确定删除原文件“%1$s”？此操作不可撤销。</string>
+    <string name="file_action_failed">当前无法执行该操作</string>
+    <string name="status_pending">等待中</string>
+    <string name="status_preparing">准备中</string>
+    <string name="status_converting">正在转换</string>
+    <string name="status_saving">正在保存</string>
+    <string name="status_completed">已完成</string>
+    <string name="status_cancelled">已取消</string>
+    <string name="status_failed">失败</string>
+
+    <!-- 历史页面 -->
+    <string name="history_empty_title">还没有转换历史</string>
+    <string name="history_empty_subtitle">已完成或失败的任务会显示在这里。</string>
+    <string name="history_active_title">还有 %1$d 个任务正在运行</string>
+    <string name="history_active_subtitle">打开进度页可查看详情或取消任务。</string>
+    <string name="history_open_progress">查看进度</string>
+    <string name="history_delete_record">删除记录</string>
+    <string name="history_reconvert_failed">无法读取原文件，不能再次转换</string>
 </resources>

@@ -108,6 +108,54 @@ class ConversionOrchestrator(
     fun submitAll(inputs: List<InputFile>, outputFormat: String, quality: QualityPreset?, size: SizePreset?): List<String> =
         inputs.map { submit(it, outputFormat, quality, size) }
 
+    /**
+     * 进程恢复：沿用同一条历史记录继续执行，避免应用被系统回收后历史里出现重复条目。
+     * 若旧记录里已经有提交时解析好的目标 Uri，则优先复用，避免生成新的重名输出文件。
+     */
+    suspend fun recover(
+        historyId: Long,
+        input: InputFile,
+        outputFormat: String,
+        quality: QualityPreset?,
+        size: SizePreset?,
+        existingOutputUri: android.net.Uri?,
+    ): String {
+        val requestId = UUID.randomUUID().toString()
+        val destinationUri = existingOutputUri ?: outputResolutionMutex.withLock {
+            outputLocationResolver.resolve(input.displayName, outputFormat, input.mediaType)
+        }
+        val request = ConversionRequest(
+            id = requestId,
+            input = input,
+            outputFormat = outputFormat,
+            quality = quality,
+            size = size,
+            destination = OutputDestination.ResolvedUri(destinationUri),
+        )
+        val existing = historyRepository.getById(historyId)
+        if (existing != null) {
+            historyRepository.update(
+                existing.copy(
+                    startTime = System.currentTimeMillis(),
+                    endTime = null,
+                    status = ConversionStatus.PENDING,
+                    outputUri = destinationUri,
+                    outputSizeBytes = null,
+                    failureReason = null,
+                ),
+            )
+        }
+        val job = scope.launch {
+            try {
+                runTask(request, historyId)
+            } finally {
+                activeJobs.remove(requestId)
+            }
+        }
+        activeJobs[requestId] = job
+        return requestId
+    }
+
     private suspend fun runTask(request: ConversionRequest, historyId: Long) {
         updateTask(request.id, ConversionTask(request, historyId, ConversionStatus.PENDING))
         val semaphore = semaphores.getValue(request.input.mediaType)
@@ -165,10 +213,16 @@ class ConversionOrchestrator(
         activeJobs[taskId] = job
     }
 
+    /** 再次转换会新建任务与历史记录，并重新解析输出位置，避免覆写既有结果。 */
+    fun convertAgain(taskId: String): String? {
+        val task = _tasks.value[taskId] ?: return null
+        return submit(task.request.input, task.request.outputFormat, task.request.quality, task.request.size)
+    }
+
     fun summary(): ConversionBatchSummary = ConversionBatchSummary.from(_tasks.value.values)
 
     private suspend fun completeTask(id: String, historyId: Long, result: ConversionResult.Success) {
-        updateTask(id) { it?.copy(status = ConversionStatus.COMPLETED, progress = 1f) }
+        updateTask(id) { it?.copy(status = ConversionStatus.COMPLETED, progress = 1f, outputUri = result.outputUri) }
         updateHistory(historyId) {
             it.copy(
                 status = ConversionStatus.COMPLETED,
@@ -219,7 +273,7 @@ class ConversionOrchestrator(
         startTime = System.currentTimeMillis(),
         endTime = null,
         status = ConversionStatus.PENDING,
-        outputUri = null,
+        outputUri = (request.destination as? OutputDestination.ResolvedUri)?.uri,
         outputSizeBytes = null,
         failureReason = null,
         quality = request.quality,

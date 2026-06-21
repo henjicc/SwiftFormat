@@ -17,41 +17,45 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.henjicc.swiftformat.feature.history.HistoryScreen
 import com.henjicc.swiftformat.feature.home.HomeScreen
+import com.henjicc.swiftformat.feature.progress.ConversionProgressScreen
 import com.henjicc.swiftformat.feature.settings.SettingsScreen
 
-/** 应用根布局：底部导航 + 内容区。 */
+/** 应用根布局：底部导航 + 内容区。转换进度页面（见 SPEC 4.5）是推入式全屏页，不显示底部导航。 */
 @Composable
 fun SwiftFormatApp() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    val showBottomBar = TopLevelDestination.entries.any { it.route == currentDestination?.route }
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                TopLevelDestination.entries.forEach { destination ->
-                    val selected = currentDestination?.hierarchy?.any {
-                        it.route == destination.route
-                    } == true
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
+            if (showBottomBar) {
+                NavigationBar {
+                    TopLevelDestination.entries.forEach { destination ->
+                        val selected = currentDestination?.hierarchy?.any {
+                            it.route == destination.route
+                        } == true
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = destination.icon,
-                                contentDescription = stringResource(destination.labelRes),
-                            )
-                        },
-                        label = { Text(stringResource(destination.labelRes)) },
-                    )
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = destination.icon,
+                                    contentDescription = stringResource(destination.labelRes),
+                                )
+                            },
+                            label = { Text(stringResource(destination.labelRes)) },
+                        )
+                    }
                 }
             }
         },
@@ -61,9 +65,16 @@ fun SwiftFormatApp() {
             startDestination = TopLevelDestination.CONVERT.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(TopLevelDestination.CONVERT.route) { HomeScreen() }
-            composable(TopLevelDestination.HISTORY.route) { HistoryScreen() }
+            composable(TopLevelDestination.CONVERT.route) {
+                HomeScreen(onConversionStarted = { navController.navigate(CONVERSION_PROGRESS_ROUTE) })
+            }
+            composable(TopLevelDestination.HISTORY.route) {
+                HistoryScreen(onOpenProgress = { navController.navigate(CONVERSION_PROGRESS_ROUTE) })
+            }
             composable(TopLevelDestination.SETTINGS.route) { SettingsScreen() }
+            composable(CONVERSION_PROGRESS_ROUTE) {
+                ConversionProgressScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }
