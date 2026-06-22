@@ -220,7 +220,13 @@
   （`optimization.enable`）评估后建议暂不开启（无 proguard 规则、FFmpegKit/Room 反射风险、当前无法真机验证）；
   许可证/隐私说明双语核对无需更新。**唯一遗留缺口**：`signingConfigs` 仍未配置，`bundleRelease` 目前只能
   产出未签名包，需要用户提供发布密钥库才能完成，不在自动化范围内。SPEC 19 列的「多设备/4KB+16KB 页面/
-  低内存/横竖屏测试」「性能 pass」「单元/集成/UI 测试补齐」仍待后续按需推进。
+  低内存/横竖屏测试」「性能 pass」「单元/集成/UI 测试补齐」仍待后续按需推进。质量档位默认值纠正与调参集中化
+  已完成（2026-06-22，详见 TASK-07 Stage N）：图片/视频/音频默认质量由「高」改为「标准」（SPEC 同步修改
+  5 处），并修正了真正决定首次启动默认值的 `SettingsRepository.kt` 缺省值回退（不是 `AppSettings.kt` 的
+  data class 默认参数）；新增 `engine/tuning/QualityPresetTuning.kt` 作为质量数值唯一调参入口；视频转码
+  新增 VP9 按质量档位调速的 `-cpu-used` 与全格式 `-threads 0`。**遗留待续**：音频转换偏慢的排查已定位
+  `FfmpegEngine` 对纯音频转码浪费跑了一次未使用的 `ffprobe`，但用户要求先评估集中后的参数表再决定是否继续做
+  性能优化（含是否要加同编码格式 stream copy 快速路径），尚未动手优化，留给下一次会话。
 - **遗留**：TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
   UI 动态显隐、EXIF 完整标签保留、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的

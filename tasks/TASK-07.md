@@ -297,6 +297,35 @@
 - 验证：`gradlew.bat lintDebug`（49 warning / 0 error，较改动前 56 条下降）、
   `gradlew.bat testDebugUnitTest assembleDebug` 均通过。
 
+### Stage N（已完成，已验证）—— 质量档位默认值纠正与调参集中化
+- **默认质量档位由"高"改为"标准"**：用户反馈希望默认是体积与质量的折中档；核查后发现 SPEC 5.3/5.4/19.2
+  与第22节默认值表当时明确写的是"默认质量为'高'"，代码（`AppSettings.kt`）也确实按此实现，并非 bug。
+  与用户确认后**作为一次产品决策变更**同步处理：SPEC 对应 5 处"高"改为"标准"；代码层面发现真正决定首次启动
+  默认值的不是 `AppSettings.kt` 的 data class 默认参数（那只在没经过 DataStore 时才有意义），而是
+  `SettingsRepository.kt` 里 `prefs[Keys.xxx] ?: QualityPreset.HIGH` 这三处独立硬编码的 DataStore 缺省值回退，
+  两边并不同步——已一并修正，否则只改 `AppSettings.kt` 不会在真机上生效。同时为保持"无路径都收敛到同一产品
+  默认值"，把分散在 11 处 `request.quality ?: QualityPreset.HIGH`（FfmpegEngine/FfmpegCommandBuilder/
+  Media3ConversionConfigFactory/HeifAvifImageEngine/NativeImageEngine/FfmpegStillImageEngine/HomeViewModel/
+  GroupSettingsCard 等引擎与 UI 层的防御性兜底——按架构这些路径正常不会触发，是"quality 意外为 null"时的兜底）
+  统一改为 `QualityPreset.STANDARD`，并更新 `OutputFormatCatalogTest` 中对应断言。
+- **质量档位数值集中化**：新增 `engine/tuning/QualityPresetTuning.kt` 作为唯一调参入口，把原本分散在
+  `ImageQualityMapper`/`AvifCrfMapper`/`VideoBitrateMapper`/`AudioBitrateMapper`/`FfmpegAudioBitrateMapper`/
+  `OpusBitrateMapper` 六个文件里的质量档位数值表全部迁移过去，六个 mapper 改为纯委托调用，函数签名与原有
+  行为（含数值）完全不变；新增 `forPresetOrStandard` 扩展函数统一"枚举未来增档时兜底落在 STANDARD"的防御逻辑。
+- **视频转码新增编码速度参数**：核查发现 `FfmpegCommandBuilder` 的视频转码命令此前完全没有设置编码速度/线程
+  参数。新增 `QualityPresetTuning.vp9EncodeSpeed` 表，给 WEBM（libvpx-vp9）按质量档位设置 `-cpu-used`
+  （最佳=1 最慢最精细 ... 省空间=5 最快），解决 VP9 软件编码默认速度档位（0）过慢的问题；WEBM/MOV/MKV 三种
+  视频输出格式统一加 `-threads 0` 让编码器自动用满多核。**已知限制**：MOV/MKV 用的 `libopenh264` 在这个
+  FFmpeg 构建里没有类似 x264 `-preset`/VP9 `-cpu-used` 的复杂度旋钮，无法做到"按质量档位调节编码速度"，
+  只能加通用的 `-threads 0`，这是该编码器本身的限制，不是实现疏漏。
+- **音频转换慢的排查**：已确认无误用视频滤镜/无错误重采样；发现 `FfmpegEngine` 对纯音频转码也无条件跑了一次
+  `ffprobe`（结果未被使用）的浪费，但用户要求先看完集中化后的参数表再决定是否继续做性能优化，本阶段未动
+  `FfmpegEngine`/音频管道的性能代码，留作下一步。用户还问到"开发者模式日志窗口"的需求——已确认设置页"查看
+  日志"+"分享反馈信息"（`InMemoryLogStore`/`SettingsViewModel`）已经是功能等价实现，无需新增；并向用户说明了
+  Android Studio Logcat 配合 USB/无线调试是更专业的替代方案。
+- 验证：`gradlew.bat testDebugUnitTest`（91 测试通过，含新增 `webmVideoTranscode_smallSizeUsesFasterVp9EncodeSpeed`
+  等回归用例）、`gradlew.bat lintDebug`、`gradlew.bat assembleDebug` 均通过。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。
