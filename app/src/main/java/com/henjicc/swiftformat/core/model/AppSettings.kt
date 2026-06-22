@@ -26,6 +26,15 @@ enum class AppLanguage {
 }
 
 /**
+ * 输出重名处理策略（见 SPEC 12.4）。SPEC 还列了"每次询问"，但当前批量提交即异步入队的编排模型
+ * 不支持中途暂停等待用户输入，第一版先只做这两种不需要打断转换流程的策略。
+ */
+enum class NameCollisionStrategy {
+    AUTO_NUMBER,
+    OVERWRITE,
+}
+
+/**
  * 持久化的应用设置。默认值见 SPEC 22。
  * 第一版先承载外观相关项，转换默认值/文件项后续在 TASK-07 扩展。
  */
@@ -40,4 +49,6 @@ data class AppSettings(
     val autoCleanupTempFiles: Boolean = true,
     val showCompletionNotification: Boolean = true,
     val preserveImageMetadata: Boolean = true,
+    val customOutputDirectoryUri: String? = null,
+    val nameCollisionStrategy: NameCollisionStrategy = NameCollisionStrategy.AUTO_NUMBER,
 )

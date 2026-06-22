@@ -1,6 +1,8 @@
 package com.henjicc.swiftformat.feature.settings
 
 import android.content.Context
+import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -15,6 +17,7 @@ import com.henjicc.swiftformat.core.file.CacheMaintenance
 import com.henjicc.swiftformat.core.model.AccentColor
 import com.henjicc.swiftformat.core.model.AppLanguage
 import com.henjicc.swiftformat.core.model.AppSettings
+import com.henjicc.swiftformat.core.model.NameCollisionStrategy
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.ThemeMode
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,6 +26,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -30,7 +37,7 @@ class SettingsViewModel(
     private val repository: SettingsRepository,
     private val cacheMaintenance: CacheMaintenance,
     private val orchestrator: ConversionOrchestrator,
-    appContext: Context,
+    private val appContext: Context,
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = repository.settings.stateIn(
@@ -38,6 +45,14 @@ class SettingsViewModel(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AppSettings(),
     )
+
+    /** 自定义输出目录的人类可读名称（取 SAF 树根文档的 DISPLAY_NAME），未设置时为 null。 */
+    val customOutputDirectoryLabel: StateFlow<String?> = settings
+        .map { it.customOutputDirectoryUri }
+        .distinctUntilChanged()
+        .map { uriString -> uriString?.let { resolveDirectoryDisplayName(appContext, Uri.parse(it)) } }
+        .flowOn(Dispatchers.IO)
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = null)
     private val _cacheBytes = MutableStateFlow(cacheMaintenance.cacheSizeBytes())
     val cacheBytes: StateFlow<Long> = _cacheBytes.asStateFlow()
 
@@ -61,6 +76,8 @@ class SettingsViewModel(
     fun setAutoCleanupTempFiles(enabled: Boolean) = viewModelScope.launch { repository.setAutoCleanupTempFiles(enabled) }
     fun setShowCompletionNotification(enabled: Boolean) = viewModelScope.launch { repository.setShowCompletionNotification(enabled) }
     fun setPreserveImageMetadata(enabled: Boolean) = viewModelScope.launch { repository.setPreserveImageMetadata(enabled) }
+    fun setCustomOutputDirectory(uri: Uri?) = viewModelScope.launch { repository.setCustomOutputDirectory(uri) }
+    fun setNameCollisionStrategy(strategy: NameCollisionStrategy) = viewModelScope.launch { repository.setNameCollisionStrategy(strategy) }
 
     fun clearCache() = viewModelScope.launch {
         if (orchestrator.summary().inProgress > 0) {
@@ -90,3 +107,14 @@ class SettingsViewModel(
         }
     }
 }
+
+private fun resolveDirectoryDisplayName(context: Context, treeUri: Uri): String? = runCatching {
+    val documentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri))
+    context.contentResolver.query(
+        documentUri,
+        arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+        null,
+        null,
+        null,
+    )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+}.getOrNull()

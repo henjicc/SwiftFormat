@@ -201,11 +201,13 @@
   转 JPG 时通过 `ImageDecodeCompat.copyExifMetadata` 复制拍摄时间/相机型号/GPS 等标签，方向标签固定写回
   `ORIENTATION_NORMAL`；其余引擎不输出 JPG，无需改动），「动态配色开关」「默认保持原始尺寸」「默认保留
   视频音频轨道」核查后确认已有实现满足（详见 [TASK-07](./TASK-07.md)），「正式问题反馈入口」判断现有
-  「分享反馈信息」机制已足够、无需新增。继续 [TASK-07](./TASK-07.md) 剩余收尾，按以下顺序推进：
-  ①可配置默认输出目录（当前硬编码 `Download/转个格式`，需 SAF 目录选择）与可配置重名策略（当前硬编码
-  自动追加序号）；②国际化逐项核对（无未翻译文案、档位语义跨语言一致）与无障碍验收
-  （TalkBack、超大字体、对比度、横竖屏）；③体积与发布收尾（ABI 拆分/App Bundle 评估、清理 lint
-  warning、许可证与隐私说明发布版核对）。
+  「分享反馈信息」机制已足够、无需新增。「可配置默认输出目录与可配置重名策略」已实现（2026-06-22，详见
+  TASK-07 Stage K）：新增 `AppSettings.customOutputDirectoryUri`/`nameCollisionStrategy`，设置页可用
+  系统目录选择器（SAF）指定自定义保存目录、可在“自动追加序号”/“覆盖”两种重名策略间切换；`SAF` 路径用
+  `DocumentsContract` 直接操作（未引入 `androidx.documentfile`），“每次询问”策略因与当前异步入队编排
+  模型不兼容暂缓。SPEC 15 设置页事项已全部覆盖。继续按以下顺序推进：①国际化逐项核对（无未翻译文案、
+  档位语义跨语言一致）与无障碍验收（TalkBack、超大字体、对比度、横竖屏）；②体积与发布收尾（ABI 拆分/
+  App Bundle 评估、清理 lint warning、许可证与隐私说明发布版核对）。
 - **遗留**：TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
   UI 动态显隐、EXIF 完整标签保留、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的

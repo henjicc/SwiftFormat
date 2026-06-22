@@ -51,7 +51,7 @@ class AppContainer(context: Context) {
     val conversionEngineSelector: ConversionEngineSelector by lazy {
         buildConversionEngineSelector()
     }
-    private val outputLocationResolver: OutputLocationResolver by lazy { OutputLocationResolver(appContext) }
+    private val outputLocationResolver: OutputLocationResolver by lazy { OutputLocationResolver(appContext, settingsRepository) }
     val conversionOrchestrator: ConversionOrchestrator by lazy {
         ConversionOrchestrator(conversionEngineSelector, outputLocationResolver, conversionHistoryRepository, logger)
     }

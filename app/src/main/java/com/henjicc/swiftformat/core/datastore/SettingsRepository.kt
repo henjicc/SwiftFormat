@@ -1,6 +1,8 @@
 package com.henjicc.swiftformat.core.datastore
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -9,9 +11,11 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.henjicc.swiftformat.core.model.AccentColor
 import com.henjicc.swiftformat.core.model.AppLanguage
 import com.henjicc.swiftformat.core.model.AppSettings
+import com.henjicc.swiftformat.core.model.NameCollisionStrategy
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -33,6 +37,8 @@ class SettingsRepository(private val context: Context) {
         val AUTO_CLEANUP_TEMP_FILES = stringPreferencesKey("auto_cleanup_temp_files")
         val SHOW_COMPLETION_NOTIFICATION = stringPreferencesKey("show_completion_notification")
         val PRESERVE_IMAGE_METADATA = stringPreferencesKey("preserve_image_metadata")
+        val CUSTOM_OUTPUT_DIRECTORY_URI = stringPreferencesKey("custom_output_directory_uri")
+        val NAME_COLLISION_STRATEGY = stringPreferencesKey("name_collision_strategy")
     }
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { prefs ->
@@ -53,6 +59,9 @@ class SettingsRepository(private val context: Context) {
             autoCleanupTempFiles = prefs[Keys.AUTO_CLEANUP_TEMP_FILES]?.toBooleanStrictOrNull() ?: true,
             showCompletionNotification = prefs[Keys.SHOW_COMPLETION_NOTIFICATION]?.toBooleanStrictOrNull() ?: true,
             preserveImageMetadata = prefs[Keys.PRESERVE_IMAGE_METADATA]?.toBooleanStrictOrNull() ?: true,
+            customOutputDirectoryUri = prefs[Keys.CUSTOM_OUTPUT_DIRECTORY_URI],
+            nameCollisionStrategy = prefs[Keys.NAME_COLLISION_STRATEGY]?.let { enumValueOfOrNull<NameCollisionStrategy>(it) }
+                ?: NameCollisionStrategy.AUTO_NUMBER,
         )
     }
 
@@ -94,6 +103,35 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setPreserveImageMetadata(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.PRESERVE_IMAGE_METADATA] = enabled.toString() }
+    }
+
+    /**
+     * 设为非空 [uri] 时需要先持久化该 SAF 目录的读写授权（否则进程重启后会失效）；
+     * 切换或清空时释放旧目录的授权，避免授权列表无限增长。
+     */
+    suspend fun setCustomOutputDirectory(uri: Uri?) {
+        val previous = context.settingsDataStore.data.first()[Keys.CUSTOM_OUTPUT_DIRECTORY_URI]?.let(Uri::parse)
+        if (previous != null && previous != uri) {
+            runCatching {
+                context.contentResolver.releasePersistableUriPermission(
+                    previous,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }
+        }
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        }
+        context.settingsDataStore.edit { prefs ->
+            if (uri != null) prefs[Keys.CUSTOM_OUTPUT_DIRECTORY_URI] = uri.toString() else prefs.remove(Keys.CUSTOM_OUTPUT_DIRECTORY_URI)
+        }
+    }
+
+    suspend fun setNameCollisionStrategy(strategy: NameCollisionStrategy) {
+        context.settingsDataStore.edit { it[Keys.NAME_COLLISION_STRATEGY] = strategy.name }
     }
 }
 

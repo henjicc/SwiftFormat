@@ -2,6 +2,8 @@ package com.henjicc.swiftformat.feature.settings
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,10 +21,15 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val customOutputDirectoryLabel by viewModel.customOutputDirectoryLabel.collectAsStateWithLifecycle()
     val cacheBytes by viewModel.cacheBytes.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var infoDialog by rememberSaveable { mutableStateOf<InfoDialogKind?>(null) }
+
+    val pickDirectoryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) viewModel.setCustomOutputDirectory(uri)
+    }
 
     val versionLabel = stringResource(R.string.settings_version)
     val languageLabel = stringResource(R.string.settings_language)
@@ -41,6 +48,7 @@ fun SettingsScreen(
 
     SettingsContent(
         settings = settings,
+        customOutputDirectoryLabel = customOutputDirectoryLabel,
         cacheBytes = cacheBytes,
         appVersion = viewModel.appVersion,
         onThemeModeChange = viewModel::setThemeMode,
@@ -51,6 +59,9 @@ fun SettingsScreen(
         onDefaultVideoQualityChange = viewModel::setDefaultVideoQuality,
         onDefaultAudioQualityChange = viewModel::setDefaultAudioQuality,
         onPreserveImageMetadataChange = viewModel::setPreserveImageMetadata,
+        onPickOutputDirectory = { pickDirectoryLauncher.launch(null) },
+        onResetOutputDirectory = { viewModel.setCustomOutputDirectory(null) },
+        onNameCollisionStrategyChange = viewModel::setNameCollisionStrategy,
         onCompletionNotificationChange = viewModel::setShowCompletionNotification,
         onAutoCleanupTempFilesChange = viewModel::setAutoCleanupTempFiles,
         onClearCache = viewModel::clearCache,

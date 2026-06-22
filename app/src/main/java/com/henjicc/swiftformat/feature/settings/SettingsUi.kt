@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.model.AccentColor
 import com.henjicc.swiftformat.core.model.AppLanguage
+import com.henjicc.swiftformat.core.model.NameCollisionStrategy
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.ThemeMode
 
@@ -68,8 +69,8 @@ internal fun SectionHeader(text: String) {
 }
 
 @Composable
-internal fun SettingSummary(title: String, value: String) {
-    Column {
+internal fun SettingSummary(title: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
         Text(title, style = MaterialTheme.typography.titleSmall)
         Text(
             text = value,
@@ -158,4 +159,9 @@ internal fun qualityLabelRes(preset: QualityPreset): Int = when (preset) {
     QualityPreset.HIGH -> R.string.quality_high
     QualityPreset.STANDARD -> R.string.quality_standard
     QualityPreset.SMALL_SIZE -> R.string.quality_small_size
+}
+
+internal fun nameCollisionStrategyLabelRes(strategy: NameCollisionStrategy): Int = when (strategy) {
+    NameCollisionStrategy.AUTO_NUMBER -> R.string.settings_name_collision_auto_number
+    NameCollisionStrategy.OVERWRITE -> R.string.settings_name_collision_overwrite
 }

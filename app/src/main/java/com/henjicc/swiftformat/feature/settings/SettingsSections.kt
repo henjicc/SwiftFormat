@@ -26,6 +26,7 @@ import com.henjicc.swiftformat.core.designsystem.accentSwatchColor
 import com.henjicc.swiftformat.core.model.AccentColor
 import com.henjicc.swiftformat.core.model.AppLanguage
 import com.henjicc.swiftformat.core.model.AppSettings
+import com.henjicc.swiftformat.core.model.NameCollisionStrategy
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.ThemeMode
 
@@ -33,6 +34,7 @@ import com.henjicc.swiftformat.core.model.ThemeMode
 @Composable
 internal fun SettingsContent(
     settings: AppSettings,
+    customOutputDirectoryLabel: String?,
     cacheBytes: Long,
     appVersion: String,
     onThemeModeChange: (ThemeMode) -> Unit,
@@ -43,6 +45,9 @@ internal fun SettingsContent(
     onDefaultVideoQualityChange: (QualityPreset) -> Unit,
     onDefaultAudioQualityChange: (QualityPreset) -> Unit,
     onPreserveImageMetadataChange: (Boolean) -> Unit,
+    onPickOutputDirectory: () -> Unit,
+    onResetOutputDirectory: () -> Unit,
+    onNameCollisionStrategyChange: (NameCollisionStrategy) -> Unit,
     onCompletionNotificationChange: (Boolean) -> Unit,
     onAutoCleanupTempFilesChange: (Boolean) -> Unit,
     onClearCache: () -> Unit,
@@ -80,8 +85,12 @@ internal fun SettingsContent(
         )
         FileSettingsSection(
             settings = settings,
+            customOutputDirectoryLabel = customOutputDirectoryLabel,
             cacheBytes = cacheBytes,
             formattedCacheSize = Formatter.formatShortFileSize(context, cacheBytes),
+            onPickOutputDirectory = onPickOutputDirectory,
+            onResetOutputDirectory = onResetOutputDirectory,
+            onNameCollisionStrategyChange = onNameCollisionStrategyChange,
             onCompletionNotificationChange = onCompletionNotificationChange,
             onAutoCleanupTempFilesChange = onAutoCleanupTempFilesChange,
             onClearCache = onClearCache,
@@ -190,22 +199,50 @@ private fun ConversionDefaultsSection(
 @Composable
 private fun FileSettingsSection(
     settings: AppSettings,
+    customOutputDirectoryLabel: String?,
     cacheBytes: Long,
     formattedCacheSize: String,
+    onPickOutputDirectory: () -> Unit,
+    onResetOutputDirectory: () -> Unit,
+    onNameCollisionStrategyChange: (NameCollisionStrategy) -> Unit,
     onCompletionNotificationChange: (Boolean) -> Unit,
     onAutoCleanupTempFilesChange: (Boolean) -> Unit,
     onClearCache: () -> Unit,
 ) {
     SectionHeader(stringResource(R.string.settings_files))
 
-    SettingSummary(
-        title = stringResource(R.string.settings_save_location),
-        value = stringResource(R.string.settings_save_location_value),
+    val hasCustomDirectory = settings.customOutputDirectoryUri != null
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SettingSummary(
+            modifier = Modifier.weight(1f),
+            title = stringResource(R.string.settings_save_location),
+            value = if (hasCustomDirectory) {
+                customOutputDirectoryLabel ?: stringResource(R.string.settings_save_location_custom_unknown)
+            } else {
+                stringResource(R.string.settings_save_location_value)
+            },
+        )
+        if (hasCustomDirectory) {
+            TextButton(onClick = onResetOutputDirectory) {
+                Text(stringResource(R.string.settings_reset_directory))
+            }
+        }
+        TextButton(onClick = onPickOutputDirectory) {
+            Text(stringResource(R.string.settings_choose_directory))
+        }
+    }
+
+    Text(stringResource(R.string.settings_name_collision), style = MaterialTheme.typography.titleSmall)
+    ChipRow(
+        options = NameCollisionStrategy.entries,
+        selected = settings.nameCollisionStrategy,
+        label = { stringResource(nameCollisionStrategyLabelRes(it)) },
+        onSelect = onNameCollisionStrategyChange,
     )
-    SettingSummary(
-        title = stringResource(R.string.settings_name_collision),
-        value = stringResource(R.string.settings_name_collision_value),
-    )
+
     ToggleRow(
         title = stringResource(R.string.settings_completion_notification),
         description = stringResource(R.string.settings_completion_notification_desc),

@@ -72,8 +72,12 @@
     <string name="settings_files">文件</string>
     <string name="settings_save_location">保存位置</string>
     <string name="settings_save_location_value">Download/转个格式</string>
+    <string name="settings_save_location_custom_unknown">自定义目录</string>
+    <string name="settings_choose_directory">选择目录</string>
+    <string name="settings_reset_directory">恢复默认</string>
     <string name="settings_name_collision">重名处理</string>
-    <string name="settings_name_collision_value">自动追加序号</string>
+    <string name="settings_name_collision_auto_number">自动追加序号</string>
+    <string name="settings_name_collision_overwrite">覆盖同名文件</string>
     <string name="settings_completion_notification">完成通知</string>
     <string name="settings_completion_notification_desc">当全部转换结束后显示汇总通知</string>
     <string name="settings_auto_cleanup">自动清理临时文件</string>

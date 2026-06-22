@@ -72,8 +72,12 @@
     <string name="settings_files">Files</string>
     <string name="settings_save_location">Save location</string>
     <string name="settings_save_location_value">Download/转个格式</string>
+    <string name="settings_save_location_custom_unknown">Custom folder</string>
+    <string name="settings_choose_directory">Choose folder</string>
+    <string name="settings_reset_directory">Reset to default</string>
     <string name="settings_name_collision">Name collision</string>
-    <string name="settings_name_collision_value">Auto add a number suffix</string>
+    <string name="settings_name_collision_auto_number">Auto add a number suffix</string>
+    <string name="settings_name_collision_overwrite">Overwrite the existing file</string>
     <string name="settings_completion_notification">Completion notification</string>
     <string name="settings_completion_notification_desc">Show a summary notification when all conversions finish</string>
     <string name="settings_auto_cleanup">Auto clean temporary files</string>

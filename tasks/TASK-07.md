@@ -207,10 +207,40 @@
   的 `recover` 调用因新增参数同步补了 `settingsRepository` mock 与 `preserveMetadata` 期望值。
 - 验证：`gradlew.bat testDebugUnitTest assembleDebug` 通过（使用本机 JDK 17 设置 `JAVA_HOME` 执行）。
 
+### Stage K（已完成，已验证）—— 可配置默认输出目录 + 可配置重名策略（SPEC 12.3/12.4）
+- **新增设置项**：`AppSettings.customOutputDirectoryUri`（默认 `null`，存 SAF 树 Uri 字符串）、
+  `AppSettings.nameCollisionStrategy`（新枚举 `NameCollisionStrategy`：`AUTO_NUMBER`/`OVERWRITE`，默认
+  `AUTO_NUMBER`）；`SettingsRepository` 新增对应 DataStore key 与
+  `setCustomOutputDirectory(uri: Uri?)`/`setNameCollisionStrategy(strategy)`。
+- **范围裁剪**：SPEC 12.4 列了三种重名策略（自动加序号/覆盖/每次询问），本次只实现前两种；“每次询问”需要
+  在批量提交转换的过程中暂停等待用户输入，与当前 `ConversionOrchestrator` 的异步入队编排模型不兼容，
+  留作后续如需要再单独评估编排模型改造成本。
+- **架构决策**：没有像 `preserveMetadata` 那样把这两个新参数一路透传过
+  `ConversionOrchestrator`/`ConversionRequestFactory`/`HomeViewModel`/`ConversionRecoveryManager`，而是给
+  `OutputLocationResolver` 直接注入 `SettingsRepository` 依赖，`resolve()` 改成 `suspend fun` 内部读取当前设置。
+  原因：`resolve()` 只有 `ConversionRequestFactory.createResolvedRequest` 一处调用，且已经在
+  `outputResolutionMutex.withLock` 的 suspend 上下文里，没有必要为两个新参数改动一整条调用链的公开签名。
+- **`OutputLocationResolver` 双路径**：
+  - 未设置自定义目录时沿用原 MediaStore 路径（`Download/转个格式`）；`OVERWRITE` 策略新增
+    `deleteExistingByName`，按 `DISPLAY_NAME` + `RELATIVE_PATH`（或旧版 `DATA` 路径）先删后插。
+  - 设置了自定义目录时改用 `android.provider.DocumentsContract` 直接操作 SAF 树（不引入
+    `androidx.documentfile` 依赖，按项目“新增依赖前确认现有依赖或标准库无法合理解决”的约束）：
+    `buildChildDocumentsUriUsingTree` 查询现有子项名称/`documentId`，`AUTO_NUMBER` 复用
+    `OutputNaming.resolveCollision`，`OVERWRITE` 先 `deleteDocument` 再 `createDocument`。
+  - 选目录后立即 `takePersistableUriPermission`（读写）持久化授权，切换/清空旧目录时
+    `releasePersistableUriPermission` 释放，避免授权列表无限增长（`SettingsRepository.setCustomOutputDirectory`）。
+- **设置页 UI**（`SettingsSections.kt`/`SettingsScreen.kt`/`SettingsViewModel.kt`）：保存位置行新增“选择目录”/
+  “恢复默认”按钮，用 `ActivityResultContracts.OpenDocumentTree()` 启动系统目录选择器；自定义目录的展示名称
+  通过 `SettingsViewModel.customOutputDirectoryLabel`（查询 SAF 树根文档的 `COLUMN_DISPLAY_NAME`，跑在
+  `Dispatchers.IO`）派生展示，查询失败时兜底显示“自定义目录”。重名处理从静态文案改成
+  `ChipRow<NameCollisionStrategy>`。
+- 验证：`gradlew.bat testDebugUnitTest assembleDebug` 通过；`OutputLocationResolver` 重度依赖
+  `MediaStore`/`DocumentsContract` 等 Android 框架行为，沿用既有项目惯例未补 Robolectric 测试，
+  本机真机测试由用户后续验证。
+
 ### 已知简化 / 下一步
-- **设置页仍未完整覆盖 SPEC 15**：目前已补到“外观 + 转换默认值（含保留图片元数据） + 文件行为说明 +
-  完成通知开关 + 临时清理 + 关于版本/隐私/开源说明 + 基础日志查看 + 反馈信息分享”；还缺可自定义默认目录、
-  可配置重名策略（当前两项均硬编码：`Download/转个格式` + 自动追加序号）。
+- **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
+  `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。
 - **失败详情仍是基础版本**：目前已经做到了“结构化友好原因 + 查看详情分层”，但还没补复制详情、
   更完整的错误恢复建议、以及更多边界错误的主动注入测试。
 - **日志查看是进程内临时日志**：重启应用后会丢失，不是持久日志系统；足够支撑真机测试排错，但还不是最终发布态方案。
