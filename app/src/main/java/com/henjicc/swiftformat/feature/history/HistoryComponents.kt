@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -103,7 +101,7 @@ internal fun HistoryRecordCard(
 ) {
     var showFailureDetails by rememberSaveable(item.id) { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    val rowContent: @Composable () -> Unit = {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -139,7 +137,6 @@ internal fun HistoryRecordCard(
             } else {
                 HistoryQuickActions(
                     item = item,
-                    onOpen = onOpen,
                     onShare = onShare,
                     onShowInFolder = onShowInFolder,
                     onDeleteOutput = onDeleteOutput,
@@ -148,6 +145,14 @@ internal fun HistoryRecordCard(
                 )
             }
         }
+    }
+
+    // 整行可点击直接打开结果文件——最常见的后续操作，腾出行尾不用再放单独的"打开"图标。
+    val outputUri = item.outputUri
+    if (outputUri != null && !item.isActive) {
+        Card(onClick = { onOpen(outputUri) }, modifier = Modifier.fillMaxWidth()) { rowContent() }
+    } else {
+        Card(modifier = Modifier.fillMaxWidth()) { rowContent() }
     }
 
     if (showFailureDetails && item.failureDetails != null) {
@@ -171,22 +176,18 @@ private fun HistoryRecordSummary(
     timeFormatter: (Long) -> String,
     onShowFailureDetails: () -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.Top) {
+    Text(
+        text = item.displayName,
+        style = MaterialTheme.typography.bodyLarge,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
+    if (item.status != ConversionStatus.COMPLETED) {
         Text(
-            text = item.displayName,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+            text = stringResource(statusLabelRes(item.status)),
+            style = MaterialTheme.typography.labelMedium,
+            color = statusColor(item.status),
         )
-        if (item.status != ConversionStatus.COMPLETED) {
-            Text(
-                text = stringResource(statusLabelRes(item.status)),
-                style = MaterialTheme.typography.labelMedium,
-                color = statusColor(item.status),
-                modifier = Modifier.padding(start = 8.dp),
-            )
-        }
     }
     val detailLine = buildString {
         append(
@@ -236,11 +237,13 @@ private fun HistoryRecordSummary(
     }
 }
 
-/** 行尾快捷操作：打开/分享常驻图标按钮，其余收进"更多"菜单，避免每条记录都铺满一排按钮。 */
+/**
+ * 行尾只留一个"更多"图标——点击整行已经能打开结果文件（最常见操作），其余低频操作全部收进菜单，
+ * 把行高让给文件名。
+ */
 @Composable
 private fun HistoryQuickActions(
     item: HistoryUiItem,
-    onOpen: (android.net.Uri) -> Unit,
     onShare: (android.net.Uri) -> Unit,
     onShowInFolder: () -> Unit,
     onDeleteOutput: (Long) -> Unit,
@@ -249,41 +252,35 @@ private fun HistoryQuickActions(
 ) {
     var menuExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        item.outputUri?.let { outputUri ->
-            IconButton(onClick = { onOpen(outputUri) }) {
-                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = stringResource(R.string.action_open))
-            }
-            IconButton(onClick = { onShare(outputUri) }) {
-                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share))
-            }
+    Box {
+        IconButton(onClick = { menuExpanded = true }) {
+            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
         }
-        Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
-            }
-            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                if (item.outputUri != null) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.action_show_in_folder)) },
-                        onClick = { menuExpanded = false; onShowInFolder() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.action_delete_result)) },
-                        onClick = { menuExpanded = false; onDeleteOutput(item.id) },
-                    )
-                }
-                if (item.canConvertAgain) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.action_convert_again)) },
-                        onClick = { menuExpanded = false; onConvertAgain(item.id) },
-                    )
-                }
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            item.outputUri?.let { outputUri ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.history_delete_record)) },
-                    onClick = { menuExpanded = false; onDeleteRecord(item.id) },
+                    text = { Text(stringResource(R.string.action_share)) },
+                    onClick = { menuExpanded = false; onShare(outputUri) },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_show_in_folder)) },
+                    onClick = { menuExpanded = false; onShowInFolder() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_delete_result)) },
+                    onClick = { menuExpanded = false; onDeleteOutput(item.id) },
                 )
             }
+            if (item.canConvertAgain) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_convert_again)) },
+                    onClick = { menuExpanded = false; onConvertAgain(item.id) },
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.history_delete_record)) },
+                onClick = { menuExpanded = false; onDeleteRecord(item.id) },
+            )
         }
     }
 }
