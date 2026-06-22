@@ -446,6 +446,33 @@
   ②强调色预览圆圈在深色模式下是否跟实际按钮颜色一致；③底部三个 Tab 切换与"转换进度"推入页的转场是否
   顺滑、有没有意外的闪烁或方向感不对的情况。
 
+### Stage S（已完成，已验证）—— 首页"已选文件"页头部精简 + 参数行改为下拉框样式
+- **问题 1：选中文件后的头部三件套（"已选 N 个 · 体积"文字 / "清空全部" / "添加更多文件"两个按钮）占地方且拥挤**，
+  窄屏下两个按钮经常挤到换行。按用户要求改成标准 `TopAppBar`（`HomeContent.kt` 的 `FileList`）：
+  - `navigationIcon` 用返回箭头，点击直接调用原来的 `onClear`——这个页面本身没有"上一级"可以真正返回，
+    用户的意图是"点返回=清空选择回到初始引导态"，跟原来的"清空全部"按钮是同一个回调，只是换了个更省地方
+    的图标入口，`contentDescription` 沿用既有的 `home_clear` 字符串。
+  - `actions` 放一个"+"`IconButton` 对应"添加更多文件"，沿用既有的 `home_add_more` 字符串作
+    `contentDescription`，不再是占一整块的实心按钮。
+  - "已选 N 个 · 体积" 文字保留在 `TopAppBar` 的 `title` 里（单行省略号），信息没有丢，只是从一个独立的
+    `LazyColumn` item 挪进了固定不滚动的头部。
+  - 空状态（未选文件时的引导页）本轮未动，仍是原来没有 `TopAppBar` 的居中引导布局——这次反馈明确针对
+    "选完文件之后"的页面，空状态不在范围内。
+- **问题 2：每个分组卡片里"输出格式/质量/尺寸"三行纵向铺开太占空间**。参考用户给的截图（类似电商筛选栏的
+  三个并排下拉框样式），把原来纵向堆叠的 3 个 `SettingRow`（每个一整行）改成横向一排 3 个等宽
+  `DropdownSettingChip`（`GroupSettingsCard.kt`）：每个芯片上方是 2 字小标签（尺寸/质量/格式），下方是带
+  边框圆角的"当前值 + ▾"，点击仍然打开原有的 `ModalBottomSheet` 选择器——**只换外观，没有改交互机制**，
+  不是新做一套 `ExposedDropdownMenu`。顺序按用户要求改成尺寸→质量→格式（原来是格式→质量→尺寸）；
+  "输出格式"标签统一缩成"格式"（中英文 `row_output_format` 字符串资源同步改短，英文 "Output format"→
+  "Format"），跟"质量"/"尺寸"保持两字风格一致。条件显隐逻辑（无质量/尺寸档位的格式不显示对应芯片）
+  完全保留，仍用 `weight(1f)` 让剩余芯片自动占满整行。
+- **未改动**：`OptionsBottomSheet` 的选择器本身、`onFormatChange`/`onQualityChange`/`onSizeChange` 等业务
+  回调签名、`FileRow`（每个文件的缩略图行）。
+- 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 均通过；中英 `strings.xml`
+  仍保持 152 key 同步（只改了 `row_output_format` 的文案，没新增字符串）。**仍未做真机视觉复核**，下次
+  真机测试请重点确认：① TopAppBar 返回箭头在状态栏边缘的点击区域是否舒适；②三个下拉框芯片在小屏/长格式名
+  （如 "WEBM"）下是否会挤得太紧或文字被截断。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。

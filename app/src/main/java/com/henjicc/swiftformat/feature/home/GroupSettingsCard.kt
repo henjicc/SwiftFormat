@@ -1,5 +1,6 @@
 package com.henjicc.swiftformat.feature.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,9 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -18,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -26,8 +29,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import com.henjicc.swiftformat.R
@@ -67,23 +72,33 @@ internal fun GroupCard(
         Column(modifier = Modifier.padding(12.dp)) {
             GroupHeader(stringResource(groupLabel(mediaType)), files.size)
 
-            SettingRow(
-                label = stringResource(R.string.row_output_format),
-                value = settings.outputFormat,
-                onClick = { activeSheet = SheetKind.FORMAT },
-            )
-            if (showQuality) {
-                SettingRow(
-                    label = stringResource(R.string.row_quality),
-                    value = qualityLabel(settings.quality ?: QualityPreset.STANDARD),
-                    onClick = { activeSheet = SheetKind.QUALITY },
-                )
-            }
-            if (showSize) {
-                SettingRow(
-                    label = stringResource(R.string.row_size),
-                    value = sizeLabel(settings.size ?: SizePreset.Original),
-                    onClick = { activeSheet = SheetKind.SIZE },
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (showSize) {
+                    DropdownSettingChip(
+                        label = stringResource(R.string.row_size),
+                        value = sizeLabel(settings.size ?: SizePreset.Original),
+                        onClick = { activeSheet = SheetKind.SIZE },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (showQuality) {
+                    DropdownSettingChip(
+                        label = stringResource(R.string.row_quality),
+                        value = qualityLabel(settings.quality ?: QualityPreset.STANDARD),
+                        onClick = { activeSheet = SheetKind.QUALITY },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                DropdownSettingChip(
+                    label = stringResource(R.string.row_output_format),
+                    value = settings.outputFormat,
+                    onClick = { activeSheet = SheetKind.FORMAT },
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -140,27 +155,44 @@ internal fun GroupCard(
 
 private enum class SheetKind { FORMAT, QUALITY, SIZE }
 
+/** 尺寸/质量/格式三个参数并排展示的下拉框样式：上方小标签 + 下方带边框的"当前值 + ▾"。 */
 @Composable
-private fun SettingRow(label: String, value: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyLarge)
-        Row {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+private fun DropdownSettingChip(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 2.dp, bottom = 4.dp),
+        )
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

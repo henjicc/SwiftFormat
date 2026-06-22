@@ -27,7 +27,7 @@
     <string name="file_remove">移除</string>
 
     <!-- 分组参数行 -->
-    <string name="row_output_format">输出格式</string>
+    <string name="row_output_format">格式</string>
     <string name="row_quality">质量</string>
     <string name="row_size">尺寸</string>
     <string name="files_show_all">查看全部（%1$d）</string>

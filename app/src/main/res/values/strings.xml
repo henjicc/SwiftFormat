@@ -27,7 +27,7 @@
     <string name="file_remove">Remove</string>
 
     <!-- Group settings rows -->
-    <string name="row_output_format">Output format</string>
+    <string name="row_output_format">Format</string>
     <string name="row_quality">Quality</string>
     <string name="row_size">Size</string>
     <string name="files_show_all">Show all (%1$d)</string>
