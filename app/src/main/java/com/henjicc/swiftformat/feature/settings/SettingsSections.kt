@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.designsystem.accentSwatchColor
+import com.henjicc.swiftformat.core.designsystem.resolveDarkTheme
 import com.henjicc.swiftformat.core.model.AccentColor
 import com.henjicc.swiftformat.core.model.AppLanguage
 import com.henjicc.swiftformat.core.model.AppSettings
@@ -124,13 +125,14 @@ private fun AppearanceSection(
     )
 
     Text(stringResource(R.string.settings_accent), style = MaterialTheme.typography.titleSmall)
+    val isDarkTheme = resolveDarkTheme(settings.themeMode)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AccentColor.entries.forEach { accent ->
             AccentSwatch(
-                color = accentSwatchColor(accent),
+                color = accentSwatchColor(accent, dark = isDarkTheme),
                 contentDescription = stringResource(accentLabelRes(accent)),
                 selected = accent == settings.accentColor,
                 onClick = { onAccentColorChange(accent) },

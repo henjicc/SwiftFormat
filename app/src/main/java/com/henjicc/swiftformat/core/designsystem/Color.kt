@@ -22,6 +22,18 @@ internal val BaseLightColorScheme = lightColorScheme(
     onError = Color.White,
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
+    // 以下中性表面角色（NavigationBar/Card/BottomSheet 等默认用色）若不显式指定，
+    // 会落到 Compose Material3 自带的基线配色（偏紫粉），与强调色无关也不随之变化，
+    // 这正是底栏/列表卡片背景看起来发粉的根因，此处统一收口为中性灰阶。
+    surfaceDim = Color(0xFFD8DAE0),
+    surfaceBright = Color(0xFFF8F9FA),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF2F3F5),
+    surfaceContainer = Color(0xFFECEEF1),
+    surfaceContainerHigh = Color(0xFFE6E8EC),
+    surfaceContainerHighest = Color(0xFFE0E3E7),
+    inverseSurface = Color(0xFF191C1D),
+    inverseOnSurface = Color(0xFFE1E3E4),
 )
 
 internal val BaseDarkColorScheme = darkColorScheme(
@@ -37,6 +49,15 @@ internal val BaseDarkColorScheme = darkColorScheme(
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
+    surfaceDim = Color(0xFF111416),
+    surfaceBright = Color(0xFF373A3B),
+    surfaceContainerLowest = Color(0xFF0C0F10),
+    surfaceContainerLow = Color(0xFF1D2021),
+    surfaceContainer = Color(0xFF212425),
+    surfaceContainerHigh = Color(0xFF2C2F30),
+    surfaceContainerHighest = Color(0xFF36393A),
+    inverseSurface = Color(0xFFF8F9FA),
+    inverseOnSurface = Color(0xFF191C1D),
 )
 
 /** 单个强调色在某一明暗模式下的 primary 四元组。 */

@@ -25,12 +25,18 @@ private fun darkAccent(accent: AccentColor): AccentColors = when (accent) {
     AccentColor.RED -> AccentColors(Color(0xFFF2B8B5), Color(0xFF601410), Color(0xFF8C1D18), Color(0xFFF9DEDC))
 }
 
-/** 用于设置页色块展示的代表色（取浅色 primary）。 */
-fun accentSwatchColor(accent: AccentColor): Color = lightAccent(accent).primary
+/**
+ * 用于设置页色块展示的代表色，必须与 [accentColorScheme] 在同一明暗模式下取同一张表，
+ * 否则色块预览会跟实际生效的 primary 不一致（例如深色模式下 lightAccent 比实际 primary 深得多）。
+ */
+fun accentSwatchColor(accent: AccentColor, dark: Boolean): Color =
+    (if (dark) darkAccent(accent) else lightAccent(accent)).primary
 
 /** 根据强调色与明暗模式生成 Material3 配色（中性基底 + 强调 primary 四元组）。 */
 fun accentColorScheme(accent: AccentColor, dark: Boolean): ColorScheme {
     val a = if (dark) darkAccent(accent) else lightAccent(accent)
+    // inversePrimary 用在"反色"表面（如 Snackbar 操作按钮）上，需要能在对侧明暗模式的表面上保持可读对比度。
+    val inverseA = if (dark) lightAccent(accent) else darkAccent(accent)
     val base = if (dark) BaseDarkColorScheme else BaseLightColorScheme
     return base.copy(
         primary = a.primary,
@@ -41,5 +47,6 @@ fun accentColorScheme(accent: AccentColor, dark: Boolean): ColorScheme {
         onSecondary = a.onPrimary,
         secondaryContainer = a.primaryContainer,
         onSecondaryContainer = a.onPrimaryContainer,
+        inversePrimary = inverseA.primary,
     )
 }

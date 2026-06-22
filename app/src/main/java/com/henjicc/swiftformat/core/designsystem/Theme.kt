@@ -21,11 +21,7 @@ fun SwiftFormatTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val darkTheme = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-    }
+    val darkTheme = resolveDarkTheme(themeMode)
 
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -41,4 +37,12 @@ fun SwiftFormatTheme(
         typography = AppTypography,
         content = content,
     )
+}
+
+/** 主题模式 → 实际是否深色，[SwiftFormatTheme] 与设置页强调色预览复用同一份判定逻辑。 */
+@Composable
+fun resolveDarkTheme(themeMode: ThemeMode): Boolean = when (themeMode) {
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
 }
