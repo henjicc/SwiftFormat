@@ -88,7 +88,7 @@
     <string name="settings_feedback_header">转个格式测试反馈</string>
     <string name="settings_feedback_logs">最近日志：</string>
     <string name="settings_privacy_content">默认情况下，所有转换都在你的设备本地完成。应用不会上传文件、不要求登录，只会访问你主动选择的文件。</string>
-    <string name="settings_open_source_content">本应用使用 AndroidX、Material 3、Coil、Media3、Room、DataStore，以及一个社区维护的 16KB 兼容 FFmpegKit fork 来提供媒体转换能力。</string>
+    <string name="settings_open_source_content">本应用使用 AndroidX、Material 3、Coil、Media3、Room、DataStore 提供基础能力。\n\n扩展格式转换依赖社区维护的 FFmpegKit 16KB 兼容 fork（moizhassankh/ffmpeg-kit-android-16KB）。该组件除 LGPL-3.0 部分外，还静态链接了 x264（GPL-3.0），因此随本应用分发的 FFmpeg 原生库整体按 GPL-3.0 条款提供：\n\n· 对应源代码与构建脚本：github.com/moizhassankh/ffmpeg-kit-android-16KB（当前使用版本 6.1.1）\n· GPL-3.0 完整许可证文本：gnu.org/licenses/gpl-3.0.txt</string>
     <string name="settings_view_logs">查看日志</string>
     <string name="settings_logs_empty">本次应用会话里还没有捕获到日志。</string>
     <string name="language_system">跟随系统</string>

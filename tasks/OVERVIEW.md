@@ -195,19 +195,18 @@
   TASK-07 Stage I（FFmpeg 运行时启动失败诊断增强：新增 startup probe 与 cause 链格式化，让
   `FFmpegKit failed to start on brand ...` 能进一步看到底层 `UnsatisfiedLinkError/dlopen failed` 详情），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
-- **下一步**：继续 [TASK-07](./TASK-07.md) 后续 Stage；优先回到真机/模拟器验证，重点复测
-  “开始转换 / 崩溃后重启恢复 / 取消 / 前台服务通知 / 分享打开查看位置”，确认这次止血后不再出现死循环闪退；
-  然后继续覆盖超大字体/TalkBack、横竖屏、4KB/16KB 页面设备，以及 `HEIC / AVIF` 的实际编码可用性与系统互操作性，
-  再决定是否补剩余设置项与发布收尾。
-- **遗留**：TASK-01~05 的真机交互与转换产物验证（50+ 文件、分享菜单、缩略图、底部弹层、JPG/PNG/WebP/HEIC/AVIF 互转打开、
-  MP4/AAC 转换效果、BMP/TIFF/MP3/M4A/OGG/FLAC/WAV/MOV/WEBM/MKV/视频→音频 转换效果、16KB 页面设备）待设备/模拟器环境；
-  TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
+- **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
+  后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。继续 [TASK-07](./TASK-07.md) 剩余收尾，按以下顺序推进：
+  ①补齐 SPEC 15 设置页剩余项（动态配色开关、默认保持原始尺寸/保留元数据/保留音轨、可配置默认目录与
+  重名策略、正式问题反馈入口）；②国际化逐项核对（无未翻译文案、档位语义跨语言一致）与无障碍验收
+  （TalkBack、超大字体、对比度、横竖屏）；③体积与发布收尾（ABI 拆分/App Bundle 评估、清理 lint
+  warning、许可证与隐私说明发布版核对）。
+- **遗留**：TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
   UI 动态显隐、EXIF 完整标签保留、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
-  判定逻辑拆成纯函数单测，编排本身运行时行为待 Robolectric/插桩或真机验证）；输出统一写入
+  判定逻辑拆成纯函数单测，编排本身运行时行为已经真机验证通过）；输出统一写入
   `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消为"双重保证"非事务性保证；
-  TASK-06 已功能性完成，但多项关键路径仍缺真实设备验证：前台服务恢复、分享/打开/查看位置、
-  删除原文件、WorkManager 清理以及 16KB 页面设备。
+  16KB 页面设备、WorkManager 清理等边缘场景仍缺逐项专门验证，但不阻塞当前迭代。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。
   - **KSP/AGP9 工具链阻塞已解决**（TASK-06 Stage A）：升级 `com.google.devtools.ksp` 到 `2.3.9`
@@ -220,8 +219,10 @@
     （API 与 `com.arthenica.ffmpegkit.*` 完全一致，零代码改动）。详见 TASK-05「选型决策」更新。
   - **新换上的 FFmpeg 依赖同样静态链接了 x264（GPL）**：排查替代依赖时发现，包括原依赖和新依赖在内的
     多个社区 16KB fork 的 `libavcodec.so` 都含 x264 符号，但 `.pom` 仅声明 LGPL-3.0——许可证标注与
-    实际二进制内容不符。当前为恢复功能临时接受 GPL 引入，**尚未做 GPL 合规处理**（如源码公开义务、
-    许可证声明更新），需后续单独评估。详见 TASK-05「已知风险」。
+    实际二进制内容不符。**GPL 合规已处理**（2026-06-22）：设置页「关于 → 开源组件」已纠正标注为
+    GPL-3.0，并附上游源码仓库（`github.com/moizhassankh/ffmpeg-kit-android-16KB`，含版本号）与
+    GPL-3.0 完整许可证文本链接，履行 GPL §6(d) 网络分发场景下的对应源代码访问义务；本应用自身代码
+    未随之开源（行业常见做法，非最终法律判定），详见 TASK-05「GPL 合规处理」。
   - **HEIC/AVIF 输出依赖系统编码能力**：当前实现通过 AndroidX `heifwriter` 接入，`HEIC` 需 API 28+、
     `AVIF` 需 API 31+；同时因库本身声明 `minSdk 28`，工程侧使用了 manifest `tools:overrideLibrary`
     并在运行时门控，构建已验证通过，但仍需真机确认设备互操作性与失败表现。

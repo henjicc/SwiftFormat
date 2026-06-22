@@ -88,7 +88,7 @@
     <string name="settings_feedback_header">SwiftFormat test feedback</string>
     <string name="settings_feedback_logs">Recent logs:</string>
     <string name="settings_privacy_content">All conversions run locally on your device by default. The app does not upload your files, does not require sign-in, and only accesses files you explicitly choose.</string>
-    <string name="settings_open_source_content">This app uses AndroidX, Material 3, Coil, Media3, Room, DataStore, and an FFmpegKit community-maintained 16KB-compatible fork for media conversion support.</string>
+    <string name="settings_open_source_content">This app uses AndroidX, Material 3, Coil, Media3, Room, and DataStore.\n\nExtended format conversion relies on a community-maintained FFmpegKit 16KB-compatible fork (moizhassankh/ffmpeg-kit-android-16KB). Besides LGPL-3.0 parts, it statically links x264 (GPL-3.0), so the FFmpeg native libraries shipped with this app are provided as a whole under GPL-3.0 terms:\n\n· Corresponding source and build scripts: github.com/moizhassankh/ffmpeg-kit-android-16KB (version 6.1.1 in use)\n· Full GPL-3.0 license text: gnu.org/licenses/gpl-3.0.txt</string>
     <string name="settings_view_logs">View logs</string>
     <string name="settings_logs_empty">No logs captured in this app session yet.</string>
     <string name="language_system">Follow system</string>
