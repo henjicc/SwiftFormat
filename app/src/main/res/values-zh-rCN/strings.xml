@@ -120,6 +120,7 @@
     <!-- 转换进度页面（见 SPEC 4.5） -->
     <string name="progress_title_active">正在转换</string>
     <string name="progress_title_done">转换完成</string>
+    <string name="nav_back">返回</string>
     <string name="progress_summary">已完成 %1$d / %2$d</string>
     <string name="progress_breakdown">成功 %1$d · 失败 %2$d · 已取消 %3$d</string>
     <string name="progress_format_transition">%1$s → %2$s</string>
@@ -153,6 +154,8 @@
     <string name="error_unknown">未知转换错误</string>
     <string name="action_view_details">查看详情</string>
     <string name="error_details_title">错误详情</string>
+    <string name="action_copy">复制</string>
+    <string name="error_details_copied">已复制到剪贴板</string>
     <string name="status_pending">等待中</string>
     <string name="status_preparing">准备中</string>
     <string name="status_converting">正在转换</string>

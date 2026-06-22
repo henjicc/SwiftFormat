@@ -180,6 +180,7 @@ internal fun ConversionTaskRow(
     if (showFailureDetails && item.failureDetails != null) {
         val clipboardManager = LocalClipboardManager.current
         val context = LocalContext.current
+        val copiedMessage = stringResource(R.string.error_details_copied)
         AlertDialog(
             onDismissRequest = { showFailureDetails = false },
             title = { Text(stringResource(R.string.error_details_title)) },
@@ -193,10 +194,10 @@ internal fun ConversionTaskRow(
                 TextButton(
                     onClick = {
                         clipboardManager.setText(AnnotatedString(item.failureDetails))
-                        Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text("复制")
+                    Text(stringResource(R.string.action_copy))
                 }
             },
         )
