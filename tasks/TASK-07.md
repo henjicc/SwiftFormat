@@ -409,6 +409,43 @@
   复核**，下次真机测试建议重点确认：可点击 `Card` 的点击反馈（ripple）范围是否符合预期、2 行文件名在长列表
   里整体高度是否确实比 Stage P 更紧凑。
 
+### Stage R（已完成，已验证）—— 配色系统补全中性表面角色 + 强调色预览取色修正 + 导航转场动画
+- **问题 1：底部导航栏/列表卡片背景偏粉，且不随强调色变化**。排查后定位根因：`core/designsystem/Color.kt`
+  的 `BaseLightColorScheme`/`BaseDarkColorScheme` 只显式覆盖了 `background/surface/surfaceVariant/outline/
+  error` 等角色，**没有覆盖 `surfaceContainer` 系列（`surfaceContainerLowest/Low/.../Highest`、`surfaceDim`、
+  `surfaceBright`、`inverseSurface`、`inverseOnSurface`）**——这些角色没指定时会落回 Compose Material3
+  `lightColorScheme()`/`darkColorScheme()` 工厂函数自带的基线配色（Material baseline 默认偏紫粉调），
+  与项目自己的强调色逻辑（`accentColorScheme`）完全无关，因此切换强调色时这块背景纹丝不动——
+  跟用户反馈完全对应。`NavigationBar` 默认 `containerColor` 和 `Card` 默认 `containerColor` 都读的是这组
+  `surfaceContainer*` 角色，因此底栏和历史卡片同时受影响。
+  **修复**：在 `BaseLightColorScheme`/`BaseDarkColorScheme` 里用中性灰阶显式补全这一整组角色（深浅两套各
+  9 个值，延续既有 background/surfaceVariant 的灰阶序列），不再继承 Material3 的紫粉基线默认值；
+  `tertiary` 系列因全项目无任何调用，本次未处理（避免无依据的范围扩大）。
+- **问题 2：设置页强调色预览圆圈颜色和实际生效颜色有明显色差**。定位到 `core/designsystem/Accent.kt` 的
+  `accentSwatchColor()` 此前**永远只取 `lightAccent(accent).primary`，不感知当前深浅主题**，而实际生效的
+  `ColorScheme.primary` 在深色模式下来自 `darkAccent()`——深浅两张表数值差异很大（如 BLUE 浅色 `#1565C0`
+  深色 `#9FCBFF`），跟用户描述的"预览深、实际浅"完全对应。**修复**：`accentSwatchColor` 改为接收
+  `dark: Boolean` 参数，和 `accentColorScheme` 用同一套 `lightAccent`/`darkAccent` 表，调用处
+  （`SettingsSections.kt`）按 `settings.themeMode` 解析出实际深浅再传入，新增 `resolveDarkTheme()`
+  辅助函数（`Theme.kt`）让 `SwiftFormatTheme` 和设置页复用同一份"主题模式→是否深色"判定逻辑，避免后续
+  再出现两处独立判断不一致。顺带给 `accentColorScheme` 补了 `inversePrimary`（之前也会落到 Material3
+  基线默认值，同样会带紫粉色），取对侧明暗模式的 accent primary，保证在反色表面（如 Snackbar 按钮）上
+  仍随强调色变化。
+- **问题 3：导航切换动效**。用户提供了图片/视频/音频这类"同级 Tab"该用 `HorizontalPager` 平移的资料，
+  但本项目"转换/历史/设置"三个目的地是**底部 `NavigationBar`**（`SwiftFormatApp.kt`），不是并列的 Tab——
+  用户给的资料原文末尾也明确给出了这个区分：底部导航的多个顶级目的地之间没有固定左右顺序，不适合整页
+  平移，更适合"淡入淡出或轻微缩放"，因此没有引入 `HorizontalPager`，而是按 Material motion 规范里
+  "Fade through"（先淡出再淡入+轻微放大）模式实现：退出 90ms 纯淡出，进入延迟 90ms 后 210ms
+  淡入+从 0.92 缩放到 1.0，三个目的地之间切换共用同一套转场。另外"转换进度"页是推入式全屏页（比底部导航
+  深一层，语义上更接近"列表进入详情"），单独给它配了从右侧滑入/滑出 300ms 的前进式转场，跟底部 Tab 之间的
+  fade-through 区分开。全部用 Navigation Compose 的 `enterTransition`/`exitTransition`/`popEnterTransition`/
+  `popExitTransition`（`NavHost` 级默认 + `composable()` 单独覆盖进度页），未引入手势驱动的 Pager，
+  风险和改动面都比较小。
+- 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 均通过。**仍未做真机
+  视觉复核**，下次真机测试请重点确认：①底栏/卡片背景在浅色/深色模式下是否确实不再偏粉、且随强调色切换；
+  ②强调色预览圆圈在深色模式下是否跟实际按钮颜色一致；③底部三个 Tab 切换与"转换进度"推入页的转场是否
+  顺滑、有没有意外的闪烁或方向感不对的情况。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。

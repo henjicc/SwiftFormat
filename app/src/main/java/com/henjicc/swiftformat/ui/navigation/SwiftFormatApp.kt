@@ -1,5 +1,11 @@
 package com.henjicc.swiftformat.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -19,6 +25,31 @@ import com.henjicc.swiftformat.feature.history.HistoryScreen
 import com.henjicc.swiftformat.feature.home.HomeScreen
 import com.henjicc.swiftformat.feature.progress.ConversionProgressScreen
 import com.henjicc.swiftformat.feature.settings.SettingsScreen
+
+/**
+ * 底部导航三个同级目的地之间切换用 Material 的"淡入淡出（fade through）"：先淡出再淡入+轻微放大，
+ * 而不是平移——三者是底部导航的并列顶级页面，没有左右顺序关系，不适合用 Pager 式整页平移。
+ */
+private const val FADE_THROUGH_EXIT_DURATION = 90
+private const val FADE_THROUGH_ENTER_DURATION = 210
+
+private fun fadeThroughEnter() = fadeIn(tween(FADE_THROUGH_ENTER_DURATION, delayMillis = FADE_THROUGH_EXIT_DURATION)) +
+    scaleIn(initialScale = 0.92f, animationSpec = tween(FADE_THROUGH_ENTER_DURATION, delayMillis = FADE_THROUGH_EXIT_DURATION))
+
+private fun fadeThroughExit() = fadeOut(tween(FADE_THROUGH_EXIT_DURATION))
+
+/** 转换进度页是推入式全屏页（比底部导航深一层），用标准的"从右侧滑入/滑出"前进式转场。 */
+private const val PUSH_TRANSITION_DURATION = 300
+
+private fun pushEnter() = slideInHorizontally(
+    initialOffsetX = { fullWidth -> fullWidth },
+    animationSpec = tween(PUSH_TRANSITION_DURATION),
+) + fadeIn(tween(PUSH_TRANSITION_DURATION))
+
+private fun pushExit() = slideOutHorizontally(
+    targetOffsetX = { fullWidth -> fullWidth },
+    animationSpec = tween(PUSH_TRANSITION_DURATION),
+) + fadeOut(tween(PUSH_TRANSITION_DURATION))
 
 /** 应用根布局：底部导航 + 内容区。转换进度页面（见 SPEC 4.5）是推入式全屏页，不显示底部导航。 */
 @Composable
@@ -64,6 +95,10 @@ fun SwiftFormatApp() {
             navController = navController,
             startDestination = TopLevelDestination.CONVERT.route,
             modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeThroughEnter() },
+            exitTransition = { fadeThroughExit() },
+            popEnterTransition = { fadeThroughEnter() },
+            popExitTransition = { fadeThroughExit() },
         ) {
             composable(TopLevelDestination.CONVERT.route) {
                 HomeScreen(
@@ -75,7 +110,11 @@ fun SwiftFormatApp() {
                 HistoryScreen(onOpenProgress = { navController.navigate(CONVERSION_PROGRESS_ROUTE) })
             }
             composable(TopLevelDestination.SETTINGS.route) { SettingsScreen() }
-            composable(CONVERSION_PROGRESS_ROUTE) {
+            composable(
+                CONVERSION_PROGRESS_ROUTE,
+                enterTransition = { pushEnter() },
+                popExitTransition = { pushExit() },
+            ) {
                 ConversionProgressScreen(onBack = { navController.popBackStack() })
             }
         }
