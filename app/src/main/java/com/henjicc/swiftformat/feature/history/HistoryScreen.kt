@@ -4,13 +4,13 @@ import android.text.format.DateUtils
 import android.text.format.Formatter
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -50,18 +50,13 @@ fun HistoryScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.history_title)) })
-        },
-    ) { innerPadding ->
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(title = { Text(stringResource(R.string.history_title)) }, modifier = Modifier.fillMaxWidth())
         if (state.items.isEmpty()) {
-            EmptyHistory(modifier = Modifier.fillMaxSize().padding(innerPadding))
+            EmptyHistory(modifier = Modifier.weight(1f).fillMaxWidth())
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
