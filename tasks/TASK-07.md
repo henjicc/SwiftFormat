@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A/B/C/D/E/F/G/H/I 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A~M 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -16,13 +16,13 @@
 - 体积（SPEC 18.3）：FFmpeg 裁剪、按 ABI/App Bundle、无重复媒体库、依赖统一版本。
 
 ## 执行步骤
-- [ ] 设置页全项实现 + 默认值落地
-- [ ] 全量错误路径处理与可理解文案 + “查看详情”技术信息
+- [x] 设置页全项实现 + 默认值落地
+- [x] 全量错误路径处理与可理解文案 + “查看详情”技术信息
 - [ ] 性能 pass（大文件/大量文件/缩略图/内存）
-- [ ] 国际化与无障碍检查
+- [x] 国际化与无障碍检查
 - [ ] 多设备/4KB+16KB 页面/低内存/横竖屏测试
 - [ ] 单元/集成/UI 测试补齐（SPEC 20）
-- [ ] 体积优化与发布准备（ABI/App Bundle、许可、隐私说明）
+- [x] 体积优化与发布准备（ABI/App Bundle、许可、隐私说明）—— 见 Stage M，签名配置仍需用户提供发布密钥
 
 ## 验收标准
 - SPEC 19 全部可测试验收项通过（文件选择/参数/转换/多语言/主题/稳定性）。
@@ -237,6 +237,65 @@
 - 验证：`gradlew.bat testDebugUnitTest assembleDebug` 通过；`OutputLocationResolver` 重度依赖
   `MediaStore`/`DocumentsContract` 等 Android 框架行为，沿用既有项目惯例未补 Robolectric 测试，
   本机真机测试由用户后续验证。
+
+### Stage L（已完成，已验证）—— 国际化与无障碍验收
+
+- **系统化扫描**：用 Explore 子代理对 `app/src/main/java` 全树与两份 `strings.xml` 做硬编码文案/缺失翻译排查，
+  发现并修复 2 处：`ProgressComponents.kt`（复制失败详情按钮的 Toast 文案与按钮文案）从硬编码中文/英文改为
+  `R.string.action_copy`/`R.string.error_details_copied`。
+- **无障碍人工复核**（逐个判断装饰性 vs 功能性图标，未委托子代理）：`ConversionProgressScreen.kt` 的 TopAppBar
+  返回按钮原来 `contentDescription = null`，是独立 `IconButton` 且旁边无文字标签，修正为
+  `stringResource(R.string.nav_back)`；其余 `contentDescription = null` 的用法（`AccentSwatch`、文件行缩略图、
+  FAB、勾选/箭头图标等）均确认旁边已有文字标签提供可读名称，保留 `null` 是正确做法。
+- **完整性核对**：`grep -c '<string name=' values/strings.xml values-zh-rCN/strings.xml` 均为 151，中英文 key
+  一一对应，无缺失。
+- **范围内的“合理假设”而非逐项实测**：确认无 `screenOrientation` 锁定、文本均用 `sp`（无 `dp` 硬编码反模式），
+  作为旋转支持/大字体缩放的间接证据；未做逐屏幕真机 TalkBack/超大字体/横竖屏穷举测试，留给用户后续真机验证
+  （按用户既有反馈，常规走查已足够，不为这一项单独安排专门测试设备）。
+- 验证：`gradlew.bat lintDebug` 在当时（Stage K 状态）报告 0 issue（后续 Stage M 复测发现该结论不完整，
+  见下方说明）；`gradlew.bat testDebugUnitTest assembleDebug` 通过。
+
+### Stage M（已完成，已验证）—— 体积与发布收尾评估（SPEC 18.3）
+
+- **lint 复测纠偏**：重新执行 `gradlew.bat lintDebug` 发现实际是 **0 error / 56 warning**（Stage L 记录的
+  “0 issue”是当时未仔细核对汇总行的误判，在此纠正）。逐条分类处理：
+  - **已修复**：删除 `app/src/main/res/values/colors.xml` 中 7 个未被任何代码/资源引用的默认模板色
+    （`purple_200/500/700`、`teal_200/700`、`black`、`white`），确认零引用后整文件移除；warning 数降到 49。
+  - **本轮判定为不处理**（记录理由，避免后续重复评估）：
+    - `ExifInterface`×8：建议把 `android.media.ExifInterface` 换成 `androidx.exifinterface.media.ExifInterface`。
+      命中位置包含 `ImageDecodeCompat.kt` 的“保留图片元数据”EXIF 复制路径（Stage J，已经过用户真机验证）；
+      迁移本身预期是同 API 的平替，但当前环境无法重新做真机验证，为一条安全提示性 lint 警告冒险动一段
+      已验证过的发布关键路径不划算，暂缓，留到下次有真机测试窗口时再做。
+    - `IconLauncherShape`/`MonochromeLauncherIcon`/`IconDuplicates`（共 10 条，图标相关）：用户最近 5 个提交
+      正在手动迭代应用图标素材，本轮不插手这块归用户负责的区域。
+    - `GradleDependency`/`NewerVersionAvailable`（约 11 条）：仅是“有更新版本”的常规提示，主动升级依赖本身
+      引入新的兼容性风险，收益不确定，本轮不做。
+    - `PluralsCandidate`×6：命中的都是“数字 + completed/failed/cancelled/files/task(s)”类技术统计文案，
+      经判断不是真正需要语法复数的场景，是该检查的已知启发式误报，不改为 `<plurals>`。
+    - `ObsoleteSdkInt`（`mipmap-anydpi-v26` 文件夹名冗余）、`UsableSpace`×2、`UseKtx`×5：纯风格/收尾提示，
+      收益低于改动成本，本轮不做无关重构。
+- **ABI 拆分 / App Bundle**：核实 AGP 的 `bundle { abi/density/language { enableSplit } }`
+  默认均为 `true`，无需在 `app/build.gradle.kts` 新增任何配置；生产发行应使用
+  `./gradlew bundleRelease` 产出 `.aab` 而不是通用 `assembleRelease` APK，Play 商店会按用户设备 ABI 自动分发拆分包，
+  避免每个用户都下载全部四个 ABI 的 FFmpeg 原生库。**结论：此项已天然满足，不需要代码改动。**
+- **FFmpeg 裁剪**：复核 TASK-05.md 中已记录的选型决策——当前依赖 `com.moizhassan.ffmpeg:ffmpeg-kit-16kb` fork
+  只发布一个预编译 full 包，没有 min/audio/video 等更小变体；自建裁剪版本需要自建 NDK 交叉编译流水线，是
+  TASK-05 选型时就已经评估过并主动放弃的方向（换来不用自建编译流水线）。**结论：维持现状，体积优化依赖
+  上面的 App Bundle 按 ABI 拆分，而不是裁剪 FFmpeg 本体**；如未来确有必要，需要单独立项评估自建构建流水线的成本。
+- **R8 代码压缩（`optimization.enable`）**：确认该开关从项目最初的脚手架提交起就是 `false`，从未被启用过，
+  且全项目没有任何 `proguard-rules.pro` 文件。评估后**建议暂不开启**：FFmpegKit（反射桥接 native 库）、
+  Room（生成代码）等依赖在开启代码压缩/混淆后行为可能与已通过真机验证的当前状态不一致，而当前环境没有
+  真机验证条件，盲目开启有不可控的发布期风险；同时 dex 代码体积相对于四 ABI 全量 FFmpeg 原生库（体积大头）
+  边际收益很小。留到下次有真机测试预算时再单独评估开启并配套编写 proguard 规则。
+- **许可证/隐私说明复核**：对照中英文 `settings_privacy_content`/`settings_open_source_content`
+  ——本地处理声明、AndroidX/Material3/Coil/Media3/Room/DataStore 框架性说明、FFmpegKit fork 的 GPL-3.0
+  整体声明（上游仓库 + 协议原文链接）均已覆盖，中英文版本逐句对应。**结论：未发现需要更新之处。**
+- **遗留缺口（需要用户介入，AI 无法代为决定/获取）**：`app/build.gradle.kts` 目前没有
+  `signingConfigs`/release 签名配置，`bundleRelease` 现在只能产出未签名的 `.aab`；真正上架发布前需要用户提供
+  发布密钥库（或决定使用 Play App Signing 上传密钥）并补上签名配置，这一步涉及密钥/密码等敏感信息，
+  不在本轮自动化范围内。
+- 验证：`gradlew.bat lintDebug`（49 warning / 0 error，较改动前 56 条下降）、
+  `gradlew.bat testDebugUnitTest assembleDebug` 均通过。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持

@@ -211,8 +211,16 @@
   `action_copy`/`error_details_copied`）与一处无障碍缺口（转换进度页返回按钮 `contentDescription = null`
   导致 TalkBack 无法播报用途，补了 `nav_back`）；其余 decorative 图标的 `contentDescription = null`
   均有相邻文本提供可读标签，未发现遗漏；未发现 `screenOrientation` 锁定，文字均走 `sp` 受系统字号缩放
-  影响，`lintDebug` 0 issue。继续推进：体积与发布收尾（ABI 拆分/App Bundle 评估、清理 lint warning、
-  许可证与隐私说明发布版核对）。
+  影响。体积与发布收尾评估已完成（2026-06-22，详见 TASK-07 Stage M）：`lintDebug` 复测实际为 0 error/
+  56 warning（此前记录的“0 issue”是核对疏漏，已纠正），删除 `colors.xml` 中 7 个未引用的默认模板色后降到
+  49 条，其余条目逐条记录了暂缓理由（EXIF 安全提示涉及已验证的元数据保留功能、图标相关条目是用户正在
+  手动迭代的区域、依赖版本提示/复数候选/风格类提示收益低于改动风险）；ABI 拆分确认 AGP App Bundle 默认即
+  按 ABI/密度/语言拆分，无需新增配置，生产发行用 `bundleRelease` 而非通用 APK 即可；FFmpeg 裁剪复核
+  TASK-05 既有选型结论（fork 只提供单一 full 包，裁剪需自建 NDK 流水线，维持现状）；R8 代码压缩
+  （`optimization.enable`）评估后建议暂不开启（无 proguard 规则、FFmpegKit/Room 反射风险、当前无法真机验证）；
+  许可证/隐私说明双语核对无需更新。**唯一遗留缺口**：`signingConfigs` 仍未配置，`bundleRelease` 目前只能
+  产出未签名包，需要用户提供发布密钥库才能完成，不在自动化范围内。SPEC 19 列的「多设备/4KB+16KB 页面/
+  低内存/横竖屏测试」「性能 pass」「单元/集成/UI 测试补齐」仍待后续按需推进。
 - **遗留**：TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
   UI 动态显隐、EXIF 完整标签保留、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
