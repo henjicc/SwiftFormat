@@ -3,12 +3,19 @@ package com.henjicc.swiftformat.feature.history
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,14 +92,14 @@ internal fun HistoryRecordCard(
     var showFailureDetails by rememberSaveable(item.id) { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             HistoryRecordSummary(
                 item = item,
                 sizeFormatter = sizeFormatter,
                 timeFormatter = timeFormatter,
                 onShowFailureDetails = { showFailureDetails = true },
             )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             HistoryRecordActions(
                 item = item,
                 onOpen = onOpen,
@@ -126,45 +134,47 @@ private fun HistoryRecordSummary(
     timeFormatter: (Long) -> String,
     onShowFailureDetails: () -> Unit,
 ) {
-    Text(
-        text = item.displayName,
-        style = MaterialTheme.typography.titleMedium,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
-    Text(
-        text = stringResource(
-            R.string.progress_format_transition,
-            item.originalFormat?.uppercase() ?: "?",
-            item.outputFormat,
-        ),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
-    )
-    Text(
-        text = stringResource(statusLabelRes(item.status)),
-        style = MaterialTheme.typography.labelLarge,
-        color = statusColor(item.status),
-        modifier = Modifier.padding(top = 8.dp),
-    )
-    Text(
-        text = timeFormatter(item.endTime ?: item.startTime),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
-    )
-    item.outputSizeBytes?.let { sizeBytes ->
+    Row(verticalAlignment = Alignment.Top) {
         Text(
-            text = sizeFormatter(sizeBytes),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp),
+            text = item.displayName,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = stringResource(statusLabelRes(item.status)),
+            style = MaterialTheme.typography.labelMedium,
+            color = statusColor(item.status),
+            modifier = Modifier.padding(start = 8.dp),
         )
     }
+    val detailLine = buildString {
+        append(
+            stringResource(
+                R.string.progress_format_transition,
+                item.originalFormat?.uppercase() ?: "?",
+                item.outputFormat,
+            ),
+        )
+        append(" · ")
+        append(timeFormatter(item.endTime ?: item.startTime))
+        item.outputSizeBytes?.let { sizeBytes ->
+            append(" · ")
+            append(sizeFormatter(sizeBytes))
+        }
+    }
+    Text(
+        text = detailLine,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = 4.dp),
+    )
     if (item.quality != null || item.size != null) {
         FlowRow(
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -189,7 +199,7 @@ private fun HistoryRecordSummary(
             text = stringResource(errorKindLabelRes(item.failureKind)),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 4.dp),
         )
         if (!item.failureDetails.isNullOrBlank()) {
             TextButton(onClick = onShowFailureDetails) {
@@ -217,20 +227,24 @@ private fun HistoryRecordActions(
         return
     }
 
+    item.outputUri?.let { outputUri ->
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            IconButton(onClick = { onOpen(outputUri) }) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = stringResource(R.string.action_open))
+            }
+            IconButton(onClick = { onShare(outputUri) }) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share))
+            }
+            IconButton(onClick = onShowInFolder) {
+                Icon(Icons.Filled.FolderOpen, contentDescription = stringResource(R.string.action_show_in_folder))
+            }
+        }
+    }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        item.outputUri?.let { outputUri ->
-            TextButton(onClick = { onOpen(outputUri) }) {
-                Text(stringResource(R.string.action_open))
-            }
-            TextButton(onClick = { onShare(outputUri) }) {
-                Text(stringResource(R.string.action_share))
-            }
-            TextButton(onClick = onShowInFolder) {
-                Text(stringResource(R.string.action_show_in_folder))
-            }
+        if (item.outputUri != null) {
             TextButton(onClick = { onDeleteOutput(item.id) }) {
                 Text(stringResource(R.string.action_delete_result))
             }

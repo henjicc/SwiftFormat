@@ -326,6 +326,31 @@
 - 验证：`gradlew.bat testDebugUnitTest`（91 测试通过，含新增 `webmVideoTranscode_smallSizeUsesFasterVp9EncodeSpeed`
   等回归用例）、`gradlew.bat lintDebug`、`gradlew.bat assembleDebug` 均通过。
 
+### Stage O（已完成，已验证）—— 历史/完成页操作区 UI 精简
+- **问题**：用户反馈历史记录卡片与转换完成页的操作按钮区域"很乱"且占用空间过大——`打开/分享/查看位置/
+  删除结果` 四个 `TextButton` 挤在一个 `FlowRow` 里经常换行到两行，`删除原文件` 还单独占一整行；卡片摘要部分
+  文件名/格式/状态/时间/体积/质量标签各占一行，纵向也偏长。
+- **核查可用图标集**：项目 `app/build.gradle.kts` 没有显式声明 `material-icons-extended`，但通过
+  `gradlew app:dependencies` 核实它被其他依赖间接拉入并已在 `debugRuntimeClasspath` 上（`HomeFileRows.kt`/
+  `GroupSettingsCard.kt` 等已在用 `Icons.Filled.Image/Movie/ChevronRight` 等扩展集图标可印证），因此可以直接用
+  `Icons.AutoMirrored.Filled.OpenInNew`/`Icons.Filled.Share`/`Icons.Filled.FolderOpen`，不需要新增 Gradle 依赖。
+- **`HistoryComponents.kt`（历史记录卡片）**：
+  - `HistoryRecordSummary` 把文件名+状态合并到同一行（状态靠右、`labelMedium` 着色），格式转换/时间/体积合并成
+    一行 `FORMAT → FORMAT · 时间 · 体积`（单行省略号），质量/尺寸标签行 `padding(top)` 从 8dp 收紧到 4dp；
+    整体从 6 行摘要信息收紧到 2-3 行。
+  - `HistoryRecordActions` 拆成两行：`打开/分享/查看位置` 改成 `IconButton`（保留原有字符串资源作
+    `contentDescription`，满足无障碍朗读），`删除结果/再次转换/删除记录` 保留为 `TextButton` 文字按钮——
+    按用户要求，删除类操作维持清晰文字而不是纯图标。
+  - `Card` 内边距 12dp（原 16dp）、分割线竖向间距 8dp（原 12dp）。
+- **`ProgressComponents.kt`（转换完成页任务行）**：`TaskActionRow` 同样把 `打开/分享/查看位置` 改成 `IconButton`
+  行；原来"删除结果"和"删除原文件"分两个独立 `FlowRow`（后者总是单独占一整行）合并成一个 `FlowRow`，按各自条件
+  显隐，减少一行。
+- **未改动**：取消/重试/再次转换（顶部行）、删除原文件前的二次确认对话框、所有字符串资源——均按原有行为保留，
+  没有新增/删改文案。
+- 验证：`gradlew.bat compileDebugKotlin`（确认图标引用可解析）、`gradlew.bat testDebugUnitTest lintDebug
+  assembleDebug` 均通过；UI 改动未跑真机截图复核（当前环境没有连接设备/模拟器），下次真机测试时建议确认
+  图标可点击区域与文字密度的实际视觉效果。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。

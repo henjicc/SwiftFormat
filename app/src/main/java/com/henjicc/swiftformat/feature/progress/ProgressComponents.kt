@@ -6,8 +6,14 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -236,35 +242,36 @@ private fun TaskActionRow(
 
     val outputUri = item.outputUri
     if (outputUri != null && !outputDeleted) {
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        Row(
+            modifier = Modifier.padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            TextButton(onClick = { onOpen(outputUri) }) {
-                Text(stringResource(R.string.action_open))
+            IconButton(onClick = { onOpen(outputUri) }) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = stringResource(R.string.action_open))
             }
-            TextButton(onClick = { onShare(outputUri) }) {
-                Text(stringResource(R.string.action_share))
+            IconButton(onClick = { onShare(outputUri) }) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share))
             }
-            TextButton(onClick = onShowInFolder) {
-                Text(stringResource(R.string.action_show_in_folder))
-            }
-            TextButton(onClick = { onDeleteOutput(outputUri) }) {
-                Text(stringResource(R.string.action_delete_result))
+            IconButton(onClick = onShowInFolder) {
+                Icon(Icons.Filled.FolderOpen, contentDescription = stringResource(R.string.action_show_in_folder))
             }
         }
     }
-    if (!originalDeleted) {
+    if (outputUri != null && !outputDeleted || !originalDeleted) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            TextButton(onClick = onRequestDeleteOriginal) {
-                Text(stringResource(R.string.action_delete_original))
+            if (outputUri != null && !outputDeleted) {
+                TextButton(onClick = { onDeleteOutput(outputUri) }) {
+                    Text(stringResource(R.string.action_delete_result))
+                }
+            }
+            if (!originalDeleted) {
+                TextButton(onClick = onRequestDeleteOriginal) {
+                    Text(stringResource(R.string.action_delete_original))
+                }
             }
         }
     }
