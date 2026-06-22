@@ -1,19 +1,24 @@
 package com.henjicc.swiftformat.feature.history
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +41,7 @@ import com.henjicc.swiftformat.feature.common.errorKindLabelRes
 import com.henjicc.swiftformat.feature.common.qualityLabel
 import com.henjicc.swiftformat.feature.common.sizeLabel
 import com.henjicc.swiftformat.feature.common.statusLabelRes
+import com.henjicc.swiftformat.feature.home.mediaIcon
 
 @Composable
 internal fun EmptyHistory(modifier: Modifier = Modifier) {
@@ -76,6 +83,11 @@ internal fun ActiveTasksCard(activeCount: Int, onOpenProgress: () -> Unit) {
     }
 }
 
+/**
+ * 单行列表项样式（图标 + 两行文字 + 行尾操作），与 [com.henjicc.swiftformat.feature.home.FileRow]
+ * 保持一致的视觉语言。已完成是历史记录里最常见的状态，不再单独展示"已完成"文字占位——
+ * 状态文字只用于需要提醒用户注意的失败/取消/进行中场景。
+ */
 @Composable
 internal fun HistoryRecordCard(
     item: HistoryUiItem,
@@ -92,24 +104,49 @@ internal fun HistoryRecordCard(
     var showFailureDetails by rememberSaveable(item.id) { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            HistoryRecordSummary(
-                item = item,
-                sizeFormatter = sizeFormatter,
-                timeFormatter = timeFormatter,
-                onShowFailureDetails = { showFailureDetails = true },
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            HistoryRecordActions(
-                item = item,
-                onOpen = onOpen,
-                onShare = onShare,
-                onShowInFolder = onShowInFolder,
-                onDeleteOutput = onDeleteOutput,
-                onDeleteRecord = onDeleteRecord,
-                onConvertAgain = onConvertAgain,
-                onOpenProgress = onOpenProgress,
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = mediaIcon(item.mediaType),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                HistoryRecordSummary(
+                    item = item,
+                    sizeFormatter = sizeFormatter,
+                    timeFormatter = timeFormatter,
+                    onShowFailureDetails = { showFailureDetails = true },
+                )
+            }
+            Spacer(Modifier.size(4.dp))
+            if (item.isActive) {
+                TextButton(onClick = onOpenProgress) {
+                    Text(stringResource(R.string.history_open_progress))
+                }
+            } else {
+                HistoryQuickActions(
+                    item = item,
+                    onOpen = onOpen,
+                    onShare = onShare,
+                    onShowInFolder = onShowInFolder,
+                    onDeleteOutput = onDeleteOutput,
+                    onDeleteRecord = onDeleteRecord,
+                    onConvertAgain = onConvertAgain,
+                )
+            }
         }
     }
 
@@ -137,17 +174,19 @@ private fun HistoryRecordSummary(
     Row(verticalAlignment = Alignment.Top) {
         Text(
             text = item.displayName,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.bodyLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        Text(
-            text = stringResource(statusLabelRes(item.status)),
-            style = MaterialTheme.typography.labelMedium,
-            color = statusColor(item.status),
-            modifier = Modifier.padding(start = 8.dp),
-        )
+        if (item.status != ConversionStatus.COMPLETED) {
+            Text(
+                text = stringResource(statusLabelRes(item.status)),
+                style = MaterialTheme.typography.labelMedium,
+                color = statusColor(item.status),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
     }
     val detailLine = buildString {
         append(
@@ -163,6 +202,14 @@ private fun HistoryRecordSummary(
             append(" · ")
             append(sizeFormatter(sizeBytes))
         }
+        item.quality?.let { quality ->
+            append(" · ")
+            append(qualityLabel(quality))
+        }
+        item.size?.let { size ->
+            append(" · ")
+            append(sizeLabel(size))
+        }
     }
     Text(
         text = detailLine,
@@ -170,47 +217,28 @@ private fun HistoryRecordSummary(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = 4.dp),
+        modifier = Modifier.padding(top = 2.dp),
     )
-    if (item.quality != null || item.size != null) {
-        FlowRow(
-            modifier = Modifier.padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            item.quality?.let { quality ->
-                Text(
-                    text = qualityLabel(quality),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            item.size?.let { size ->
-                Text(
-                    text = sizeLabel(size),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-    }
     if (item.failureKind != null) {
         Text(
             text = stringResource(errorKindLabelRes(item.failureKind)),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(top = 4.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp),
         )
         if (!item.failureDetails.isNullOrBlank()) {
-            TextButton(onClick = onShowFailureDetails) {
-                Text(stringResource(R.string.action_view_details))
+            TextButton(onClick = onShowFailureDetails, contentPadding = PaddingValues(0.dp)) {
+                Text(stringResource(R.string.action_view_details), style = MaterialTheme.typography.labelMedium)
             }
         }
     }
 }
 
+/** 行尾快捷操作：打开/分享常驻图标按钮，其余收进"更多"菜单，避免每条记录都铺满一排按钮。 */
 @Composable
-private fun HistoryRecordActions(
+private fun HistoryQuickActions(
     item: HistoryUiItem,
     onOpen: (android.net.Uri) -> Unit,
     onShare: (android.net.Uri) -> Unit,
@@ -218,44 +246,44 @@ private fun HistoryRecordActions(
     onDeleteOutput: (Long) -> Unit,
     onDeleteRecord: (Long) -> Unit,
     onConvertAgain: (Long) -> Unit,
-    onOpenProgress: () -> Unit,
 ) {
-    if (item.isActive) {
-        Button(onClick = onOpenProgress) {
-            Text(stringResource(R.string.history_open_progress))
-        }
-        return
-    }
+    var menuExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
 
-    item.outputUri?.let { outputUri ->
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        item.outputUri?.let { outputUri ->
             IconButton(onClick = { onOpen(outputUri) }) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = stringResource(R.string.action_open))
             }
             IconButton(onClick = { onShare(outputUri) }) {
                 Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share))
             }
-            IconButton(onClick = onShowInFolder) {
-                Icon(Icons.Filled.FolderOpen, contentDescription = stringResource(R.string.action_show_in_folder))
-            }
         }
-    }
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        if (item.outputUri != null) {
-            TextButton(onClick = { onDeleteOutput(item.id) }) {
-                Text(stringResource(R.string.action_delete_result))
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
             }
-        }
-        if (item.canConvertAgain) {
-            TextButton(onClick = { onConvertAgain(item.id) }) {
-                Text(stringResource(R.string.action_convert_again))
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                if (item.outputUri != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_show_in_folder)) },
+                        onClick = { menuExpanded = false; onShowInFolder() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_delete_result)) },
+                        onClick = { menuExpanded = false; onDeleteOutput(item.id) },
+                    )
+                }
+                if (item.canConvertAgain) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_convert_again)) },
+                        onClick = { menuExpanded = false; onConvertAgain(item.id) },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.history_delete_record)) },
+                    onClick = { menuExpanded = false; onDeleteRecord(item.id) },
+                )
             }
-        }
-        TextButton(onClick = { onDeleteRecord(item.id) }) {
-            Text(stringResource(R.string.history_delete_record))
         }
     }
 }

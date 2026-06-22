@@ -129,6 +129,7 @@
     <string name="action_open">Open</string>
     <string name="action_share">Share</string>
     <string name="action_show_in_folder">Show in folder</string>
+    <string name="action_more">More options</string>
     <string name="action_convert_again">Convert again</string>
     <string name="action_delete_result">Delete result</string>
     <string name="action_delete_original">Delete original</string>

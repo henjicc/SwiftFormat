@@ -129,6 +129,7 @@
     <string name="action_open">打开</string>
     <string name="action_share">分享</string>
     <string name="action_show_in_folder">查看位置</string>
+    <string name="action_more">更多操作</string>
     <string name="action_convert_again">再次转换</string>
     <string name="action_delete_result">删除结果</string>
     <string name="action_delete_original">删除原文件</string>

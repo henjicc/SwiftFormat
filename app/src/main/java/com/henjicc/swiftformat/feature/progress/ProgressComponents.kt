@@ -1,17 +1,19 @@
 package com.henjicc.swiftformat.feature.progress
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -240,37 +242,42 @@ private fun TaskActionRow(
 
     if (item.status != ConversionStatus.COMPLETED) return
 
+    var menuExpanded by rememberSaveable(item.taskId) { mutableStateOf(false) }
     val outputUri = item.outputUri
-    if (outputUri != null && !outputDeleted) {
-        Row(
-            modifier = Modifier.padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
+    Row(
+        modifier = Modifier.padding(top = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (outputUri != null && !outputDeleted) {
             IconButton(onClick = { onOpen(outputUri) }) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = stringResource(R.string.action_open))
             }
             IconButton(onClick = { onShare(outputUri) }) {
                 Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share))
             }
-            IconButton(onClick = onShowInFolder) {
-                Icon(Icons.Filled.FolderOpen, contentDescription = stringResource(R.string.action_show_in_folder))
-            }
         }
-    }
-    if (outputUri != null && !outputDeleted || !originalDeleted) {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            if (outputUri != null && !outputDeleted) {
-                TextButton(onClick = { onDeleteOutput(outputUri) }) {
-                    Text(stringResource(R.string.action_delete_result))
+        if (outputUri != null && !outputDeleted || !originalDeleted) {
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
                 }
-            }
-            if (!originalDeleted) {
-                TextButton(onClick = onRequestDeleteOriginal) {
-                    Text(stringResource(R.string.action_delete_original))
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    if (outputUri != null && !outputDeleted) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_show_in_folder)) },
+                            onClick = { menuExpanded = false; onShowInFolder() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_delete_result)) },
+                            onClick = { menuExpanded = false; onDeleteOutput(outputUri) },
+                        )
+                    }
+                    if (!originalDeleted) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_delete_original)) },
+                            onClick = { menuExpanded = false; onRequestDeleteOriginal() },
+                        )
+                    }
                 }
             }
         }

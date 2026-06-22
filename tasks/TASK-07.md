@@ -351,6 +351,36 @@
   assembleDebug` 均通过；UI 改动未跑真机截图复核（当前环境没有连接设备/模拟器），下次真机测试时建议确认
   图标可点击区域与文字密度的实际视觉效果。
 
+### Stage P（已完成，已验证）—— 历史记录卡片改为单行列表项 + 溢出菜单
+- **问题**：Stage O 收紧后用户真机实测反馈一个屏幕仍只能完整看到 2 条历史记录，且"已完成"状态文字独占一行
+  右侧，下方却没有任何内容跟它对齐，视觉上显得突兀空旷。
+- **参考的同类 UI 模式**：Google Files / Google Drive / Telegram 媒体下载列表等"历史记录/下载列表"类场景的
+  通行做法——单行列表项（左侧类型图标 + 中间两行文字 + 行尾 1-2 个常用操作 + "更多"溢出菜单），且这些应用
+  对"已完成"这种默认/期望状态通常**不展示专门的状态文字**，只有失败/进行中等需要用户注意的例外状态才显示
+  状态标签。本次改造直接借用了这个思路，而不是继续在原有"卡片+多行文字+多行按钮"结构上挤间距。
+  本项目自己的 `feature/home/HomeFileRows.kt` 的 `FileRow`（40dp 图标 + 两行文字 + 单个尾随 `IconButton`）
+  恰好就是同一种列表项模式，因此直接复用了它的 `mediaIcon(MediaType)` 图标映射，保持视觉语言一致。
+- **`HistoryComponents.kt` 改动**：
+  - 整条记录从"卡片内三段纵向堆叠（摘要/分割线/按钮行）"改为单个 `Row`：40dp 媒体类型图标
+    （复用 `feature.home.mediaIcon`）+ 文字列（标题行 + 一行合并详情：格式转换 · 时间 · 体积 · 质量 · 尺寸）
+    + 行尾操作，divider 和单独的按钮行整段删除。
+  - **状态文字仅在非 `COMPLETED` 时显示**（失败/取消/进行中），完成是历史记录里的默认期望结果，不再用
+    "已完成"占一块地方；失败时的错误原因/"查看详情"仍保留在文字列里，不受影响。
+  - 行尾操作改为"打开+分享"两个常驻 `IconButton`，`查看位置/删除结果/再次转换/删除记录` 收进一个
+    `Icons.Filled.MoreVert` 触发的 `DropdownMenu`（`DropdownMenuItem`），不再用占地方的 `TextButton` 平铺。
+    新增字符串资源 `action_more`（中"更多操作"/英"More options"）作为该图标的 `contentDescription`，
+    中英 `strings.xml` 保持 152 key 同步。
+  - 进行中（`isActive`）记录的行尾不再用独立 `Button`，改为同一 `Row` 末尾的 `TextButton`「查看进度」，
+    与已完成/失败记录共享同一种单行结构。
+- **`ProgressComponents.kt` 同步调整**：`TaskActionRow` 完成态的操作区也改成同样的"打开+分享图标 + 更多
+  溢出菜单（查看位置/删除结果/删除原文件）"结构，保持与历史页一致的交互模式；删除原文件的二次确认弹窗
+  行为不变（仍由 `onRequestDeleteOriginal` 触发同一个 `AlertDialog`）。
+- **未改动**：取消/重试/再次转换的顶部行、删除确认对话框文案、`qualityLabel`/`sizeLabel`/`errorKindLabelRes`
+  等既有标签函数。
+- 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 均通过；
+  英/中 `strings.xml` key 集合核对完全一致（152 个）。**仍未做真机视觉复核**（环境无设备/模拟器），
+  下次真机测试请重点确认：单行高度下拉框点击是否顺手、溢出菜单展开位置在长列表滚动时是否被裁切。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。
