@@ -205,9 +205,14 @@
   TASK-07 Stage K）：新增 `AppSettings.customOutputDirectoryUri`/`nameCollisionStrategy`，设置页可用
   系统目录选择器（SAF）指定自定义保存目录、可在“自动追加序号”/“覆盖”两种重名策略间切换；`SAF` 路径用
   `DocumentsContract` 直接操作（未引入 `androidx.documentfile`），“每次询问”策略因与当前异步入队编排
-  模型不兼容暂缓。SPEC 15 设置页事项已全部覆盖。继续按以下顺序推进：①国际化逐项核对（无未翻译文案、
-  档位语义跨语言一致）与无障碍验收（TalkBack、超大字体、对比度、横竖屏）；②体积与发布收尾（ABI 拆分/
-  App Bundle 评估、清理 lint warning、许可证与隐私说明发布版核对）。
+  模型不兼容暂缓。SPEC 15 设置页事项已全部覆盖。国际化与无障碍验收已完成（2026-06-22）：核对
+  `values`/`values-zh-rCN` 两份 `strings.xml` 共 151 个 key 完全一致、无漏翻译；扫描 Compose UI 发现并
+  修复两处硬编码中文（失败详情弹窗“复制”按钮与“已复制到剪贴板” Toast，原先英文环境也会显示中文，补了
+  `action_copy`/`error_details_copied`）与一处无障碍缺口（转换进度页返回按钮 `contentDescription = null`
+  导致 TalkBack 无法播报用途，补了 `nav_back`）；其余 decorative 图标的 `contentDescription = null`
+  均有相邻文本提供可读标签，未发现遗漏；未发现 `screenOrientation` 锁定，文字均走 `sp` 受系统字号缩放
+  影响，`lintDebug` 0 issue。继续推进：体积与发布收尾（ABI 拆分/App Bundle 评估、清理 lint warning、
+  许可证与隐私说明发布版核对）。
 - **遗留**：TASK-02/03/04/05 的已知简化项（自定义尺寸输入框、显隐动画、WebP 有损/无损、设备编码能力检查未接入
   UI 动态显隐、EXIF 完整标签保留、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
