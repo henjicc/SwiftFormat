@@ -112,6 +112,59 @@ internal fun applyExifOrientation(bitmap: Bitmap, orientation: Int): Bitmap {
     return rotated
 }
 
+/**
+ * 把源图片的拍摄相关 EXIF 标签复制到目标文件（见 SPEC 15「默认保留图片元数据」）。
+ * 只复制拍摄参数/时间/GPS，不复制宽高等几何标签（输出尺寸可能已变化）；
+ * 方向标签固定写回 [ExifInterface.ORIENTATION_NORMAL]，因为输出位图已经是旋正后的像素数据。
+ */
+internal fun copyExifMetadata(
+    context: Context,
+    sourceUri: Uri,
+    destinationUri: Uri,
+    logger: Logger,
+    tag: String,
+) {
+    runCatching {
+        val resolver = context.contentResolver
+        val sourceExif = resolver.openInputStream(sourceUri)?.use { ExifInterface(it) } ?: return
+        val destinationDescriptor = resolver.openFileDescriptor(destinationUri, "rw") ?: return
+        destinationDescriptor.use { descriptor ->
+            val destinationExif = ExifInterface(descriptor.fileDescriptor)
+            COPIED_EXIF_TAGS.forEach { copyTag ->
+                sourceExif.getAttribute(copyTag)?.let { value ->
+                    destinationExif.setAttribute(copyTag, value)
+                }
+            }
+            destinationExif.setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL.toString())
+            destinationExif.saveAttributes()
+        }
+    }.onFailure { logger.w(tag, "copyExifMetadata failed", it) }
+}
+
+private val COPIED_EXIF_TAGS = listOf(
+    ExifInterface.TAG_MAKE,
+    ExifInterface.TAG_MODEL,
+    ExifInterface.TAG_SOFTWARE,
+    ExifInterface.TAG_DATETIME,
+    ExifInterface.TAG_DATETIME_ORIGINAL,
+    ExifInterface.TAG_DATETIME_DIGITIZED,
+    ExifInterface.TAG_EXPOSURE_TIME,
+    ExifInterface.TAG_F_NUMBER,
+    ExifInterface.TAG_ISO_SPEED_RATINGS,
+    ExifInterface.TAG_FOCAL_LENGTH,
+    ExifInterface.TAG_FLASH,
+    ExifInterface.TAG_WHITE_BALANCE,
+    ExifInterface.TAG_GPS_LATITUDE,
+    ExifInterface.TAG_GPS_LATITUDE_REF,
+    ExifInterface.TAG_GPS_LONGITUDE,
+    ExifInterface.TAG_GPS_LONGITUDE_REF,
+    ExifInterface.TAG_GPS_ALTITUDE,
+    ExifInterface.TAG_GPS_ALTITUDE_REF,
+    ExifInterface.TAG_GPS_TIMESTAMP,
+    ExifInterface.TAG_GPS_DATESTAMP,
+    ExifInterface.TAG_GPS_PROCESSING_METHOD,
+)
+
 private fun Bitmap.useBounds(): ImageBounds {
     val bounds = ImageBounds(width, height)
     recycle()

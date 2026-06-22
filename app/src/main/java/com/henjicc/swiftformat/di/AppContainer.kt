@@ -61,6 +61,7 @@ class AppContainer(context: Context) {
             historyRepository = conversionHistoryRepository,
             metadataReader = fileMetadataReader,
             orchestrator = conversionOrchestrator,
+            settingsRepository = settingsRepository,
             logger = logger,
         )
     }

@@ -67,6 +67,8 @@
     <string name="settings_default_image_quality">图片默认质量</string>
     <string name="settings_default_video_quality">视频默认质量</string>
     <string name="settings_default_audio_quality">音频默认质量</string>
+    <string name="settings_preserve_metadata">保留图片元数据</string>
+    <string name="settings_preserve_metadata_desc">转换为 JPG 时保留拍摄时间、相机型号、GPS 位置等信息</string>
     <string name="settings_files">文件</string>
     <string name="settings_save_location">保存位置</string>
     <string name="settings_save_location_value">Download/转个格式</string>

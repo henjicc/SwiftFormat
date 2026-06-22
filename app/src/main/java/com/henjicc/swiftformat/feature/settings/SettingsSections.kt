@@ -42,6 +42,7 @@ internal fun SettingsContent(
     onDefaultImageQualityChange: (QualityPreset) -> Unit,
     onDefaultVideoQualityChange: (QualityPreset) -> Unit,
     onDefaultAudioQualityChange: (QualityPreset) -> Unit,
+    onPreserveImageMetadataChange: (Boolean) -> Unit,
     onCompletionNotificationChange: (Boolean) -> Unit,
     onAutoCleanupTempFilesChange: (Boolean) -> Unit,
     onClearCache: () -> Unit,
@@ -75,6 +76,7 @@ internal fun SettingsContent(
             onDefaultImageQualityChange = onDefaultImageQualityChange,
             onDefaultVideoQualityChange = onDefaultVideoQualityChange,
             onDefaultAudioQualityChange = onDefaultAudioQualityChange,
+            onPreserveImageMetadataChange = onPreserveImageMetadataChange,
         )
         FileSettingsSection(
             settings = settings,
@@ -149,6 +151,7 @@ private fun ConversionDefaultsSection(
     onDefaultImageQualityChange: (QualityPreset) -> Unit,
     onDefaultVideoQualityChange: (QualityPreset) -> Unit,
     onDefaultAudioQualityChange: (QualityPreset) -> Unit,
+    onPreserveImageMetadataChange: (Boolean) -> Unit,
 ) {
     SectionHeader(stringResource(R.string.settings_conversion_defaults))
 
@@ -174,6 +177,13 @@ private fun ConversionDefaultsSection(
         selected = settings.defaultAudioQuality,
         label = { stringResource(qualityLabelRes(it)) },
         onSelect = onDefaultAudioQualityChange,
+    )
+
+    ToggleRow(
+        title = stringResource(R.string.settings_preserve_metadata),
+        description = stringResource(R.string.settings_preserve_metadata_desc),
+        checked = settings.preserveImageMetadata,
+        onCheckedChange = onPreserveImageMetadataChange,
     )
 }
 

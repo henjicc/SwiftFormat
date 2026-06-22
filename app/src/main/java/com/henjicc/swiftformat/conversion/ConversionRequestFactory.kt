@@ -28,6 +28,7 @@ internal class ConversionRequestFactory(
         quality: QualityPreset?,
         size: SizePreset?,
         existingOutputUri: Uri? = null,
+        preserveMetadata: Boolean = false,
     ): ConversionRequest {
         val resolvedTargetMediaType = targetMediaType ?: OutputFormatCatalog.targetMediaTypeFor(input.mediaType, outputFormat)
         val destinationUri = existingOutputUri ?: outputResolutionMutex.withLock {
@@ -41,6 +42,7 @@ internal class ConversionRequestFactory(
             quality = quality,
             size = size,
             destination = OutputDestination.ResolvedUri(destinationUri),
+            preserveMetadata = preserveMetadata,
         )
     }
 }

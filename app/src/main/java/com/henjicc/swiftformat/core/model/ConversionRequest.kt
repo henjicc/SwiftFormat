@@ -13,6 +13,7 @@ data class ConversionRequest(
     val quality: QualityPreset?,
     val size: SizePreset?,
     val destination: OutputDestination,
+    val preserveMetadata: Boolean = false,
 )
 
 /**

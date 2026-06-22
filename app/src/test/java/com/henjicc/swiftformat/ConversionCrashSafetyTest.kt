@@ -7,7 +7,9 @@ import com.henjicc.swiftformat.conversion.ConversionRecoveryManager
 import com.henjicc.swiftformat.conversion.OutputLocationResolver
 import com.henjicc.swiftformat.core.common.Logger
 import com.henjicc.swiftformat.core.database.ConversionHistoryRepository
+import com.henjicc.swiftformat.core.datastore.SettingsRepository
 import com.henjicc.swiftformat.core.file.FileMetadataReader
+import com.henjicc.swiftformat.core.model.AppSettings
 import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionHistoryRecord
 import com.henjicc.swiftformat.core.model.ConversionStatus
@@ -18,6 +20,7 @@ import com.henjicc.swiftformat.engine.api.ConversionEngineSelector
 import com.henjicc.swiftformat.engine.api.ConversionProgress
 import com.henjicc.swiftformat.engine.api.ConversionResult
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
@@ -87,6 +90,7 @@ class ConversionCrashSafetyTest {
         val historyRepository = mock<ConversionHistoryRepository>()
         val metadataReader = mock<FileMetadataReader>()
         val orchestrator = mock<ConversionOrchestrator>()
+        val settingsRepository = mock<SettingsRepository>()
         val logger = mock<Logger>()
         val inputUri = mock<Uri>()
         val outputUri = mock<Uri>()
@@ -97,11 +101,13 @@ class ConversionCrashSafetyTest {
             historyRepository = historyRepository,
             metadataReader = metadataReader,
             orchestrator = orchestrator,
+            settingsRepository = settingsRepository,
             logger = logger,
         )
 
         whenever(historyRepository.getActiveRecords()).thenReturn(listOf(activeRecord))
         whenever(metadataReader.read(inputUri)).thenReturn(input)
+        whenever(settingsRepository.settings).thenReturn(flowOf(AppSettings()))
         whenever(
             orchestrator.recover(
                 historyId = activeRecord.id,
@@ -110,6 +116,7 @@ class ConversionCrashSafetyTest {
                 quality = activeRecord.quality,
                 size = activeRecord.size,
                 existingOutputUri = activeRecord.outputUri,
+                preserveMetadata = AppSettings().preserveImageMetadata,
             ),
         ).thenThrow(IllegalStateException("queue failed"))
 

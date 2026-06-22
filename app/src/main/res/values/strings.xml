@@ -67,6 +67,8 @@
     <string name="settings_default_image_quality">Image quality</string>
     <string name="settings_default_video_quality">Video quality</string>
     <string name="settings_default_audio_quality">Audio quality</string>
+    <string name="settings_preserve_metadata">Preserve image metadata</string>
+    <string name="settings_preserve_metadata_desc">Keep capture time, camera model, and GPS location when converting to JPG</string>
     <string name="settings_files">Files</string>
     <string name="settings_save_location">Save location</string>
     <string name="settings_save_location_value">Download/转个格式</string>

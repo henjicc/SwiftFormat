@@ -60,6 +60,7 @@ class SettingsViewModel(
     fun setDefaultAudioQuality(quality: QualityPreset) = viewModelScope.launch { repository.setDefaultAudioQuality(quality) }
     fun setAutoCleanupTempFiles(enabled: Boolean) = viewModelScope.launch { repository.setAutoCleanupTempFiles(enabled) }
     fun setShowCompletionNotification(enabled: Boolean) = viewModelScope.launch { repository.setShowCompletionNotification(enabled) }
+    fun setPreserveImageMetadata(enabled: Boolean) = viewModelScope.launch { repository.setPreserveImageMetadata(enabled) }
 
     fun clearCache() = viewModelScope.launch {
         if (orchestrator.summary().inProgress > 0) {

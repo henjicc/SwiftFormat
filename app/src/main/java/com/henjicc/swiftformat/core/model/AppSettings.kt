@@ -39,4 +39,5 @@ data class AppSettings(
     val defaultAudioQuality: QualityPreset = QualityPreset.HIGH,
     val autoCleanupTempFiles: Boolean = true,
     val showCompletionNotification: Boolean = true,
+    val preserveImageMetadata: Boolean = true,
 )

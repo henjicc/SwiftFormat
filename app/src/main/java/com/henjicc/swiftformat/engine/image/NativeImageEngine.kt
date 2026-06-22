@@ -6,6 +6,7 @@ import android.os.Build
 import com.henjicc.swiftformat.core.common.Logger
 import com.henjicc.swiftformat.core.common.toDebugMessage
 import com.henjicc.swiftformat.core.file.applyExifOrientation
+import com.henjicc.swiftformat.core.file.copyExifMetadata
 import com.henjicc.swiftformat.core.file.decodeImageBounds
 import com.henjicc.swiftformat.core.file.decodeSampledBitmap
 import com.henjicc.swiftformat.core.file.readExifOrientation
@@ -104,6 +105,10 @@ class NativeImageEngine(
             counting.count
         }
         resized.recycle()
+
+        if (request.preserveMetadata && request.outputFormat.uppercase() == "JPG") {
+            copyExifMetadata(appContext, request.input.uri, destinationUri, logger, TAG)
+        }
 
         onProgress(ConversionProgress(1f))
         return ConversionResult.Success(destinationUri, sizeBytes)

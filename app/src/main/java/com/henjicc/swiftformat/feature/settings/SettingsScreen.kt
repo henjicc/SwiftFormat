@@ -50,6 +50,7 @@ fun SettingsScreen(
         onDefaultImageQualityChange = viewModel::setDefaultImageQuality,
         onDefaultVideoQualityChange = viewModel::setDefaultVideoQuality,
         onDefaultAudioQualityChange = viewModel::setDefaultAudioQuality,
+        onPreserveImageMetadataChange = viewModel::setPreserveImageMetadata,
         onCompletionNotificationChange = viewModel::setShowCompletionNotification,
         onAutoCleanupTempFilesChange = viewModel::setAutoCleanupTempFiles,
         onClearCache = viewModel::clearCache,

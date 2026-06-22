@@ -32,6 +32,7 @@ class SettingsRepository(private val context: Context) {
         val DEFAULT_AUDIO_QUALITY = stringPreferencesKey("default_audio_quality")
         val AUTO_CLEANUP_TEMP_FILES = stringPreferencesKey("auto_cleanup_temp_files")
         val SHOW_COMPLETION_NOTIFICATION = stringPreferencesKey("show_completion_notification")
+        val PRESERVE_IMAGE_METADATA = stringPreferencesKey("preserve_image_metadata")
     }
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { prefs ->
@@ -51,6 +52,7 @@ class SettingsRepository(private val context: Context) {
                 ?: QualityPreset.HIGH,
             autoCleanupTempFiles = prefs[Keys.AUTO_CLEANUP_TEMP_FILES]?.toBooleanStrictOrNull() ?: true,
             showCompletionNotification = prefs[Keys.SHOW_COMPLETION_NOTIFICATION]?.toBooleanStrictOrNull() ?: true,
+            preserveImageMetadata = prefs[Keys.PRESERVE_IMAGE_METADATA]?.toBooleanStrictOrNull() ?: true,
         )
     }
 
@@ -88,6 +90,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setShowCompletionNotification(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.SHOW_COMPLETION_NOTIFICATION] = enabled.toString() }
+    }
+
+    suspend fun setPreserveImageMetadata(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.PRESERVE_IMAGE_METADATA] = enabled.toString() }
     }
 }
 

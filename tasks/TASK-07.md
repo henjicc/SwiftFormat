@@ -177,10 +177,40 @@
   - 新增 `ThrowableDebugFormatterTest`，验证嵌套 `Error -> UnsatisfiedLinkError` 时详情文本会保留两层信息。
 - 验证：`gradlew.bat testDebugUnitTest`、`gradlew.bat assembleDebug` 通过（使用本机 JDK 17 设置 `JAVA_HOME` 执行）。
 
+### Stage J（已完成，已验证）—— 默认保留图片元数据（SPEC 15.2）
+- **结论先行**：核查 SPEC 15.2「转换默认值」四项后，确认只有「默认保留图片元数据」是真正缺失的代码项；
+  「系统动态配色」已在 Stage A 实现；「默认保持原始尺寸」已满足（`SizePreset.Original` 本就是各媒体类型
+  尺寸档位列表里的第一个/默认选项）；「默认保留视频音频轨道」已满足（当前转换链路没有静音/抽轨开关，
+  音轨始终保留，对应的“保留音频/视频静音”需求在 SPEC 里实际归类在第一版之后的附加能力，非本页待办）。
+- **新增设置项**：`AppSettings.preserveImageMetadata`（默认 `true`，DataStore key `preserve_image_metadata`），
+  `SettingsRepository.setPreserveImageMetadata`，`SettingsViewModel.setPreserveImageMetadata`，UI 落在
+  `ConversionDefaultsSection`（`SettingsSections.kt`）里的一个 `ToggleRow`，字符串
+  `settings_preserve_metadata` / `_desc`（中英双语）。
+- **数据通路**：`ConversionRequest.preserveMetadata`（默认 `false`，引擎只认这个字段，不感知 `AppSettings`）→
+  `ConversionRequestFactory.createResolvedRequest` 新增同名参数透传 → `ConversionOrchestrator.submit`/
+  `submitAll`/`recover`/`convertAgain` 依次透传；`HomeViewModel.startConversion` 提交时传入
+  `currentAppSettings.preserveImageMetadata`；`ConversionRecoveryManager` 新增 `settingsRepository` 依赖，
+  恢复时读取当前设置值传给 `orchestrator.recover`（进程重启后的恢复语义用“当前设置”而非“提交时设置”，
+  与本页其它默认值的语义一致）。
+- **实现细节**（`core/file/ImageDecodeCompat.kt` 新增 `copyExifMetadata`，`NativeImageEngine` 转 JPG 成功后调用）：
+  - 用 `android.media.ExifInterface`（平台类，非 androidx），构造参数与 `TAG_*` 常量名先用本机 Android SDK
+    `android.jar` 反查 `javap` 确认过真实签名，避免凑名字编译失败。
+  - 只复制拍摄相关标签（厂商/型号/软件、拍摄时间三种、曝光/光圈/ISO/焦距/闪光灯/白平衡、GPS 经纬度/海拔/
+    时间戳/处理方式），不复制宽高等几何标签（输出尺寸可能已经变化）。
+  - 方向标签固定写回 `ORIENTATION_NORMAL`，不是直接复制源文件的值：输出位图在写出前已经按 EXIF 方向旋正过，
+    如果原样复制方向标签会变成“图已经转正 + 标签还说要再转一次”的二次旋转错误。
+  - 只在输出格式为 `JPG` 时生效：`PNG`/`WEBP` 用 `Bitmap.compress` 直接落盘，且 `ExifInterface` 对这两种容器
+    的标签支持本就有限；其余引擎（`HeifAvifImageEngine`、`FfmpegStillImageEngine`）不产出 JPG 输出，未受影响。
+  - 整个复制过程包一层 `runCatching` 仅记录警告日志，不影响转换主流程成功与否（元数据是锦上添花，不是
+    转换是否成功的判定条件）。
+- **回归测试**：`ConversionCrashSafetyTest` 中 `ConversionRecoveryManager` 的构造与 `mock<ConversionOrchestrator>()`
+  的 `recover` 调用因新增参数同步补了 `settingsRepository` mock 与 `preserveMetadata` 期望值。
+- 验证：`gradlew.bat testDebugUnitTest assembleDebug` 通过（使用本机 JDK 17 设置 `JAVA_HOME` 执行）。
+
 ### 已知简化 / 下一步
-- **设置页仍未完整覆盖 SPEC 15**：目前已补到“外观 + 部分转换默认值 + 文件行为说明 + 完成通知开关 +
-  临时清理 + 关于版本/隐私/开源说明 + 基础日志查看 + 反馈信息分享”；还缺可自定义默认目录、可配置重名策略、
-  保留元数据/音轨、反馈等。
+- **设置页仍未完整覆盖 SPEC 15**：目前已补到“外观 + 转换默认值（含保留图片元数据） + 文件行为说明 +
+  完成通知开关 + 临时清理 + 关于版本/隐私/开源说明 + 基础日志查看 + 反馈信息分享”；还缺可自定义默认目录、
+  可配置重名策略（当前两项均硬编码：`Download/转个格式` + 自动追加序号）。
 - **失败详情仍是基础版本**：目前已经做到了“结构化友好原因 + 查看详情分层”，但还没补复制详情、
   更完整的错误恢复建议、以及更多边界错误的主动注入测试。
 - **日志查看是进程内临时日志**：重启应用后会丢失，不是持久日志系统；足够支撑真机测试排错，但还不是最终发布态方案。

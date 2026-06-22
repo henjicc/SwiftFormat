@@ -140,7 +140,14 @@ class HomeViewModel(
         val state = _uiState.value
         state.groups.forEach { (type, files) ->
             val settings = state.settings[type] ?: OutputFormatCatalog.defaultSettings(type)
-            orchestrator.submitAll(files, settings.outputFormat, settings.targetMediaType, settings.quality, settings.size)
+            orchestrator.submitAll(
+                files,
+                settings.outputFormat,
+                settings.targetMediaType,
+                settings.quality,
+                settings.size,
+                preserveMetadata = currentAppSettings.preserveImageMetadata,
+            )
         }
         clear()
     }

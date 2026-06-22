@@ -58,6 +58,7 @@ class ConversionOrchestrator(
         targetMediaType: MediaType? = null,
         quality: QualityPreset?,
         size: SizePreset?,
+        preserveMetadata: Boolean = false,
     ): String {
         val requestId = requestFactory.newRequestId()
         launchTask(requestId) {
@@ -69,6 +70,7 @@ class ConversionOrchestrator(
                     targetMediaType,
                     quality,
                     size,
+                    preserveMetadata = preserveMetadata,
                 )
                 val historyId = historyTracker.insertPending(resolvedRequest)
                 runTask(resolvedRequest, historyId)
@@ -98,7 +100,8 @@ class ConversionOrchestrator(
         targetMediaType: MediaType? = null,
         quality: QualityPreset?,
         size: SizePreset?,
-    ): List<String> = inputs.map { submit(it, outputFormat, targetMediaType, quality, size) }
+        preserveMetadata: Boolean = false,
+    ): List<String> = inputs.map { submit(it, outputFormat, targetMediaType, quality, size, preserveMetadata) }
 
     /**
      * 进程恢复：沿用同一条历史记录继续执行，避免应用被系统回收后历史里出现重复条目。
@@ -112,6 +115,7 @@ class ConversionOrchestrator(
         quality: QualityPreset?,
         size: SizePreset?,
         existingOutputUri: android.net.Uri?,
+        preserveMetadata: Boolean = false,
     ): String {
         val requestId = requestFactory.newRequestId()
         val request = requestFactory.createResolvedRequest(
@@ -122,6 +126,7 @@ class ConversionOrchestrator(
             quality = quality,
             size = size,
             existingOutputUri = existingOutputUri,
+            preserveMetadata = preserveMetadata,
         )
         historyTracker.resetForRecovery(historyId, request)
         launchTask(request.id) {
@@ -207,6 +212,7 @@ class ConversionOrchestrator(
             task.request.targetMediaType,
             task.request.quality,
             task.request.size,
+            task.request.preserveMetadata,
         )
     }
 
