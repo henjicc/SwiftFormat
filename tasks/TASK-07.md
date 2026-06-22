@@ -473,6 +473,32 @@
   真机测试请重点确认：① TopAppBar 返回箭头在状态栏边缘的点击区域是否舒适；②三个下拉框芯片在小屏/长格式名
   （如 "WEBM"）下是否会挤得太紧或文字被截断。
 
+### Stage T（已完成，已验证）—— 修复嵌套 Scaffold 重复留白 + 文案/排序微调
+- **问题："开始转换"按钮下方有一大片空白，且上下不对称**。排查后定位到真实根因：Stage S 新增的
+  `HomeContent.kt` `FileList` 内部 `Scaffold` 是**嵌套在外层 `SwiftFormatApp.kt` 的 `Scaffold`（带
+  底部 `NavigationBar`）+ `NavHost` 里面的第二层 `Scaffold`**。外层 `Scaffold` 已经把底部系统导航条/手势区
+  计算进 `innerPadding` 并应用给 `NavHost`，但内层 `Scaffold` 默认的 `contentWindowInsets` 不知道这件事，
+  会**再算一遍**底部系统栏 inset 加到自己的 `innerPadding` 上——两层叠加正好就是按钮下方那块多出来的空白，
+  且只有底部会叠加（顶部状态栏只由 `TopAppBar` 自己处理一次），所以看起来"上下不对称"。`HistoryScreen.kt`
+  原本也是同样的嵌套 `Scaffold` 写法，存在一样的潜在重复留白（只是列表场景不像固定按钮那样直观可见）。
+  **修复**：两个页面都去掉了内层 `Scaffold`，改成直接 `Column { TopAppBar(...); 内容（weight(1f)）}`——
+  `TopAppBar` 本身就会处理顶部状态栏 inset，不需要外面再包一层 `Scaffold` 来重复保留底部 inset 空间。
+- **文案："保持原始"统一简化为"原始"**。`size_original` 中文字符串资源（英文已经是简洁的 "Original"，
+  未改）；同步检查并修正了 SPEC 里所有"作为 UI 标签字面引用"的"保持原始"出处（选项列表项 / 带引号的默认值
+  描述 / 中英对照表 / 第22节默认值表，共 8 处），**保留了 2 处是描述行为的散文用法**（"竖屏视频保持原始
+  方向和宽高比"、"默认保持原始尺寸"）未动，因为那两处不是 UI 按钮文案，改了反而读不通。
+- **视频输出格式排序：WEBM 移到 MKV 后面**。`OutputFormatCatalog.kt` 的 `videoOptions` 表交换了 MKV(30)/
+  WEBM(40) 的 `sortOrder`，不常用格式不再排在比较常用的 MKV 前面；同步更新了
+  `OutputFormatCatalogTest.outputOptions_followPlannedStableOrder` 里断言的期望顺序。
+- **关于"WEBP 能完整显示但 WEBM 会被截断"**：两个值都是 4 个字符，芯片宽度也相同，差异来自 **"M" 在大多数
+  字体里比 "P" 宽**，临界情况下足够让 WEBM 多出几个像素触发省略号——不是某处宽度设置错了。已经把
+  `DropdownSettingChip` 内部水平留白从两侧各 12dp 收紧到"左 10dp / 右 4dp"（图标本身有内边距，右侧不需要
+  留太多），给文字腾出一点余量，但这类长度临界的格式名仍有可能在更窄的设备上触发省略号，省略号本身是
+  正常的兜底显示而不是 bug。
+- 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 均通过；中英 `strings.xml`
+  仍保持 152 key 同步。**仍未做真机视觉复核**，下次真机测试请重点确认"开始转换"按钮下方的空白是否已经消失、
+  上下间距是否对称。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。
