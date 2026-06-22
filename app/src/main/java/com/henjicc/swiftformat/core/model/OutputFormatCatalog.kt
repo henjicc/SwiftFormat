@@ -38,8 +38,9 @@ object OutputFormatCatalog {
     private val videoOptions = listOf(
         OutputOption("MP4", MediaType.VIDEO, EngineHint.MEDIA3, qualityApplicable = true, sizeApplicable = true, sortOrder = 10),
         OutputOption("MOV", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 20),
-        OutputOption("WEBM", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 30),
-        OutputOption("MKV", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 40),
+        // WEBM 不是常用格式，排在 MKV 后面。
+        OutputOption("MKV", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 30),
+        OutputOption("WEBM", MediaType.VIDEO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = true, sortOrder = 40),
         OutputOption("MP3", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false, sortOrder = 50),
         OutputOption("M4A", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = true, sizeApplicable = false, sortOrder = 60),
         OutputOption("WAV", MediaType.AUDIO, EngineHint.FFMPEG, qualityApplicable = false, sizeApplicable = false, sortOrder = 70),

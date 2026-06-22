@@ -48,7 +48,7 @@ class OutputFormatCatalogTest {
             OutputFormatCatalog.outputOptions(MediaType.IMAGE).map { it.format },
         )
         assertEquals(
-            listOf("MP4", "MOV", "WEBM", "MKV", "MP3", "M4A", "WAV", "FLAC"),
+            listOf("MP4", "MOV", "MKV", "WEBM", "MP3", "M4A", "WAV", "FLAC"),
             OutputFormatCatalog.outputOptions(MediaType.VIDEO).map { it.format },
         )
         assertEquals(
