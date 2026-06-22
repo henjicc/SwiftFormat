@@ -105,7 +105,7 @@ class HeifAvifImageEngine(
 
         val tempFile = File(appContext.cacheDir, "heif_${request.id}.${request.outputFormat.lowercase()}")
         try {
-            val quality = ImageQualityMapper.compressQuality(request.quality ?: QualityPreset.HIGH)
+            val quality = ImageQualityMapper.compressQuality(request.quality ?: QualityPreset.STANDARD)
             val encodeResult = runCatching {
                 when (request.outputFormat.uppercase()) {
                     "HEIC" -> encodeHeic(tempFile, resized, quality)

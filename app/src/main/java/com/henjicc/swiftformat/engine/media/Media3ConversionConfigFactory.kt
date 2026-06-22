@@ -55,7 +55,7 @@ internal class Media3ConversionConfigFactory(
                 val target = VideoSizeMapper.targetDimensions(source, request.size)
                 val track = probeVideoTrack(request.input.uri)
                 val bitrate = VideoBitrateMapper.targetBitrateBps(
-                    preset = request.quality ?: QualityPreset.HIGH,
+                    preset = request.quality ?: QualityPreset.STANDARD,
                     targetWidth = target.width,
                     targetHeight = target.height,
                     frameRate = track?.frameRate ?: 30.0,
@@ -67,7 +67,7 @@ internal class Media3ConversionConfigFactory(
             }
 
             MediaType.AUDIO -> {
-                val bitrate = AudioBitrateMapper.targetBitrateBps(request.outputFormat, request.quality ?: QualityPreset.HIGH)
+                val bitrate = AudioBitrateMapper.targetBitrateBps(request.outputFormat, request.quality ?: QualityPreset.STANDARD)
                 if (bitrate != null) {
                     builder.setRequestedAudioEncoderSettings(
                         AudioEncoderSettings.Builder().setBitrate(bitrate).build(),

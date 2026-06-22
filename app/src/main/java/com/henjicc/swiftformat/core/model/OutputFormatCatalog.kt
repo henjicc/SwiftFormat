@@ -115,14 +115,17 @@ object OutputFormatCatalog {
     }
 
     /**
-     * [quality] 始终保留用户选择（默认高），是否展示由 [isQualityApplicable] 在 UI 层按
+     * [quality] 始终保留用户选择（默认标准），是否展示由 [isQualityApplicable] 在 UI 层按
      * 当前 [GroupConversionSettings.outputFormat] 动态判断，切换格式不丢失已选质量。
+     * IMAGE/VIDEO/AUDIO 这里给的初值会被 [com.henjicc.swiftformat.feature.home.HomeViewModel]
+     * 用 [com.henjicc.swiftformat.core.model.AppSettings] 里的用户默认质量覆盖，
+     * 只有 UNKNOWN（不支持的文件类型，不会真正转换）会保留这个初值。
      */
     fun defaultSettings(mediaType: MediaType): GroupConversionSettings = GroupConversionSettings(
         mediaType = mediaType,
         outputFormat = defaultFormat(mediaType),
         targetMediaType = targetMediaTypeFor(mediaType, defaultFormat(mediaType)),
-        quality = QualityPreset.HIGH,
+        quality = QualityPreset.STANDARD,
         size = sizePresets(mediaType).firstOrNull(), // Original 或 null（音频/未知）
     )
 }

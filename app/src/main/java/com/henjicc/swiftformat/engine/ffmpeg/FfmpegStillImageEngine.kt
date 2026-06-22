@@ -138,7 +138,7 @@ class FfmpegStillImageEngine(
                     inputPath = preprocessedTemp.absolutePath,
                     outputPath = outputTemp.absolutePath,
                     outputFormat = request.outputFormat,
-                    quality = request.quality ?: QualityPreset.HIGH,
+                    quality = request.quality ?: QualityPreset.STANDARD,
                 ).toTypedArray(),
                 { completed -> sessionDeferred.complete(completed) },
             )

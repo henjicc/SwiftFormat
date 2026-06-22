@@ -132,7 +132,7 @@ class NativeImageEngine(
         outputFormat: String,
         quality: QualityPreset?,
     ): Pair<Bitmap.CompressFormat, Int> {
-        val q = ImageQualityMapper.compressQuality(quality ?: QualityPreset.HIGH)
+        val q = ImageQualityMapper.compressQuality(quality ?: QualityPreset.STANDARD)
         return when (outputFormat.uppercase()) {
             "PNG" -> Bitmap.CompressFormat.PNG to 100
             "WEBP" -> webpLossyFormat() to q

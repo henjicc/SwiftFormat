@@ -51,11 +51,11 @@ class SettingsRepository(private val context: Context) {
             language = prefs[Keys.LANGUAGE]?.let { enumValueOfOrNull<AppLanguage>(it) }
                 ?: AppLanguage.SYSTEM,
             defaultImageQuality = prefs[Keys.DEFAULT_IMAGE_QUALITY]?.let { enumValueOfOrNull<QualityPreset>(it) }
-                ?: QualityPreset.HIGH,
+                ?: QualityPreset.STANDARD,
             defaultVideoQuality = prefs[Keys.DEFAULT_VIDEO_QUALITY]?.let { enumValueOfOrNull<QualityPreset>(it) }
-                ?: QualityPreset.HIGH,
+                ?: QualityPreset.STANDARD,
             defaultAudioQuality = prefs[Keys.DEFAULT_AUDIO_QUALITY]?.let { enumValueOfOrNull<QualityPreset>(it) }
-                ?: QualityPreset.HIGH,
+                ?: QualityPreset.STANDARD,
             autoCleanupTempFiles = prefs[Keys.AUTO_CLEANUP_TEMP_FILES]?.toBooleanStrictOrNull() ?: true,
             showCompletionNotification = prefs[Keys.SHOW_COMPLETION_NOTIFICATION]?.toBooleanStrictOrNull() ?: true,
             preserveImageMetadata = prefs[Keys.PRESERVE_IMAGE_METADATA]?.toBooleanStrictOrNull() ?: true,

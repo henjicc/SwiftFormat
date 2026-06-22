@@ -186,7 +186,7 @@ class HomeViewModel(
             MediaType.IMAGE -> currentAppSettings.defaultImageQuality
             MediaType.VIDEO -> currentAppSettings.defaultVideoQuality
             MediaType.AUDIO -> currentAppSettings.defaultAudioQuality
-            MediaType.UNKNOWN -> base.quality ?: QualityPreset.HIGH
+            MediaType.UNKNOWN -> base.quality ?: QualityPreset.STANDARD
         }
         return base.copy(quality = quality)
     }

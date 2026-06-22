@@ -75,7 +75,7 @@ internal fun GroupCard(
             if (showQuality) {
                 SettingRow(
                     label = stringResource(R.string.row_quality),
-                    value = qualityLabel(settings.quality ?: QualityPreset.HIGH),
+                    value = qualityLabel(settings.quality ?: QualityPreset.STANDARD),
                     onClick = { activeSheet = SheetKind.QUALITY },
                 )
             }

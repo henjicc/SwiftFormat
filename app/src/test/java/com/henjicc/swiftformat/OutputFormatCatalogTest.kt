@@ -88,19 +88,19 @@ class OutputFormatCatalogTest {
         val image = OutputFormatCatalog.defaultSettings(MediaType.IMAGE)
         assertEquals("WEBP", image.outputFormat)
         assertEquals(MediaType.IMAGE, image.targetMediaType)
-        assertEquals(QualityPreset.HIGH, image.quality)
+        assertEquals(QualityPreset.STANDARD, image.quality)
         assertEquals(SizePreset.Original, image.size)
 
         val video = OutputFormatCatalog.defaultSettings(MediaType.VIDEO)
         assertEquals("MP4", video.outputFormat)
         assertEquals(MediaType.VIDEO, video.targetMediaType)
-        assertEquals(QualityPreset.HIGH, video.quality)
+        assertEquals(QualityPreset.STANDARD, video.quality)
         assertEquals(SizePreset.Original, video.size)
 
         val audio = OutputFormatCatalog.defaultSettings(MediaType.AUDIO)
         assertEquals("MP3", audio.outputFormat)
         assertEquals(MediaType.AUDIO, audio.targetMediaType)
-        assertEquals(QualityPreset.HIGH, audio.quality)
+        assertEquals(QualityPreset.STANDARD, audio.quality)
         assertNull(audio.size)
     }
 }

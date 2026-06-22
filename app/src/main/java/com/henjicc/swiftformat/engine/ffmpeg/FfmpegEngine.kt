@@ -105,7 +105,7 @@ class FfmpegEngine(
             withContext(Dispatchers.IO) { copyUriToFile(request.input.uri, inputTemp) }
 
             val probe = probeMediaInformation(inputTemp.absolutePath)
-            val quality = request.quality ?: QualityPreset.HIGH
+            val quality = request.quality ?: QualityPreset.STANDARD
             val args = try {
                 when (mode) {
                     FfmpegMode.AUDIO_TRANSCODE -> FfmpegCommandBuilder.buildAudioTranscodeArgs(
