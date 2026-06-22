@@ -1,15 +1,16 @@
 package com.henjicc.swiftformat.feature.progress
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -27,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -38,6 +40,7 @@ import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.model.ConversionStatus
 import com.henjicc.swiftformat.feature.common.errorKindLabelRes
 import com.henjicc.swiftformat.feature.common.statusLabelRes
+import com.henjicc.swiftformat.feature.home.mediaIcon
 
 @Composable
 internal fun ProgressHeader(state: ConversionProgressUiState, onCancelAll: () -> Unit) {
@@ -95,53 +98,80 @@ internal fun ConversionTaskRow(
     var confirmDeleteOriginal by rememberSaveable(item.taskId) { mutableStateOf(false) }
     var showFailureDetails by rememberSaveable(item.taskId) { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
+    val rowContent: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = mediaIcon(item.mediaType),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (item.status != ConversionStatus.COMPLETED) {
                     Text(
-                        text = item.displayName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.progress_format_transition,
-                            item.originalFormat?.uppercase() ?: "?",
-                            item.outputFormat,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = stringResource(statusLabelRes(item.status)),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = statusColor(item.status),
                     )
                 }
                 Text(
-                    text = stringResource(statusLabelRes(item.status)),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = statusColor(item.status),
-                )
-            }
-            if (item.isActive) {
-                LinearProgressIndicator(
-                    progress = { item.progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                )
-            }
-            if (item.status == ConversionStatus.FAILED && item.failureKind != null) {
-                Text(
-                    text = stringResource(errorKindLabelRes(item.failureKind)),
+                    text = stringResource(
+                        R.string.progress_format_transition,
+                        item.originalFormat?.uppercase() ?: "?",
+                        item.outputFormat,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
-                if (item.hasFailureDetails) {
-                    TextButton(onClick = { showFailureDetails = true }) {
-                        Text(stringResource(R.string.action_view_details))
+                if (item.isActive) {
+                    LinearProgressIndicator(
+                        progress = { item.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                    )
+                }
+                if (item.status == ConversionStatus.FAILED && item.failureKind != null) {
+                    Text(
+                        text = stringResource(errorKindLabelRes(item.failureKind)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                    if (item.hasFailureDetails) {
+                        TextButton(
+                            onClick = { showFailureDetails = true },
+                            contentPadding = PaddingValues(0.dp),
+                        ) {
+                            Text(stringResource(R.string.action_view_details), style = MaterialTheme.typography.labelMedium)
+                        }
                     }
                 }
             }
+            Spacer(Modifier.size(4.dp))
             TaskActionRow(
                 item = item,
                 outputDeleted = outputDeleted,
@@ -149,7 +179,6 @@ internal fun ConversionTaskRow(
                 onCancel = onCancel,
                 onRetry = onRetry,
                 onConvertAgain = onConvertAgain,
-                onOpen = onOpen,
                 onShare = onShare,
                 onShowInFolder = onShowInFolder,
                 onDeleteOutput = { outputUri ->
@@ -158,6 +187,14 @@ internal fun ConversionTaskRow(
                 onRequestDeleteOriginal = { confirmDeleteOriginal = true },
             )
         }
+    }
+
+    // 已完成且结果还没被删除时，整行点击直接打开，跟历史记录卡片的交互保持一致。
+    val outputUri = item.outputUri
+    if (item.status == ConversionStatus.COMPLETED && outputUri != null && !outputDeleted) {
+        Card(onClick = { onOpen(outputUri) }, modifier = Modifier.fillMaxWidth()) { rowContent() }
+    } else {
+        Card(modifier = Modifier.fillMaxWidth()) { rowContent() }
     }
 
     if (confirmDeleteOriginal) {
@@ -212,6 +249,10 @@ internal fun ConversionTaskRow(
     }
 }
 
+/**
+ * 行尾操作：进行中只显示"取消"，失败只显示"重试"，已完成才有"更多"溢出菜单——
+ * 跟历史记录卡片一样，"打开"已经交给整行点击，不在菜单里重复出现。
+ */
 @Composable
 private fun TaskActionRow(
     item: ConversionTaskUiItem,
@@ -220,65 +261,52 @@ private fun TaskActionRow(
     onCancel: () -> Unit,
     onRetry: () -> Unit,
     onConvertAgain: () -> Unit,
-    onOpen: (android.net.Uri) -> Unit,
     onShare: (android.net.Uri) -> Unit,
     onShowInFolder: () -> Unit,
     onDeleteOutput: (android.net.Uri) -> Unit,
     onRequestDeleteOriginal: () -> Unit,
 ) {
-    if (item.isActive || item.canRetry || item.canConvertAgain) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            if (item.isActive) {
-                TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
-            }
-            if (item.canRetry) {
-                TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
-            }
-            if (item.canConvertAgain) {
-                TextButton(onClick = onConvertAgain) { Text(stringResource(R.string.action_convert_again)) }
-            }
-        }
+    if (item.isActive) {
+        TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
+        return
     }
-
+    if (item.canRetry) {
+        TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+        return
+    }
     if (item.status != ConversionStatus.COMPLETED) return
 
     var menuExpanded by rememberSaveable(item.taskId) { mutableStateOf(false) }
-    val outputUri = item.outputUri
-    Row(
-        modifier = Modifier.padding(top = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        if (outputUri != null && !outputDeleted) {
-            IconButton(onClick = { onOpen(outputUri) }) {
-                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = stringResource(R.string.action_open))
-            }
-            IconButton(onClick = { onShare(outputUri) }) {
-                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share))
-            }
+    val outputUriForActions = item.outputUri?.takeIf { !outputDeleted }
+
+    Box {
+        IconButton(onClick = { menuExpanded = true }) {
+            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
         }
-        if (outputUri != null && !outputDeleted || !originalDeleted) {
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
-                }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    if (outputUri != null && !outputDeleted) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_show_in_folder)) },
-                            onClick = { menuExpanded = false; onShowInFolder() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_delete_result)) },
-                            onClick = { menuExpanded = false; onDeleteOutput(outputUri) },
-                        )
-                    }
-                    if (!originalDeleted) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_delete_original)) },
-                            onClick = { menuExpanded = false; onRequestDeleteOriginal() },
-                        )
-                    }
-                }
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            outputUriForActions?.let { outputUri ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_share)) },
+                    onClick = { menuExpanded = false; onShare(outputUri) },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_show_in_folder)) },
+                    onClick = { menuExpanded = false; onShowInFolder() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_delete_result)) },
+                    onClick = { menuExpanded = false; onDeleteOutput(outputUri) },
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_convert_again)) },
+                onClick = { menuExpanded = false; onConvertAgain() },
+            )
+            if (!originalDeleted) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_delete_original)) },
+                    onClick = { menuExpanded = false; onRequestDeleteOriginal() },
+                )
             }
         }
     }

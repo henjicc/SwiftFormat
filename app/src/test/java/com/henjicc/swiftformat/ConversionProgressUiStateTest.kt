@@ -1,6 +1,7 @@
 package com.henjicc.swiftformat
 
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.feature.progress.ConversionProgressUiState
 import com.henjicc.swiftformat.feature.progress.ConversionTaskUiItem
 import org.junit.Assert.assertEquals
@@ -17,6 +18,7 @@ class ConversionProgressUiStateTest {
         displayName = "a",
         originalFormat = "mov",
         outputFormat = "MP4",
+        mediaType = MediaType.VIDEO,
         inputUri = mock(),
         outputUri = null,
         status = status,

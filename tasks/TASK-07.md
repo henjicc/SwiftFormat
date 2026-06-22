@@ -499,6 +499,29 @@
   仍保持 152 key 同步。**仍未做真机视觉复核**，下次真机测试请重点确认"开始转换"按钮下方的空白是否已经消失、
   上下间距是否对称。
 
+### Stage U（已完成，已验证）—— 转换进度页对齐历史记录卡片的列表项样式
+- **问题**：用户反馈转换完成后的进度页（`ConversionTaskRow`）还是改造前的旧样式（纵向堆叠的卡片），跟
+  Stage P/Q 已经改过的历史记录列表项风格不一致。
+- **`ConversionProgressViewModel.kt`**：给 `ConversionTaskUiItem` 新增 `mediaType: MediaType` 字段（取自
+  `request.input.mediaType`），用于跟历史记录一样显示左侧媒体类型图标；同步更新了
+  `ConversionProgressUiStateTest.kt` 里直接构造 `ConversionTaskUiItem` 的测试夹具。
+- **`ProgressComponents.kt` 的 `ConversionTaskRow` 改造**：
+  - 整行重排成"40dp 媒体类型图标 + 两行文字 + 行尾操作"，跟 `HistoryRecordCard` 同款结构（复用
+    `feature.home.mediaIcon`）；文件名最多 2 行，状态文字只在非 `COMPLETED` 时显示。
+  - 进度条 (`LinearProgressIndicator`) 和失败原因/"查看详情"挪进文字列内部，跟随文件名一起换行，
+    不再额外占整张卡片宽度的一整行。
+  - 已完成且结果未被删除时，**整行点击直接打开**（用 Material3 `Card(onClick = ...)` 重载），不再单独放
+    "打开"图标，这点跟历史记录的处理完全一样。
+  - 行尾操作按状态收紧：进行中只显示"取消"，失败只显示"重试"，已完成才有"更多"溢出菜单
+    （分享/查看位置/删除结果/再次转换/删除原文件）——跟历史记录一样，"打开"被整行点击取代，不再重复出现
+    在菜单里。
+  - **行为未变**：取消/重试/再次转换/删除结果/删除原文件的具体回调和二次确认弹窗逻辑完全没动，只是
+    重新排布了视觉结构和触发入口。
+- **范围说明**：本次只改了单条任务行 `ConversionTaskRow`；页面顶部的整体进度条 `ProgressHeader`（总进度、
+  取消全部、完成汇总文案）保持不变，未做调整。
+- 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 均通过。**仍未做真机
+  视觉复核**，下次真机测试请重点确认转换完成后的列表是否跟历史页视觉一致、整行点击打开是否符合预期。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。

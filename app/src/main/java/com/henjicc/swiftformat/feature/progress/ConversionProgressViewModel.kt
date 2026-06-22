@@ -12,6 +12,7 @@ import com.henjicc.swiftformat.conversion.ConversionOrchestrator
 import com.henjicc.swiftformat.conversion.ConversionTask
 import com.henjicc.swiftformat.core.model.ConversionError
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.core.model.MediaType
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -23,6 +24,7 @@ data class ConversionTaskUiItem(
     val displayName: String,
     val originalFormat: String?,
     val outputFormat: String,
+    val mediaType: MediaType,
     val inputUri: Uri,
     val outputUri: Uri?,
     val status: ConversionStatus,
@@ -87,6 +89,7 @@ private fun ConversionTask.toUiItem() = ConversionTaskUiItem(
     displayName = request.input.displayName,
     originalFormat = request.input.extension,
     outputFormat = request.outputFormat,
+    mediaType = request.input.mediaType,
     inputUri = request.input.uri,
     outputUri = outputUri,
     status = status,
