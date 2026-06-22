@@ -5,6 +5,8 @@ import com.henjicc.swiftformat.core.model.SizePreset
 import com.henjicc.swiftformat.engine.media.AudioBitrateMapper
 import com.henjicc.swiftformat.engine.media.VideoBitrateMapper
 import com.henjicc.swiftformat.engine.media.VideoSizeMapper
+import com.henjicc.swiftformat.engine.tuning.QualityPresetTuning
+import com.henjicc.swiftformat.engine.tuning.QualityPresetTuning.forPresetOrStandard
 
 /**
  * 纯函数构建 FFmpeg 命令参数（见 SPEC 10.5：所有 FFmpeg 命令只能在本模块内部生成）。
@@ -20,14 +22,14 @@ object FfmpegCommandBuilder {
     ): List<String> {
         val codecArgs = when (outputFormat.uppercase()) {
             "MP3" -> {
-                val kbps = FfmpegAudioBitrateMapper.mp3TargetBitrateBps(quality ?: QualityPreset.HIGH) / 1000
+                val kbps = FfmpegAudioBitrateMapper.mp3TargetBitrateBps(quality ?: QualityPreset.STANDARD) / 1000
                 listOf("-acodec", "libmp3lame", "-b:a", "${kbps}k")
             }
 
             "FLAC" -> listOf("-acodec", "flac")
             "WAV" -> listOf("-acodec", "pcm_s16le")
             "OGG" -> {
-                val kbps = ((AudioBitrateMapper.targetBitrateBps("AAC", quality ?: QualityPreset.HIGH) ?: 160_000) / 1000).coerceAtLeast(1)
+                val kbps = ((AudioBitrateMapper.targetBitrateBps("AAC", quality ?: QualityPreset.STANDARD) ?: 160_000) / 1000).coerceAtLeast(1)
                 listOf("-acodec", "libvorbis", "-b:a", "${kbps}k")
             }
             else -> error("FfmpegEngine 不支持的音频输出格式: $outputFormat")
@@ -65,9 +67,12 @@ object FfmpegCommandBuilder {
         val codecArgs = when (outputFormat.uppercase()) {
             "WEBM" -> {
                 val audioBitrateKbps = (OpusBitrateMapper.targetBitrateBps(quality) / 1000).coerceAtLeast(1)
+                val vp9Speed = QualityPresetTuning.vp9EncodeSpeed.forPresetOrStandard(quality)
                 listOf(
                     "-c:v", "libvpx-vp9",
                     "-b:v", "${videoBitrateKbps}k",
+                    "-cpu-used", vp9Speed.toString(),
+                    "-threads", "0",
                     "-c:a", "libopus",
                     "-b:a", "${audioBitrateKbps}k",
                 )
@@ -78,6 +83,7 @@ object FfmpegCommandBuilder {
                 listOf(
                     "-c:v", "libopenh264",
                     "-b:v", "${videoBitrateKbps}k",
+                    "-threads", "0",
                     "-c:a", "aac",
                     "-b:a", "${audioBitrateKbps}k",
                 )
@@ -88,6 +94,7 @@ object FfmpegCommandBuilder {
                 listOf(
                     "-c:v", "libopenh264",
                     "-b:v", "${videoBitrateKbps}k",
+                    "-threads", "0",
                     "-c:a", "aac",
                     "-b:a", "${audioBitrateKbps}k",
                 )
@@ -173,7 +180,7 @@ object FfmpegCommandBuilder {
         inputPath: String,
         outputPath: String,
         outputFormat: String,
-        quality: QualityPreset = QualityPreset.HIGH,
+        quality: QualityPreset = QualityPreset.STANDARD,
     ): List<String> {
         val codecArgs = when (outputFormat.uppercase()) {
             "BMP" -> listOf("-frames:v", "1", "-c:v", "bmp")

@@ -38,7 +38,24 @@ class FfmpegCommandBuilderTest {
 
         assertTrue(args.containsAll(listOf("-map", "0:v:0", "-c:v", "libvpx-vp9", "-c:a", "libopus")))
         assertTrue(args.contains("scale=1280:720"))
+        assertTrue(args.containsAll(listOf("-cpu-used", "2", "-threads", "0")))
         assertEquals("out.webm", args.last())
+    }
+
+    @Test
+    fun webmVideoTranscode_smallSizeUsesFasterVp9EncodeSpeed() {
+        val args = FfmpegCommandBuilder.buildVideoTranscodeArgs(
+            inputPath = "in.mp4",
+            outputPath = "out.webm",
+            outputFormat = "WEBM",
+            quality = QualityPreset.SMALL_SIZE,
+            size = SizePreset.Original,
+            sourceDimensions = VideoSizeMapper.Dimensions(1920, 1080),
+            frameRate = 30.0,
+            sourceBitrateBps = 4_000_000,
+        )
+
+        assertTrue(args.containsAll(listOf("-cpu-used", "5")))
     }
 
     @Test
@@ -54,7 +71,7 @@ class FfmpegCommandBuilderTest {
             sourceBitrateBps = 2_000_000,
         )
 
-        assertTrue(args.containsAll(listOf("-c:v", "libopenh264", "-c:a", "aac")))
+        assertTrue(args.containsAll(listOf("-c:v", "libopenh264", "-c:a", "aac", "-threads", "0")))
         assertEquals("out.mkv", args.last())
     }
 
@@ -71,7 +88,7 @@ class FfmpegCommandBuilderTest {
             sourceBitrateBps = 3_000_000,
         )
 
-        assertTrue(args.containsAll(listOf("-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libopenh264", "-c:a", "aac")))
+        assertTrue(args.containsAll(listOf("-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libopenh264", "-c:a", "aac", "-threads", "0")))
         assertEquals("out.mov", args.last())
     }
 
