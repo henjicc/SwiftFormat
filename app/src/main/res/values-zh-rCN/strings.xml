@@ -41,7 +41,7 @@
     <string name="quality_small_size">省空间</string>
 
     <!-- 尺寸档位 -->
-    <string name="size_original">保持原始</string>
+    <string name="size_original">原始</string>
     <string name="size_4k">4K</string>
     <string name="size_2k">2K</string>
     <string name="size_1080p">1080P</string>
