@@ -1,0 +1,123 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, for example v1.0.0"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+      SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+      SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Validate signing secrets
+        shell: bash
+        run: |
+          missing=0
+          for name in SIGNING_KEYSTORE_BASE64 SIGNING_KEY_ALIAS SIGNING_STORE_PASSWORD SIGNING_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is required for release signing."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Build release artifacts
+        run: ./gradlew testDebugUnitTest lintDebug assembleRelease bundleRelease
+
+      - name: Decode keystore
+        shell: bash
+        run: |
+          echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > release.keystore
+
+      - name: Sign APK and AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUILD_TOOLS_DIR="$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -n 1)"
+          UNSIGNED_APK="$(find app/build/outputs/apk/release -name '*-release-unsigned.apk' -print -quit)"
+          RELEASE_AAB="app/build/outputs/bundle/release/app-release.aab"
+
+          if [ -z "$UNSIGNED_APK" ]; then
+            echo "::error::Unsigned release APK was not found."
+            exit 1
+          fi
+
+          mkdir -p release-artifacts
+
+          "$BUILD_TOOLS_DIR/zipalign" -p -f 4 "$UNSIGNED_APK" release-artifacts/swiftformat-${RELEASE_TAG}-aligned.apk
+          "$BUILD_TOOLS_DIR/apksigner" sign \
+            --ks release.keystore \
+            --ks-key-alias "$SIGNING_KEY_ALIAS" \
+            --ks-pass "pass:$SIGNING_STORE_PASSWORD" \
+            --key-pass "pass:$SIGNING_KEY_PASSWORD" \
+            --out release-artifacts/swiftformat-${RELEASE_TAG}.apk \
+            release-artifacts/swiftformat-${RELEASE_TAG}-aligned.apk
+          "$BUILD_TOOLS_DIR/apksigner" verify release-artifacts/swiftformat-${RELEASE_TAG}.apk
+
+          jarsigner \
+            -keystore release.keystore \
+            -storepass "$SIGNING_STORE_PASSWORD" \
+            -keypass "$SIGNING_KEY_PASSWORD" \
+            -signedjar release-artifacts/swiftformat-${RELEASE_TAG}.aab \
+            "$RELEASE_AAB" \
+            "$SIGNING_KEY_ALIAS"
+          jarsigner -verify -certs release-artifacts/swiftformat-${RELEASE_TAG}.aab
+
+          rm release-artifacts/swiftformat-${RELEASE_TAG}-aligned.apk
+          sha256sum release-artifacts/* > release-artifacts/SHA256SUMS.txt
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftformat-${{ env.RELEASE_TAG }}
+          path: release-artifacts/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          files: |
+            release-artifacts/swiftformat-${{ env.RELEASE_TAG }}.apk
+            release-artifacts/swiftformat-${{ env.RELEASE_TAG }}.aab
+            release-artifacts/SHA256SUMS.txt
