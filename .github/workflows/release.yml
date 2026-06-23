@@ -1,4 +1,4 @@
-name: Android Release
+name: Android Debug Release
 
 on:
   push:
@@ -14,20 +14,16 @@ permissions:
   contents: write
 
 concurrency:
-  group: android-release-${{ github.ref }}
+  group: android-debug-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build and publish release
+    name: Build and publish debug APK
     runs-on: ubuntu-latest
 
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-      SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
-      SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-      SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-      SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -45,70 +41,29 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Validate signing secrets
-        shell: bash
-        run: |
-          missing=0
-          for name in SIGNING_KEYSTORE_BASE64 SIGNING_KEY_ALIAS SIGNING_STORE_PASSWORD SIGNING_KEY_PASSWORD; do
-            if [ -z "${!name}" ]; then
-              echo "::error::$name is required for release signing."
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            exit 1
-          fi
+      - name: Build debug APK
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug
 
-      - name: Build release artifacts
-        run: ./gradlew testDebugUnitTest lintDebug assembleRelease bundleRelease
-
-      - name: Decode keystore
-        shell: bash
-        run: |
-          echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > release.keystore
-
-      - name: Sign APK and AAB
+      - name: Prepare release files
         shell: bash
         run: |
           set -euo pipefail
 
-          BUILD_TOOLS_DIR="$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -n 1)"
-          UNSIGNED_APK="$(find app/build/outputs/apk/release -name '*-release-unsigned.apk' -print -quit)"
-          RELEASE_AAB="app/build/outputs/bundle/release/app-release.aab"
+          DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
 
-          if [ -z "$UNSIGNED_APK" ]; then
-            echo "::error::Unsigned release APK was not found."
+          if [ ! -f "$DEBUG_APK" ]; then
+            echo "::error::Debug APK was not found."
             exit 1
           fi
 
           mkdir -p release-artifacts
-
-          "$BUILD_TOOLS_DIR/zipalign" -p -f 4 "$UNSIGNED_APK" release-artifacts/swiftformat-${RELEASE_TAG}-aligned.apk
-          "$BUILD_TOOLS_DIR/apksigner" sign \
-            --ks release.keystore \
-            --ks-key-alias "$SIGNING_KEY_ALIAS" \
-            --ks-pass "pass:$SIGNING_STORE_PASSWORD" \
-            --key-pass "pass:$SIGNING_KEY_PASSWORD" \
-            --out release-artifacts/swiftformat-${RELEASE_TAG}.apk \
-            release-artifacts/swiftformat-${RELEASE_TAG}-aligned.apk
-          "$BUILD_TOOLS_DIR/apksigner" verify release-artifacts/swiftformat-${RELEASE_TAG}.apk
-
-          jarsigner \
-            -keystore release.keystore \
-            -storepass "$SIGNING_STORE_PASSWORD" \
-            -keypass "$SIGNING_KEY_PASSWORD" \
-            -signedjar release-artifacts/swiftformat-${RELEASE_TAG}.aab \
-            "$RELEASE_AAB" \
-            "$SIGNING_KEY_ALIAS"
-          jarsigner -verify -certs release-artifacts/swiftformat-${RELEASE_TAG}.aab
-
-          rm release-artifacts/swiftformat-${RELEASE_TAG}-aligned.apk
+          cp "$DEBUG_APK" "release-artifacts/swiftformat-${RELEASE_TAG}-debug.apk"
           sha256sum release-artifacts/* > release-artifacts/SHA256SUMS.txt
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: swiftformat-${{ env.RELEASE_TAG }}
+          name: swiftformat-${{ env.RELEASE_TAG }}-debug
           path: release-artifacts/
 
       - name: Publish GitHub Release
@@ -116,8 +71,15 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
+          name: 转个格式 ${{ env.RELEASE_TAG }} debug
+          prerelease: true
           generate_release_notes: true
+          body: |
+            这是用于测试和体验的 debug 安装包，不需要发布签名密钥。
+
+            注意：
+            - debug 包适合私下分发和测试，不建议作为长期正式版本使用。
+            - 后续切换到 release 签名包时，可能无法直接覆盖安装这个 debug 版本，需要先卸载。
           files: |
-            release-artifacts/swiftformat-${{ env.RELEASE_TAG }}.apk
-            release-artifacts/swiftformat-${{ env.RELEASE_TAG }}.aab
+            release-artifacts/swiftformat-${{ env.RELEASE_TAG }}-debug.apk
             release-artifacts/SHA256SUMS.txt

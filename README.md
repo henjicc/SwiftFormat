@@ -171,16 +171,13 @@ Windows：
 - 推送形如 `v1.0.0` 的 tag。
 - 在 GitHub Actions 页面手动运行 workflow，并填写 release tag。
 
-发布 workflow 会运行单元测试、Lint、构建 Release APK/AAB、使用 GitHub Secrets 签名，然后把安装包上传到 GitHub Releases。
+当前发布 workflow 会运行单元测试、Lint，并构建 `app-debug.apk` 上传到 GitHub Releases。
 
-需要在仓库 Settings -> Secrets and variables -> Actions 中配置：
+说明：
 
-| Secret | 说明 |
-|---|---|
-| `SIGNING_KEYSTORE_BASE64` | 发布 keystore 文件的 Base64 内容 |
-| `SIGNING_KEY_ALIAS` | keystore alias |
-| `SIGNING_STORE_PASSWORD` | keystore store password |
-| `SIGNING_KEY_PASSWORD` | key password |
+- 这个流程不需要 GitHub Secrets，也不需要 release keystore。
+- debug 包适合私下分发、朋友体验和早期测试。
+- 后续如果切换到正式 release 签名包，可能无法直接覆盖安装 debug 版本，需要先卸载。
 
 ## 📁 项目结构
 
@@ -229,9 +226,9 @@ SwiftFormat/
 </details>
 
 <details>
-<summary><strong>Release workflow 为什么需要签名密钥？</strong></summary>
+<summary><strong>现在的 Release workflow 需要签名密钥吗？</strong></summary>
 
-Android Release 安装包必须签名后才适合分发。workflow 只从 GitHub Secrets 读取密钥，不会把 keystore 或密码提交到仓库。
+不需要。当前 workflow 上传的是 debug APK，Android Gradle 插件会自动使用调试签名。它适合测试分发，不建议作为长期正式版本。
 
 </details>
 

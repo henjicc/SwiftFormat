@@ -23,7 +23,7 @@
 - [ ] 多设备/4KB+16KB 页面/低内存/横竖屏测试
 - [ ] 单元/集成/UI 测试补齐（SPEC 20）
 - [x] 体积优化与发布准备（ABI/App Bundle、许可、隐私说明）—— 见 Stage M，签名配置仍需用户提供发布密钥
-- [x] README 与 GitHub Releases 自动化准备—— 见 Stage V，发布签名密钥通过 GitHub Secrets 注入
+- [x] README 与 GitHub Releases 自动化准备—— 见 Stage V，当前先发布 debug APK，无需签名密钥
 
 ## 验收标准
 - SPEC 19 全部可测试验收项通过（文件选择/参数/转换/多语言/主题/稳定性）。
@@ -523,19 +523,19 @@
 - 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 均通过。**仍未做真机
   视觉复核**，下次真机测试请重点确认转换完成后的列表是否跟历史页视觉一致、整行点击打开是否符合预期。
 
-### Stage V（已完成，已验证）—— 中文 README + GitHub Releases 自动化
+### Stage V（已完成，已验证）—— 中文 README + GitHub Releases debug 包自动化
 - **中文 README**：新增 `README.md`，参考用户提供的通用模板保留居中标题、徽章、目录、下载、使用指南、
   技术栈、开发指南、项目结构、路线图、FAQ 与许可证/开源组件说明；删掉官网、桌面端下载、网盘镜像等当前
   Android 项目并不存在的占位内容，链接落到 `henjicc/SwiftFormat` 仓库。
 - **发布 workflow**：新增 `.github/workflows/release.yml`，支持推送 `v*` tag 或手动填写 tag 触发；流程会
-  设置 JDK 17、运行 `testDebugUnitTest lintDebug assembleRelease bundleRelease`，再用 GitHub Secrets 中的
-  `SIGNING_KEYSTORE_BASE64` / `SIGNING_KEY_ALIAS` / `SIGNING_STORE_PASSWORD` / `SIGNING_KEY_PASSWORD`
-  对 release APK/AAB 签名，生成 SHA256 校验文件，并通过 `softprops/action-gh-release` 上传到 GitHub Releases。
-- **边界说明**：仓库不保存发布 keystore；如果未配置签名 Secrets，workflow 会在发布前显式失败并提示缺失项。
-  本地验证只能确认 unsigned release APK 与 AAB 能生成，真实签名和 Release 上传需在 GitHub runner 上验证。
+  设置 JDK 17、运行 `testDebugUnitTest lintDebug assembleDebug`，复制 `app-debug.apk` 为带 tag 的测试安装包，
+  生成 SHA256 校验文件，并通过 `softprops/action-gh-release` 以 prerelease 形式上传到 GitHub Releases。
+- **边界说明**：当前阶段按用户要求先发 debug 包，workflow 不需要 GitHub Secrets、release keystore 或签名密码；
+  debug 包适合私下测试和朋友体验，不建议作为长期正式版本。后续切换 release 签名包时，可能无法覆盖安装
+  已安装的 debug 版本，需要先卸载。
 - 验证：临时设置 `JAVA_HOME=C:\Program Files\Java\jdk-17.0.5` 后执行
-  `gradlew.bat testDebugUnitTest lintDebug assembleRelease bundleRelease` 通过；本地产物包含
-  `app/build/outputs/apk/release/app-release-unsigned.apk` 与 `app/build/outputs/bundle/release/app-release.aab`。
+  `gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过；本地产物包含
+  `app/build/outputs/apk/debug/app-debug.apk`。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
