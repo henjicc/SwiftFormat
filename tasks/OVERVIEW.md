@@ -195,8 +195,9 @@
   TASK-07 Stage I（FFmpeg 运行时启动失败诊断增强：新增 startup probe 与 cause 链格式化，让
   `FFmpegKit failed to start on brand ...` 能进一步看到底层 `UnsatisfiedLinkError/dlopen failed` 详情），
   TASK-07 Stage V（新增中文 `README.md` 与 `.github/workflows/release.yml`：支持推送 `v*` tag 或手动触发
-  GitHub Actions，按当前测试分发策略运行测试/Lint/`assembleDebug`，无需 GitHub Secrets 或 release keystore，
-  上传 debug APK 与 SHA256 校验文件到 GitHub Releases；本地已验证 debug APK 可生成），
+  GitHub Actions，按当前测试分发策略运行测试/Lint/`assembleDebug -Pswiftformat.abiSplits=true`，无需
+  GitHub Secrets 或 release keystore，上传按 ABI 拆分的测试 APK 与 SHA256 校验文件到 GitHub Releases；
+  README 下载按钮直连 `arm64-v8a` 安装包；本地已验证四个 ABI APK 可生成），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」

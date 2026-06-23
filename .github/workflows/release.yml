@@ -1,4 +1,4 @@
-name: Android Debug Release
+name: Android APK Release
 
 on:
   push:
@@ -7,19 +7,19 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag, for example v1.0.0"
+        description: "Release tag, for example v0.0.1"
         required: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: android-debug-release-${{ github.ref }}
+  group: android-apk-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build and publish debug APK
+    name: Build and publish APKs
     runs-on: ubuntu-latest
 
     env:
@@ -41,29 +41,29 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build debug APK
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug
+      - name: Build APKs
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug -Pswiftformat.abiSplits=true
 
       - name: Prepare release files
         shell: bash
         run: |
           set -euo pipefail
 
-          DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
-
-          if [ ! -f "$DEBUG_APK" ]; then
-            echo "::error::Debug APK was not found."
-            exit 1
-          fi
-
           mkdir -p release-artifacts
-          cp "$DEBUG_APK" "release-artifacts/swiftformat-${RELEASE_TAG}-debug.apk"
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            apk="app/build/outputs/apk/debug/app-${abi}-debug.apk"
+            if [ ! -f "$apk" ]; then
+              echo "::error::APK for ${abi} was not found at ${apk}."
+              exit 1
+            fi
+            cp "$apk" "release-artifacts/swiftformat-${abi}.apk"
+          done
           sha256sum release-artifacts/* > release-artifacts/SHA256SUMS.txt
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: swiftformat-${{ env.RELEASE_TAG }}-debug
+          name: swiftformat-${{ env.RELEASE_TAG }}
           path: release-artifacts/
 
       - name: Publish GitHub Release
@@ -71,15 +71,19 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
-          name: 转个格式 ${{ env.RELEASE_TAG }} debug
-          prerelease: true
+          name: 转个格式 ${{ env.RELEASE_TAG }}
+          prerelease: false
           generate_release_notes: true
           body: |
-            这是用于测试和体验的 debug 安装包，不需要发布签名密钥。
+            这是用于测试和体验的安装包，不需要发布签名密钥。
 
-            注意：
-            - debug 包适合私下分发和测试，不建议作为长期正式版本使用。
-            - 后续切换到 release 签名包时，可能无法直接覆盖安装这个 debug 版本，需要先卸载。
+            下载建议：
+            - 大多数安卓手机请选择 `swiftformat-arm64-v8a.apk`。
+            - 老旧 32 位安卓设备请选择 `swiftformat-armeabi-v7a.apk`。
+            - 模拟器再按需选择 `x86` 或 `x86_64`。
           files: |
-            release-artifacts/swiftformat-${{ env.RELEASE_TAG }}-debug.apk
+            release-artifacts/swiftformat-arm64-v8a.apk
+            release-artifacts/swiftformat-armeabi-v7a.apk
+            release-artifacts/swiftformat-x86.apk
+            release-artifacts/swiftformat-x86_64.apk
             release-artifacts/SHA256SUMS.txt

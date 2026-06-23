@@ -67,11 +67,11 @@
 
 ## 📥 下载
 
-最新安装包会发布在 GitHub Releases：
+最新安装包会发布在 GitHub Releases。大多数安卓手机请选择 `arm64-v8a` 包：
 
 <div align="center">
 
-[![下载最新版本](https://img.shields.io/github/v/release/henjicc/SwiftFormat?style=for-the-badge&label=下载最新版本&color=blue)](https://github.com/henjicc/SwiftFormat/releases/latest)
+[![下载安卓版](https://img.shields.io/badge/下载安卓版-0.0.1-blue?style=for-the-badge)](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-arm64-v8a.apk)
 
 [查看全部版本与更新记录](https://github.com/henjicc/SwiftFormat/releases)
 
@@ -79,7 +79,9 @@
 
 | 平台 | 文件类型 | 下载地址 |
 |---|---|---|
-| Android | `.apk` | [前往最新版本](https://github.com/henjicc/SwiftFormat/releases/latest) |
+| Android（大多数手机） | `.apk` | [直接下载 arm64-v8a](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-arm64-v8a.apk) |
+| Android（老旧 32 位设备） | `.apk` | [下载 armeabi-v7a](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-armeabi-v7a.apk) |
+| Android 模拟器 | `.apk` | [下载 x86](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-x86.apk) / [下载 x86_64](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-x86_64.apk) |
 
 安装说明：
 
@@ -168,16 +170,16 @@ Windows：
 
 触发方式：
 
-- 推送形如 `v1.0.0` 的 tag。
+- 推送形如 `v0.0.1` 的 tag。
 - 在 GitHub Actions 页面手动运行 workflow，并填写 release tag。
 
-当前发布 workflow 会运行单元测试、Lint，并构建 `app-debug.apk` 上传到 GitHub Releases。
+当前发布 workflow 会运行单元测试、Lint，并按 ABI 构建 APK 上传到 GitHub Releases。
 
 说明：
 
 - 这个流程不需要 GitHub Secrets，也不需要 release keystore。
-- debug 包适合私下分发、朋友体验和早期测试。
-- 后续如果切换到正式 release 签名包，可能无法直接覆盖安装 debug 版本，需要先卸载。
+- 当前安装包适合私下分发、朋友体验和早期测试。
+- 后续如果切换到正式 release 签名包，可能无法直接覆盖安装当前版本，需要先卸载。
 
 ## 📁 项目结构
 
@@ -228,7 +230,7 @@ SwiftFormat/
 <details>
 <summary><strong>现在的 Release workflow 需要签名密钥吗？</strong></summary>
 
-不需要。当前 workflow 上传的是 debug APK，Android Gradle 插件会自动使用调试签名。它适合测试分发，不建议作为长期正式版本。
+不需要。当前 workflow 上传的是测试用 APK，Android Gradle 插件会自动使用调试签名。它适合测试分发，不建议作为长期正式版本。
 
 </details>
 
