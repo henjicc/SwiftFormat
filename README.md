@@ -71,7 +71,7 @@
 
 <div align="center">
 
-[![下载安卓版](https://img.shields.io/badge/下载安卓版-0.0.1-blue?style=for-the-badge)](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-arm64-v8a.apk)
+[![下载安卓版](https://img.shields.io/badge/下载安卓版-0.0.1-blue?style=for-the-badge)](https://github.com/henjicc/SwiftFormat/releases/download/v0.0.1/swiftformat-arm64-v8a.apk)
 
 [查看全部版本与更新记录](https://github.com/henjicc/SwiftFormat/releases)
 
@@ -79,9 +79,9 @@
 
 | 平台 | 文件类型 | 下载地址 |
 |---|---|---|
-| Android（大多数手机） | `.apk` | [直接下载 arm64-v8a](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-arm64-v8a.apk) |
-| Android（老旧 32 位设备） | `.apk` | [下载 armeabi-v7a](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-armeabi-v7a.apk) |
-| Android 模拟器 | `.apk` | [下载 x86](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-x86.apk) / [下载 x86_64](https://github.com/henjicc/SwiftFormat/releases/latest/download/swiftformat-x86_64.apk) |
+| Android（大多数手机） | `.apk` | [直接下载 arm64-v8a](https://github.com/henjicc/SwiftFormat/releases/download/v0.0.1/swiftformat-arm64-v8a.apk) |
+| Android（老旧 32 位设备） | `.apk` | [下载 armeabi-v7a](https://github.com/henjicc/SwiftFormat/releases/download/v0.0.1/swiftformat-armeabi-v7a.apk) |
+| Android 模拟器 | `.apk` | [下载 x86](https://github.com/henjicc/SwiftFormat/releases/download/v0.0.1/swiftformat-x86.apk) / [下载 x86_64](https://github.com/henjicc/SwiftFormat/releases/download/v0.0.1/swiftformat-x86_64.apk) |
 
 安装说明：
 
