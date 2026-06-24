@@ -583,6 +583,16 @@
   `JAVA_HOME`）。曾并行执行 Gradle 时触发 Kotlin incremental cache 的 `Storage ... already registered` 噪声，改串行后
   验证干净通过。
 
+### Stage Y（已完成，已验证）—— 去除进度条末端 stop indicator 圆点
+- **问题**：进度页顶部总进度条与任务卡片内进度条右侧会显示一个蓝色小圆点，用户真机截图中看起来像多余的脏点。
+- **根因**：当前 Material3 `LinearProgressIndicator` 默认会绘制 `drawStopIndicator`，在本项目这种转换进度条里没有
+  明确语义，且与轨道断点一起出现时容易被误解为 UI 错误。
+- **修复**：
+  - 新增 `ConversionLinearProgressIndicator` 小封装，内部统一调用 `LinearProgressIndicator(..., drawStopIndicator = {})`。
+  - 顶部总进度条和单任务行进度条都改用该封装，保持原进度值、颜色、尺寸与布局不变，只去掉末端圆点。
+- 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
+  JDK 17 设置 `JAVA_HOME` 执行）。仍未做真机截图复核，下次安装包请重点确认两处进度条右侧圆点已消失。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。

@@ -202,6 +202,7 @@
   新增 `progressTaskIds` 让进度页、首页活跃卡片与通知只汇总当前任务集合；历史页只展示终态记录并支持长按多选删除），
   TASK-07 Stage X（修复无活跃任务时仍显示“正在转换 0 个文件 · 100%”的假前台通知：服务启动前先判断
   `NotificationTaskSnapshot.hasActiveWork`，只有真实活跃任务或刚提交的占位任务才进入前台通知），
+  TASK-07 Stage Y（去除进度页总进度条与任务行进度条末端 Material3 默认 stop indicator 圆点），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」

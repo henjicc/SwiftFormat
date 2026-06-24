@@ -1,5 +1,6 @@
 package com.henjicc.swiftformat.feature.progress
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,7 +35,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.model.ConversionStatus
@@ -55,7 +55,7 @@ internal fun ProgressHeader(state: ConversionProgressUiState, onCancelAll: () ->
                 TextButton(onClick = onCancelAll) { Text(stringResource(R.string.progress_cancel_all)) }
             }
         }
-        LinearProgressIndicator(
+        ConversionLinearProgressIndicator(
             progress = { state.overallFraction },
             modifier = Modifier
                 .fillMaxWidth()
@@ -145,7 +145,7 @@ internal fun ConversionTaskRow(
                     modifier = Modifier.padding(top = 2.dp),
                 )
                 if (item.isActive) {
-                    LinearProgressIndicator(
+                    ConversionLinearProgressIndicator(
                         progress = { item.progress },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -317,4 +317,16 @@ private fun statusColor(status: ConversionStatus) = when (status) {
     ConversionStatus.COMPLETED -> MaterialTheme.colorScheme.primary
     ConversionStatus.FAILED -> MaterialTheme.colorScheme.error
     else -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+@Composable
+private fun ConversionLinearProgressIndicator(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    LinearProgressIndicator(
+        progress = progress,
+        modifier = modifier,
+        drawStopIndicator = {},
+    )
 }
