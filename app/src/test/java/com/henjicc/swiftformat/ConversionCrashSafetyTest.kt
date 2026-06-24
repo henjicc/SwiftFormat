@@ -19,16 +19,20 @@ import com.henjicc.swiftformat.engine.api.ConversionEngine
 import com.henjicc.swiftformat.engine.api.ConversionEngineSelector
 import com.henjicc.swiftformat.engine.api.ConversionProgress
 import com.henjicc.swiftformat.engine.api.ConversionResult
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.mockito.Mockito.timeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class ConversionCrashSafetyTest {
@@ -82,6 +86,60 @@ class ConversionCrashSafetyTest {
         assertEquals(ConversionStatus.FAILED, task.status)
         assertEquals(ConversionError.Kind.ENGINE_CRASH, task.error?.kind)
         assertTrue(task.error?.debugMessage?.contains("native ffmpeg load failed") == true)
+    }
+
+    @Test
+    fun cancel_activeTask_marksCancelledImmediatelyAndPersistsCancellation() = runBlocking {
+        val outputResolver = mock<OutputLocationResolver>()
+        val historyRepository = mock<ConversionHistoryRepository>()
+        val logger = mock<Logger>()
+        val inputUri = mock<Uri>()
+        val outputUri = mock<Uri>()
+        val input = testInput(inputUri)
+        val pendingRecord = pendingRecord(input, outputUri)
+        val convertStarted = CompletableDeferred<Unit>()
+        val engine = object : ConversionEngine {
+            override fun supports(request: com.henjicc.swiftformat.core.model.ConversionRequest): Boolean = true
+
+            override suspend fun convert(
+                request: com.henjicc.swiftformat.core.model.ConversionRequest,
+                onProgress: (ConversionProgress) -> Unit,
+            ): ConversionResult {
+                convertStarted.complete(Unit)
+                delay(Long.MAX_VALUE)
+                error("unreachable")
+            }
+
+            override suspend fun cancel(taskId: String) = Unit
+        }
+        val orchestrator = ConversionOrchestrator(
+            engineSelector = ConversionEngineSelector(listOf(engine)),
+            outputLocationResolver = outputResolver,
+            historyRepository = historyRepository,
+            logger = logger,
+        )
+
+        whenever(outputResolver.resolve(any(), eq("WEBP"), eq(MediaType.IMAGE))).thenReturn(outputUri)
+        whenever(historyRepository.insert(any())).thenReturn(1L)
+        whenever(historyRepository.getById(1L)).thenReturn(pendingRecord)
+
+        val taskId = orchestrator.submit(
+            input = input,
+            outputFormat = "WEBP",
+            quality = null,
+            size = null,
+        )
+        withTimeout(3_000) { convertStarted.await() }
+
+        orchestrator.cancel(taskId)
+
+        assertEquals(ConversionStatus.CANCELLED, orchestrator.tasks.value.getValue(taskId).status)
+        verify(historyRepository, timeout(1_000).atLeastOnce()).update(
+            check {
+                assertEquals(pendingRecord.id, it.id)
+                assertEquals(ConversionStatus.CANCELLED, it.status)
+            },
+        )
     }
 
     @Test

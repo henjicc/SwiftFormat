@@ -22,6 +22,7 @@ import com.henjicc.swiftformat.conversion.ConversionOrchestrator
 import com.henjicc.swiftformat.conversion.ConversionTask
 import com.henjicc.swiftformat.core.model.ConversionStatus
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -49,7 +50,9 @@ class ConversionForegroundService : Service() {
         super.onCreate()
         createNotificationChannel()
         serviceScope.launch {
-            orchestrator.tasks.collect { tasks -> onTasksChanged(tasks.values) }
+            combine(orchestrator.tasks, orchestrator.progressTaskIds) { tasks, progressTaskIds ->
+                scopedTasks(tasks, progressTaskIds)
+            }.collect { tasks -> onTasksChanged(tasks) }
         }
     }
 
@@ -58,7 +61,7 @@ class ConversionForegroundService : Service() {
             ACTION_CANCEL_ALL -> orchestrator.cancelAll()
             ACTION_CANCEL_TASK -> intent.getStringExtra(EXTRA_TASK_ID)?.let(orchestrator::cancel)
         }
-        startForeground(NOTIFICATION_ID, buildNotification(orchestrator.tasks.value.values))
+        startForeground(NOTIFICATION_ID, buildNotification(scopedTasks(orchestrator.tasks.value, orchestrator.progressTaskIds.value)))
         hasStartedForeground = true
         return START_NOT_STICKY
     }
@@ -221,3 +224,13 @@ private fun ConversionStatus.isActive(): Boolean = this in setOf(
     ConversionStatus.CONVERTING,
     ConversionStatus.SAVING,
 )
+
+private fun scopedTasks(
+    tasks: Map<String, ConversionTask>,
+    progressTaskIds: Set<String>,
+): Collection<ConversionTask> =
+    if (progressTaskIds.isEmpty()) {
+        tasks.values.filter { it.status.isActive() }
+    } else {
+        progressTaskIds.mapNotNull(tasks::get)
+    }

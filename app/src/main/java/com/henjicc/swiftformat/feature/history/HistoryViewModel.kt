@@ -22,11 +22,13 @@ import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.SizePreset
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class HistoryUiItem(
@@ -51,8 +53,11 @@ data class HistoryUiItem(
 
 data class HistoryUiState(
     val items: List<HistoryUiItem> = emptyList(),
+    val selectedIds: Set<Long> = emptySet(),
+    val activeCount: Int = 0,
 ) {
-    val activeCount: Int = items.count { it.isActive }
+    val isSelectionMode: Boolean = selectedIds.isNotEmpty()
+    val selectedCount: Int = selectedIds.size
 }
 
 sealed interface HistoryEvent {
@@ -67,8 +72,23 @@ class HistoryViewModel(
     private val resultFileActions: ResultFileActions,
 ) : ViewModel() {
 
-    val uiState: StateFlow<HistoryUiState> = repository.observeAll()
-        .map { records -> HistoryUiState(records.map(ConversionHistoryRecord::toUiItem)) }
+    private val selectedIds = MutableStateFlow<Set<Long>>(emptySet())
+
+    val uiState: StateFlow<HistoryUiState> = combine(
+        repository.observeAll(),
+        orchestrator.tasks,
+        selectedIds,
+    ) { records, tasks, selected ->
+        val terminalItems = records
+            .filter { it.status !in ACTIVE_STATUSES }
+            .map(ConversionHistoryRecord::toUiItem)
+        val availableIds = terminalItems.mapTo(HashSet()) { it.id }
+        HistoryUiState(
+            items = terminalItems,
+            selectedIds = selected.filterTo(LinkedHashSet()) { it in availableIds },
+            activeCount = tasks.values.count { it.status in ACTIVE_STATUSES },
+        )
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 
     private val _events = MutableSharedFlow<HistoryEvent>()
@@ -77,6 +97,26 @@ class HistoryViewModel(
     fun deleteRecord(recordId: Long) {
         viewModelScope.launch {
             repository.deleteById(recordId)
+            selectedIds.update { it - recordId }
+        }
+    }
+
+    fun toggleSelection(recordId: Long) {
+        selectedIds.update { selected ->
+            if (recordId in selected) selected - recordId else selected + recordId
+        }
+    }
+
+    fun clearSelection() {
+        selectedIds.value = emptySet()
+    }
+
+    fun deleteSelectedRecords() {
+        val ids = selectedIds.value
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            ids.forEach { repository.deleteById(it) }
+            selectedIds.value = emptySet()
         }
     }
 
@@ -100,12 +140,13 @@ class HistoryViewModel(
                 _events.emit(HistoryEvent.ShowMessage(R.string.history_reconvert_failed))
                 return@launch
             }
-            orchestrator.submit(
+            val taskId = orchestrator.submit(
                 input = input,
                 outputFormat = record.outputFormat,
                 quality = record.quality,
                 size = record.size,
             )
+            orchestrator.showProgressFor(listOf(taskId))
             _events.emit(HistoryEvent.NavigateToProgress)
         }
     }

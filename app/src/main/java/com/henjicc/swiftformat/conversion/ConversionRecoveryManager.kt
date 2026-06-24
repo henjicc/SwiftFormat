@@ -25,7 +25,7 @@ class ConversionRecoveryManager(
     suspend fun recoverActiveTasks(): Int {
         val activeRecords = historyRepository.getActiveRecords()
         val preserveMetadata = settingsRepository.settings.first().preserveImageMetadata
-        var recoveredCount = 0
+        val recoveredTaskIds = mutableListOf<String>()
         for (record in activeRecords) {
             val input = runCatching { metadataReader.read(record.inputUri) }.getOrElse { error ->
                 logger.e(TAG, "recover metadata failed: ${record.id}", error)
@@ -50,7 +50,7 @@ class ConversionRecoveryManager(
                 )
             }
             recovered.onSuccess {
-                recoveredCount += 1
+                recoveredTaskIds += it
             }.onFailure { error ->
                 logger.e(TAG, "recover task failed to queue: ${record.id}", error)
                 historyRepository.update(
@@ -62,7 +62,9 @@ class ConversionRecoveryManager(
                 )
             }
         }
+        val recoveredCount = recoveredTaskIds.size
         if (recoveredCount > 0) {
+            orchestrator.showProgressFor(recoveredTaskIds)
             if (!ConversionForegroundService.start(appContext)) {
                 logger.w(TAG, "failed to start foreground service for recovered tasks")
             }

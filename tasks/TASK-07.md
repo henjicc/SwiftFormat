@@ -540,6 +540,28 @@
   `gradlew.bat testDebugUnitTest lintDebug assembleDebug -Pswiftformat.abiSplits=true` 通过；本地产物包含
   `app-arm64-v8a-debug.apk`、`app-armeabi-v7a-debug.apk`、`app-x86-debug.apk`、`app-x86_64-debug.apk`。
 
+### Stage W（已完成，已验证）—— 取消语义、当前进度边界与历史多选删除
+- **修复“点取消后被标记为失败/重启后又恢复等待中”的根因窗口**：
+  - `ConversionOrchestrator.cancel(taskId)` 现在会立即把内存任务与 Room 历史记录写成 `CANCELLED`，而不是只
+    `Job.cancel()` 后等待协程稍后兜底；即使用户点完取消马上杀进程/重启，也尽量避免旧记录仍停在
+    `PENDING/PREPARING/CONVERTING/SAVING` 后被恢复。
+  - 新增 `cancellationRequests` 标记，若底层引擎在取消后仍返回成功/失败结果，编排层会优先以“已取消”收尾，
+    不让迟到的引擎结果覆盖用户的取消意图。
+- **把“当前转换进度”和“历史记录”边界切开**：
+  - 新增 `progressTaskIds` 作为当前进度页任务集合。首页开始转换、历史“再次转换”、进程恢复都会显式设置当前集合；
+    进度页、首页活跃任务卡片与前台服务通知都只展示/汇总这个集合，避免上一轮已结束或旧恢复任务混进当前页面。
+  - 当没有显式当前集合时，进度相关 UI 只回退展示真正活跃任务，不再展示进程内所有旧任务。
+- **历史页改为终态历史列表 + 长按多选删除**：
+  - `HistoryViewModel` 现在过滤掉 `PENDING/PREPARING/CONVERTING/SAVING`，这些状态只属于进度页；历史列表只展示
+    已完成/已取消/失败等终态记录，避免历史里出现“等待中/正在运行”的混乱感。
+  - 历史页顶部“当前任务”入口改为基于编排器中的实时活跃任务计数，而不是基于 Room 历史里的旧活跃状态。
+  - `HistoryRecordCard` 支持长按进入多选模式；选择模式下可点行或复选框切换选中，顶部显示已选数量并可批量删除记录。
+- **回归测试**：`ConversionCrashSafetyTest` 新增取消时序测试，覆盖活跃任务取消后应立即进入 `CANCELLED` 并持久化。
+- 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest`、`gradlew.bat lintDebug`、
+  `gradlew.bat assembleDebug` 通过（使用本机 JDK 17 设置 `JAVA_HOME` 执行）。**仍未做真机视觉复核**，下次真机测试
+  请重点确认：点取消后状态是否稳定为“已取消”；重启后新添加文件进入进度页是否只显示本轮文件；历史页长按多选删除
+  是否符合手感预期。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。

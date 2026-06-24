@@ -47,9 +47,12 @@ class ConversionOrchestrator(
 
     private val activeEngines = ConcurrentHashMap<String, ConversionEngine>()
     private val activeJobs = ConcurrentHashMap<String, Job>()
+    private val cancellationRequests = ConcurrentHashMap.newKeySet<String>()
 
     private val _tasks = MutableStateFlow<Map<String, ConversionTask>>(emptyMap())
     val tasks: StateFlow<Map<String, ConversionTask>> = _tasks.asStateFlow()
+    private val _progressTaskIds = MutableStateFlow<Set<String>>(emptySet())
+    val progressTaskIds: StateFlow<Set<String>> = _progressTaskIds.asStateFlow()
 
     /** 提交单个文件转换；返回任务 id（即 [ConversionRequest.id]）。 */
     fun submit(
@@ -159,6 +162,10 @@ class ConversionOrchestrator(
                         )
                     }
                 }
+                if (cancellationRequests.contains(request.id)) {
+                    safeCancelTask(request.id, historyId)
+                    return@withPermit
+                }
                 when (result) {
                     is ConversionResult.Success -> safeCompleteTask(request.id, historyId, result)
                     is ConversionResult.Failure -> safeFailTask(request.id, historyId, result.error)
@@ -179,11 +186,19 @@ class ConversionOrchestrator(
             )
         } finally {
             activeEngines.remove(request.id)
+            cancellationRequests.remove(request.id)
         }
     }
 
     /** 取消单个任务：未开始的任务直接取消协程；已开始的任务还需通知引擎中断原生工作。 */
     fun cancel(taskId: String) {
+        val task = _tasks.value[taskId] ?: return
+        if (task.status !in ACTIVE_STATUSES) return
+        cancellationRequests.add(taskId)
+        updateTask(taskId) { current -> current?.copy(status = ConversionStatus.CANCELLED) }
+        scope.launch {
+            safeCancelTask(taskId, task.historyId)
+        }
         activeEngines[taskId]?.let { engine ->
             scope.launch { engine.cancel(taskId) }
         }
@@ -213,10 +228,18 @@ class ConversionOrchestrator(
             task.request.quality,
             task.request.size,
             task.request.preserveMetadata,
-        )
+        ).also { newTaskId -> addProgressTasks(listOf(newTaskId)) }
     }
 
     fun summary(): ConversionBatchSummary = ConversionBatchSummary.from(_tasks.value.values)
+
+    fun showProgressFor(taskIds: Collection<String>) {
+        _progressTaskIds.value = taskIds.toSet()
+    }
+
+    fun addProgressTasks(taskIds: Collection<String>) {
+        _progressTaskIds.update { current -> current + taskIds }
+    }
 
     private suspend fun completeTask(id: String, historyId: Long, result: ConversionResult.Success) {
         updateTask(id) { it?.copy(status = ConversionStatus.COMPLETED, progress = 1f, outputUri = result.outputUri) }
@@ -310,5 +333,11 @@ class ConversionOrchestrator(
 
     private companion object {
         const val TAG = "ConversionOrchestrator"
+        val ACTIVE_STATUSES = setOf(
+            ConversionStatus.PENDING,
+            ConversionStatus.PREPARING,
+            ConversionStatus.CONVERTING,
+            ConversionStatus.SAVING,
+        )
     }
 }

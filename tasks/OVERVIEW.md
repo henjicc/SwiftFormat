@@ -198,6 +198,8 @@
   GitHub Actions，按当前测试分发策略运行测试/Lint/`assembleDebug -Pswiftformat.abiSplits=true`，无需
   GitHub Secrets 或 release keystore，上传按 ABI 拆分的测试 APK 与 SHA256 校验文件到 GitHub Releases；
   README 下载按钮直连 `arm64-v8a` 安装包；本地已验证四个 ABI APK 可生成），
+  TASK-07 Stage W（修复取消语义与当前进度边界：取消会立即写入 `CANCELLED` 并防止迟到引擎结果覆盖；
+  新增 `progressTaskIds` 让进度页、首页活跃卡片与通知只汇总当前任务集合；历史页只展示终态记录并支持长按多选删除），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」
@@ -235,7 +237,8 @@
   UI 动态显隐、EXIF 完整标签保留、动图 GIF、HEVC/AV1、视频→OGG/Opus、APK 体积/ABI
   拆分评估）见各任务完成情况；`ConversionOrchestrator` 未做单元测试（依赖 Room/协程时序，已把可抽出的
   判定逻辑拆成纯函数单测，编排本身运行时行为已经真机验证通过）；输出统一写入
-  `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消为"双重保证"非事务性保证；
+  `Download/转个格式`未按媒体类型分相册/视频/音乐 MediaStore 分类；取消状态已改为立即落库并以用户取消优先，
+  但底层原生引擎的实际中断仍依赖各引擎协作式取消；
   16KB 页面设备、WorkManager 清理等边缘场景仍缺逐项专门验证，但不阻塞当前迭代。
 - **未解决问题 / 风险**：
   - minSdk 已定为 26（已决策）。

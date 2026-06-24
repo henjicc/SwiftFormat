@@ -3,6 +3,9 @@ package com.henjicc.swiftformat.feature.history
 import android.text.format.DateUtils
 import android.text.format.Formatter
 import android.widget.Toast
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -51,8 +56,33 @@ fun HistoryScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text(stringResource(R.string.history_title)) }, modifier = Modifier.fillMaxWidth())
-        if (state.items.isEmpty()) {
+        TopAppBar(
+            title = {
+                Text(
+                    if (state.isSelectionMode) {
+                        stringResource(R.string.history_selected_count, state.selectedCount)
+                    } else {
+                        stringResource(R.string.history_title)
+                    },
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            navigationIcon = {
+                if (state.isSelectionMode) {
+                    IconButton(onClick = viewModel::clearSelection) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_cancel))
+                    }
+                }
+            },
+            actions = {
+                if (state.isSelectionMode) {
+                    IconButton(onClick = viewModel::deleteSelectedRecords) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.history_delete_selected))
+                    }
+                }
+            },
+        )
+        if (state.items.isEmpty() && state.activeCount == 0) {
             EmptyHistory(modifier = Modifier.weight(1f).fillMaxWidth())
         } else {
             LazyColumn(
@@ -100,6 +130,9 @@ fun HistoryScreen(
                         onDeleteRecord = viewModel::deleteRecord,
                         onConvertAgain = viewModel::convertAgain,
                         onOpenProgress = onOpenProgress,
+                        selectionMode = state.isSelectionMode,
+                        selected = item.id in state.selectedIds,
+                        onToggleSelection = viewModel::toggleSelection,
                     )
                 }
             }

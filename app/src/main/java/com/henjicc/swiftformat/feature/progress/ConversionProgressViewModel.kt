@@ -15,6 +15,7 @@ import com.henjicc.swiftformat.core.model.ConversionStatus
 import com.henjicc.swiftformat.core.model.MediaType
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -59,7 +60,10 @@ data class ConversionProgressUiState(
 class ConversionProgressViewModel(private val orchestrator: ConversionOrchestrator) : ViewModel() {
 
     val uiState: StateFlow<ConversionProgressUiState> = orchestrator.tasks
-        .map { tasks -> ConversionProgressUiState(tasks.values.map(ConversionTask::toUiItem)) }
+        .combine(orchestrator.progressTaskIds) { tasks, progressTaskIds ->
+            scopedTasks(tasks, progressTaskIds)
+        }
+        .map { tasks -> ConversionProgressUiState(tasks.map(ConversionTask::toUiItem)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ConversionProgressUiState())
 
     fun cancel(taskId: String) = orchestrator.cancel(taskId)
@@ -83,6 +87,13 @@ private val ACTIVE_STATUSES = setOf(
     ConversionStatus.CONVERTING,
     ConversionStatus.SAVING,
 )
+
+private fun scopedTasks(tasks: Map<String, ConversionTask>, progressTaskIds: Set<String>): List<ConversionTask> =
+    if (progressTaskIds.isEmpty()) {
+        tasks.values.filter { it.status in ACTIVE_STATUSES }
+    } else {
+        progressTaskIds.mapNotNull(tasks::get)
+    }
 
 private fun ConversionTask.toUiItem() = ConversionTaskUiItem(
     taskId = request.id,

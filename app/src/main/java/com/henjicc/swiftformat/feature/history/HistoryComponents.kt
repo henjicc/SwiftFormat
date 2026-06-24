@@ -1,5 +1,7 @@
 package com.henjicc.swiftformat.feature.history
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -98,6 +101,9 @@ internal fun HistoryRecordCard(
     onDeleteRecord: (Long) -> Unit,
     onConvertAgain: (Long) -> Unit,
     onOpenProgress: () -> Unit,
+    selectionMode: Boolean,
+    selected: Boolean,
+    onToggleSelection: (Long) -> Unit,
 ) {
     var showFailureDetails by rememberSaveable(item.id) { mutableStateOf(false) }
 
@@ -108,6 +114,13 @@ internal fun HistoryRecordCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (selectionMode) {
+                Checkbox(
+                    checked = selected,
+                    onCheckedChange = { onToggleSelection(item.id) },
+                )
+                Spacer(Modifier.size(8.dp))
+            }
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -130,7 +143,9 @@ internal fun HistoryRecordCard(
                 )
             }
             Spacer(Modifier.size(4.dp))
-            if (item.isActive) {
+            if (selectionMode) {
+                // Selection mode owns row actions; keep the target calm while users batch delete.
+            } else if (item.isActive) {
                 TextButton(onClick = onOpenProgress) {
                     Text(stringResource(R.string.history_open_progress))
                 }
@@ -147,12 +162,23 @@ internal fun HistoryRecordCard(
         }
     }
 
-    // 整行可点击直接打开结果文件——最常见的后续操作，腾出行尾不用再放单独的"打开"图标。
+    // 整行点击打开结果；长按进入多选。选择模式下，整行点击改为切换选中状态。
     val outputUri = item.outputUri
-    if (outputUri != null && !item.isActive) {
-        Card(onClick = { onOpen(outputUri) }, modifier = Modifier.fillMaxWidth()) { rowContent() }
-    } else {
-        Card(modifier = Modifier.fillMaxWidth()) { rowContent() }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .historyRecordClick(
+                onClick = {
+                    if (selectionMode) {
+                        onToggleSelection(item.id)
+                    } else {
+                        outputUri?.let(onOpen)
+                    }
+                },
+                onLongClick = { onToggleSelection(item.id) },
+            ),
+    ) {
+        rowContent()
     }
 
     if (showFailureDetails && item.failureDetails != null) {
@@ -168,6 +194,15 @@ internal fun HistoryRecordCard(
         )
     }
 }
+
+@OptIn(ExperimentalFoundationApi::class)
+private fun Modifier.historyRecordClick(
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+): Modifier = combinedClickable(
+    onClick = onClick,
+    onLongClick = onLongClick,
+)
 
 @Composable
 private fun HistoryRecordSummary(

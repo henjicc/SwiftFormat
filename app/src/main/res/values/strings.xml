@@ -172,5 +172,7 @@
     <string name="history_active_subtitle">Open the progress page to view details or cancel tasks.</string>
     <string name="history_open_progress">Open progress</string>
     <string name="history_delete_record">Delete record</string>
+    <string name="history_delete_selected">Delete selected records</string>
+    <string name="history_selected_count">%1$d selected</string>
     <string name="history_reconvert_failed">Unable to read the original file for reconversion</string>
 </resources>

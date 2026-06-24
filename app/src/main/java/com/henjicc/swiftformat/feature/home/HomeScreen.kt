@@ -53,9 +53,10 @@ fun HomeScreen(
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        viewModel.startConversion()
-        ConversionForegroundService.start(context)
-        onConversionStarted()
+        if (viewModel.startConversion().isNotEmpty()) {
+            ConversionForegroundService.start(context)
+            onConversionStarted()
+        }
     }
 
     HomeContent(

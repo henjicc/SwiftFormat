@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -70,8 +71,9 @@ class HomeViewModel(
             settingsRepository.settings.collect { settings -> currentAppSettings = settings }
         }
         viewModelScope.launch {
-            orchestrator.tasks.collect { tasks ->
-                val values = tasks.values
+            combine(orchestrator.tasks, orchestrator.progressTaskIds) { tasks, progressTaskIds ->
+                scopedTasks(tasks, progressTaskIds)
+            }.collect { values ->
                 val summary = ConversionBatchSummary.from(values)
                 val currentName = values.firstOrNull {
                     it.status in setOf(
@@ -136,9 +138,9 @@ class HomeViewModel(
      * （已提交的文件由 [ConversionOrchestrator] 持有自己的快照，清空不影响已提交的任务）。
      * 不支持的文件（[HomeUiState.unsupported]）不会被提交。
      */
-    fun startConversion() {
+    fun startConversion(): List<String> {
         val state = _uiState.value
-        state.groups.forEach { (type, files) ->
+        val submittedIds = state.groups.flatMap { (type, files) ->
             val settings = state.settings[type] ?: OutputFormatCatalog.defaultSettings(type)
             orchestrator.submitAll(
                 files,
@@ -149,7 +151,11 @@ class HomeViewModel(
                 preserveMetadata = currentAppSettings.preserveImageMetadata,
             )
         }
-        clear()
+        if (submittedIds.isNotEmpty()) {
+            orchestrator.showProgressFor(submittedIds)
+            clear()
+        }
+        return submittedIds
     }
 
     fun setOutputFormat(mediaType: MediaType, format: String) {
@@ -205,3 +211,20 @@ class HomeViewModel(
         }
     }
 }
+
+private fun scopedTasks(
+    tasks: Map<String, com.henjicc.swiftformat.conversion.ConversionTask>,
+    progressTaskIds: Set<String>,
+): List<com.henjicc.swiftformat.conversion.ConversionTask> =
+    if (progressTaskIds.isEmpty()) {
+        tasks.values.filter { it.status in ACTIVE_STATUSES }
+    } else {
+        progressTaskIds.mapNotNull(tasks::get)
+    }
+
+private val ACTIVE_STATUSES = setOf(
+    ConversionStatus.PENDING,
+    ConversionStatus.PREPARING,
+    ConversionStatus.CONVERTING,
+    ConversionStatus.SAVING,
+)

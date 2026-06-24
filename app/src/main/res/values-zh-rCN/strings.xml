@@ -172,5 +172,7 @@
     <string name="history_active_subtitle">打开进度页可查看详情或取消任务。</string>
     <string name="history_open_progress">查看进度</string>
     <string name="history_delete_record">删除记录</string>
+    <string name="history_delete_selected">删除所选记录</string>
+    <string name="history_selected_count">已选择 %1$d 项</string>
     <string name="history_reconvert_failed">无法读取原文件，不能再次转换</string>
 </resources>
