@@ -207,6 +207,8 @@
   AppCompat locale delegate，且只在真实 DataStore 设置到达后应用语言，避免初始占位值清回“跟随系统”），
   TASK-07 Stage AA（去除语言切换时的 Activity 重建黑屏：改为 `AppLocaleProvider` 在 Compose 树内提供
   本地化资源 context/configuration，`MainActivity` 退回 `ComponentActivity` 且不再调用 AppCompat 语言 API），
+  TASK-07 Stage AB（修正“跟随系统”在中文系统下仍显示英文：`SYSTEM` 不再直接使用可能被应用级语言覆盖的
+  Activity context，而是读取设备系统 locale 并将简中显式映射到 `zh-CN` 资源），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」

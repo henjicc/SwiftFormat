@@ -19,24 +19,41 @@ import java.util.Locale
 object AppLocaleManager {
 
     fun localizedContext(base: Context, language: AppLanguage): Context {
-        if (language == AppLanguage.SYSTEM) return base
         val localized = base.createConfigurationContext(localizedConfiguration(base, language))
         return LocalizedResourcesContext(base, localized)
     }
 
     fun localizedConfiguration(base: Context, language: AppLanguage): Configuration {
         val configuration = Configuration(base.resources.configuration)
-        val locale = language.toLocale() ?: return configuration
+        val locale = language.toLocale()
         configuration.setLocales(LocaleList(locale))
         configuration.setLayoutDirection(locale)
         return configuration
     }
+
+    private fun AppLanguage.toLocale(): Locale = when (this) {
+        AppLanguage.SYSTEM -> resolveSystemLanguage(systemLocales()).toLocale()
+        AppLanguage.CHINESE -> Locale.forLanguageTag("zh-CN")
+        AppLanguage.ENGLISH -> Locale.ENGLISH
+    }
 }
 
-private fun AppLanguage.toLocale(): Locale? = when (this) {
-    AppLanguage.SYSTEM -> null
-    AppLanguage.CHINESE -> Locale.forLanguageTag("zh-CN")
-    AppLanguage.ENGLISH -> Locale.ENGLISH
+internal fun resolveSystemLanguage(locales: List<Locale>): AppLanguage =
+    if (locales.any(Locale::isSimplifiedChinese)) AppLanguage.CHINESE else AppLanguage.ENGLISH
+
+private fun systemLocales(): List<Locale> {
+    val localeList = Resources.getSystem().configuration.locales
+    return List(localeList.size()) { index -> localeList[index] }
+}
+
+private fun Locale.isSimplifiedChinese(): Boolean {
+    if (language != Locale.CHINESE.language) return false
+    val script = script.orEmpty()
+    val country = country.orEmpty()
+    return script.equals("Hans", ignoreCase = true) ||
+        country.equals("CN", ignoreCase = true) ||
+        country.equals("SG", ignoreCase = true) ||
+        (script.isEmpty() && country.isEmpty())
 }
 
 private class LocalizedResourcesContext(

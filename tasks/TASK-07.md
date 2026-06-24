@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A~AA 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A~AB 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -619,6 +619,18 @@
   - `MainActivity` 退回 `ComponentActivity`，不再调用 AppCompat 语言 API，因此切换语言不再触发 Activity 重建。
 - 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
   JDK 17 设置 `JAVA_HOME` 执行）。仍需真机复核：设置页切换中/英时应只更新文案，不再出现黑屏。
+
+### Stage AB（已完成，已验证）—— 修正“跟随系统”在中文系统下仍显示英文
+- **问题**：用户点击“跟随系统”后，设备系统语言明明是中文，应用仍显示英文。
+- **根因**：Stage AA 中 `AppLanguage.SYSTEM` 直接返回原始 Activity context；这个 context 可能已经被 Android /
+  AppCompat 的应用级语言状态覆盖成英文，因此没有真正读取“设备系统语言”。
+- **修复**：
+  - `AppLocaleManager` 对 `SYSTEM` 改为读取 `Resources.getSystem().configuration.locales`，显式解析设备系统语言。
+  - 当前第一版只支持简体中文与英文：系统 locale 为 `zh-Hans` / `zh-CN` / `zh-SG` 等简中时映射到
+    `zh-CN` 资源，其余系统语言回退英文；繁中按 SPEC “非简体中文显示英文”的规则处理。
+  - 新增 `AppLocaleManagerTest` 覆盖简中、Hans 脚本、繁中和非中文系统的映射。
+- 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest`、`gradlew.bat lintDebug assembleDebug` 通过（使用本机
+  JDK 17 设置 `JAVA_HOME` 执行）。仍需真机确认中文系统下“跟随系统”显示中文。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
