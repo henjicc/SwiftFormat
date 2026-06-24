@@ -14,6 +14,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -57,7 +60,10 @@ fun SwiftFormatApp() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val showBottomBar = TopLevelDestination.entries.any { it.route == currentDestination?.route }
+    var convertHasFiles by remember { mutableStateOf(false) }
+    val isConvertDestination = currentDestination?.route == TopLevelDestination.CONVERT.route
+    val showBottomBar = TopLevelDestination.entries.any { it.route == currentDestination?.route } &&
+        !(isConvertDestination && convertHasFiles)
 
     Scaffold(
         bottomBar = {
@@ -104,6 +110,7 @@ fun SwiftFormatApp() {
                 HomeScreen(
                     onConversionStarted = { navController.navigate(CONVERSION_PROGRESS_ROUTE) },
                     onOpenActiveTask = { navController.navigate(CONVERSION_PROGRESS_ROUTE) },
+                    onFileSelectionModeChange = { convertHasFiles = it },
                 )
             }
             composable(TopLevelDestination.HISTORY.route) {

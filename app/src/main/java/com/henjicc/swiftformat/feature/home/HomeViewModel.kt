@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 
 /** 媒体分组在界面上的固定展示顺序（见 SPEC 4.3）。 */
@@ -52,6 +53,7 @@ data class HomeUiState(
     val hasActiveTasks: Boolean = activeTaskSummary.total > 0 && activeTaskSummary.inProgress > 0
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val metadataReader: FileMetadataReader,
     private val orchestrator: ConversionOrchestrator,
@@ -65,7 +67,10 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
-            incomingShareFiles.collect { uris -> addFiles(uris) }
+            incomingShareFiles.collect { uris ->
+                addFiles(uris)
+                incomingShareFiles.resetReplayCache()
+            }
         }
         viewModelScope.launch {
             settingsRepository.settings.collect { settings -> currentAppSettings = settings }

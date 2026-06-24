@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A~AB 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A~AC 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -631,6 +631,26 @@
   - 新增 `AppLocaleManagerTest` 覆盖简中、Hans 脚本、繁中和非中文系统的映射。
 - 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest`、`gradlew.bat lintDebug assembleDebug` 通过（使用本机
   JDK 17 设置 `JAVA_HOME` 执行）。仍需真机确认中文系统下“跟随系统”显示中文。
+
+### Stage AC（已完成，已验证）—— 参数页隐藏底部导航 + 支持拖放追加文件
+- **问题 1**：用户选完文件进入参数页后，底部仍显示“转换 / 历史 / 设置”三 Tab，视觉上像仍在首页一级导航；
+  该页实际已经是当前批次的转换设置上下文，用户预期只保留底部“开始转换”主按钮，需要回到三 Tab 首页时点左上角返回。
+- **修复 1**：
+  - `SwiftFormatApp` 记录转换页是否已有待转换文件；只有在转换首页空态时显示底部导航，进入已选文件参数页后隐藏底部导航。
+  - `HomeScreen` 通过 `onFileSelectionModeChange` 把 `state.hasFiles` 同步给根导航；左上角返回仍沿用现有清空选择逻辑，
+    清空后自动回到有三 Tab 的转换首页。
+- **问题 2**：部分 Android 系统/桌面模式支持从相册或文件管理器拖放单个图片/视频到应用。首页拖入可进入参数页，
+  但参数页再次拖入时容易表现成新入口覆盖当前选择，而不是追加到已有批次。
+- **修复 2**：
+  - `MainActivity` 在根视图安装 `OnDragListener`，处理 `DragEvent.ACTION_DROP`，从 `ClipData.Item.uri` 或
+    `ClipData.Item.intent.data` 提取 Uri，并调用 `requestDragAndDropPermissions(event)` 保留拖放读权限到 Activity 生命周期。
+  - 拖入 Uri 与系统分享 Intent 复用同一个 `incomingShareFiles` 通道，最终仍进入 `HomeViewModel.addFiles()`，
+    因而保持现有“追加、按 Uri 去重、已有分组设置不被重置”的语义。
+  - `HomeViewModel` 消费 `incomingShareFiles` 后清理 replay 缓存，避免 ViewModel 重建时重复导入上一批分享/拖放文件。
+- **边界**：已通过编译、单测、Lint、Debug 构建验证；拖放本身依赖厂商系统/桌面模式/来源应用是否提供 Uri 与授权，
+  仍需在支持拖放的真机环境复核。
+- 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 通过（使用本机 JDK 17 设置
+  `JAVA_HOME` 执行）。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持

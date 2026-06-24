@@ -1,8 +1,11 @@
 package com.henjicc.swiftformat
 
+import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.DragAndDropPermissions
+import android.view.DragEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +22,7 @@ import kotlinx.coroutines.flow.map
 class MainActivity : ComponentActivity() {
 
     private val container get() = (application as SwiftFormatApplication).container
+    private val activeDragPermissions = mutableListOf<DragAndDropPermissions>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,12 +45,21 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        installFileDropListener()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleShareIntent(intent)
+    }
+
+    override fun onDestroy() {
+        activeDragPermissions.forEach { permissions ->
+            runCatching { permissions.release() }
+        }
+        activeDragPermissions.clear()
+        super.onDestroy()
     }
 
     /** 接收来自系统分享菜单的图片/视频/音频（见 SPEC 3.1 / 12.1）。 */
@@ -65,6 +78,50 @@ class MainActivity : ComponentActivity() {
         }
         if (uris.isNotEmpty()) {
             container.incomingShareFiles.tryEmit(uris)
+        }
+    }
+
+    /** 接收支持 Android 系统拖放的相册/文件管理器拖入的媒体 Uri，并复用首页追加导入链路。 */
+    private fun installFileDropListener() {
+        window.decorView.setOnDragListener { _, event ->
+            when (event.action) {
+                DragEvent.ACTION_DRAG_STARTED -> true
+                DragEvent.ACTION_DROP -> {
+                    requestDragAndDropPermissions(event)?.let { permissions ->
+                        activeDragPermissions += permissions
+                    }
+                    val uris = event.clipData.extractUris()
+                    uris.forEach(::tryPersistReadPermission)
+                    if (uris.isNotEmpty()) container.incomingShareFiles.tryEmit(uris)
+                    uris.isNotEmpty()
+                }
+                DragEvent.ACTION_DRAG_ENDED,
+                DragEvent.ACTION_DRAG_ENTERED,
+                DragEvent.ACTION_DRAG_EXITED,
+                DragEvent.ACTION_DRAG_LOCATION,
+                -> true
+                else -> false
+            }
+        }
+    }
+
+    private fun ClipData?.extractUris(): List<Uri> {
+        if (this == null) return emptyList()
+        val uris = ArrayList<Uri>(itemCount)
+        for (index in 0 until itemCount) {
+            val item = getItemAt(index)
+            val uri = item.uri ?: item.intent?.data
+            if (uri != null) uris += uri
+        }
+        return uris.distinctBy { it.toString() }
+    }
+
+    private fun tryPersistReadPermission(uri: Uri) {
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
         }
     }
 }

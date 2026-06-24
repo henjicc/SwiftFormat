@@ -8,6 +8,7 @@ import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -20,11 +21,16 @@ import com.henjicc.swiftformat.service.ConversionForegroundService
 fun HomeScreen(
     onConversionStarted: () -> Unit = {},
     onOpenActiveTask: () -> Unit = onConversionStarted,
+    onFileSelectionModeChange: (Boolean) -> Unit = {},
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val imageLoader = (context.applicationContext as SwiftFormatApplication).container.thumbnailImageLoader
+
+    LaunchedEffect(state.hasFiles) {
+        onFileSelectionModeChange(state.hasFiles)
+    }
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
