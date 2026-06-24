@@ -16,6 +16,7 @@
   [![Android Release](https://img.shields.io/github/actions/workflow/status/henjicc/SwiftFormat/release.yml?style=flat-square&label=Release)](https://github.com/henjicc/SwiftFormat/actions/workflows/release.yml)
   [![Downloads](https://img.shields.io/github/downloads/henjicc/SwiftFormat/total?style=flat-square&label=下载量)](https://github.com/henjicc/SwiftFormat/releases)
   [![Stars](https://img.shields.io/github/stars/henjicc/SwiftFormat?style=flat-square&label=Stars)](https://github.com/henjicc/SwiftFormat/stargazers)
+  [![License](https://img.shields.io/github/license/henjicc/SwiftFormat?style=flat-square&label=License)](LICENSE)
 </div>
 
 ---
@@ -236,9 +237,9 @@ SwiftFormat/
 
 ## 📄 许可证与开源组件
 
-当前仓库尚未提供独立 `LICENSE` 文件。应用内“设置 -> 关于 -> 开源组件”列出了 AndroidX、Material 3、Coil、Media3、Room、DataStore 与 FFmpegKit 16KB 兼容 fork 等依赖及其许可证信息。
+本项目以 [GNU General Public License v3.0](LICENSE)（GPL-3.0）开源。应用内“设置 -> 关于 -> 开源组件”列出了 AndroidX、Material 3、Coil、Media3、Room、DataStore 与 FFmpegKit 16KB 兼容 fork 等依赖及其许可证信息。
 
-其中 FFmpeg 相关原生库随应用分发时按 GPL-3.0 相关要求提供对应源代码链接，详见应用内开源组件说明。
+其中 FFmpeg 相关原生库静态链接了 x264（GPL-3.0），随应用分发时按 GPL-3.0 相关要求提供对应源代码链接，详见应用内开源组件说明。
 
 ---
 
