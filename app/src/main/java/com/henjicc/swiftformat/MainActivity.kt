@@ -3,19 +3,21 @@ package com.henjicc.swiftformat
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.henjicc.swiftformat.core.designsystem.SwiftFormatTheme
 import com.henjicc.swiftformat.core.localization.AppLocaleManager
 import com.henjicc.swiftformat.core.model.AppSettings
 import com.henjicc.swiftformat.ui.navigation.SwiftFormatApp
+import kotlinx.coroutines.flow.map
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val container get() = (application as SwiftFormatApplication).container
 
@@ -25,10 +27,13 @@ class MainActivity : ComponentActivity() {
         handleShareIntent(intent)
         val settingsRepository = container.settingsRepository
         setContent {
-            val settings by settingsRepository.settings
-                .collectAsStateWithLifecycle(initialValue = AppSettings())
-            LaunchedEffect(settings.language) {
-                AppLocaleManager.apply(settings.language)
+            val settingsFlow = remember(settingsRepository) {
+                settingsRepository.settings.map<AppSettings, AppSettings?> { it }
+            }
+            val loadedSettings by settingsFlow.collectAsStateWithLifecycle(initialValue = null)
+            val settings = loadedSettings ?: AppSettings()
+            LaunchedEffect(loadedSettings?.language) {
+                loadedSettings?.language?.let(AppLocaleManager::apply)
             }
             SwiftFormatTheme(
                 themeMode = settings.themeMode,

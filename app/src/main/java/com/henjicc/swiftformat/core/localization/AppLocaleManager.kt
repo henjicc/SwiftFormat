@@ -16,6 +16,7 @@ object AppLocaleManager {
             AppLanguage.CHINESE -> LocaleListCompat.forLanguageTags("zh-CN")
             AppLanguage.ENGLISH -> LocaleListCompat.forLanguageTags("en")
         }
+        if (AppCompatDelegate.getApplicationLocales().toLanguageTags() == locales.toLanguageTags()) return
         AppCompatDelegate.setApplicationLocales(locales)
     }
 }

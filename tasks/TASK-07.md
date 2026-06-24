@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A~V 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A~Z 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -592,6 +592,19 @@
   - 顶部总进度条和单任务行进度条都改用该封装，保持原进度值、颜色、尺寸与布局不变，只去掉末端圆点。
 - 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
   JDK 17 设置 `JAVA_HOME` 执行）。仍未做真机截图复核，下次安装包请重点确认两处进度条右侧圆点已消失。
+
+### Stage Z（已完成，已验证）—— 修复设置页多语言切换不生效
+- **问题**：设置页选择语言后，`AppSettings.language` 已写入 DataStore，但界面语言没有按预期切换。
+- **根因**：应用调用的是 AppCompat per-app language API（`AppCompatDelegate.setApplicationLocales`），但
+  `MainActivity` 继承自 `ComponentActivity`，没有 AppCompat activity delegate 参与资源上下文与重建流程；
+  同时 Compose 初始收集值使用占位 `AppSettings()`，可能在真实 DataStore 值到达前短暂把应用语言清回“跟随系统”。
+- **修复**：
+  - `MainActivity` 改为继承 `AppCompatActivity`，让 AppCompat locale delegate 正常接管应用级语言切换。
+  - 设置流在 Compose 中先以 `AppSettings?` 收集，只有真实 DataStore 设置到达后才调用 `AppLocaleManager.apply(...)`，
+    避免初始占位值覆盖用户已选语言。
+  - `AppLocaleManager.apply(...)` 增加当前 locale 对比，语言未变化时直接返回，减少无意义的重复重建。
+- 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
+  JDK 17 设置 `JAVA_HOME` 执行）。仍需下一次真机安装后确认：设置页在中文/英文/跟随系统之间切换时主界面立即刷新。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
