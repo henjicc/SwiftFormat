@@ -229,6 +229,12 @@
   `TopAppBar` 组件、同一套字号与内边距；首页“转换”Tab 的 56dp 紧凑选择栏因 TASK-07 Stage AD 是刻意的
   信息密度取舍（带返回/添加图标的上下文操作栏，语义上不是单纯页面标题），保持现状未改，待用户确认是否
   也要统一），
+  TASK-07 Stage AH（真机截图反馈设置页标题上下留白不对称：`TopAppBar` 标题在 64dp 高度内垂直居中，
+  上下内部留白本应相等，但 `SettingsContent`/`HistoryScreen` 列表紧接着又各自叠加了一份 16dp 顶部
+  padding，导致标题下方间距明显大于上方；`SettingsContent` 的 `Column` 与 `HistoryScreen` 的
+  `LazyColumn` `contentPadding` 均改为只留 `start/end/bottom` 16dp、`top` 改为 0，不再重复叠加，
+  让标题上下留白对称；`ConversionProgressScreen` 的 `ProgressHeader` 结构不同（标题与正文之间还有一条
+  `HorizontalDivider` 分隔，并非紧贴的列表项），暂未同样改动，留作后续如有反馈再处理），
   `compileDebugKotlin`、`testDebugUnitTest`、`lintDebug` 通过，未跑模拟器/真机复验。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」

@@ -64,7 +64,9 @@ internal fun SettingsContent(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            // 顶部不再叠加 16dp：TopAppBar 标题在 64dp 高度内垂直居中，本身底部已留出与顶部对称的空隙，
+            // 这里再加一份会让标题下方的间距明显大于上方，视觉不对称。
+            .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AppearanceSection(

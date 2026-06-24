@@ -94,7 +94,8 @@ fun HistoryScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp),
+                // 顶部不叠加：TopAppBar 标题已在 64dp 高度内垂直居中，底部本身留有与顶部对称的空隙。
+                contentPadding = PaddingValues(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (state.activeCount > 0) {
