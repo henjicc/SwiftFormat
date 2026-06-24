@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A~Z 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A~AA 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -605,6 +605,20 @@
   - `AppLocaleManager.apply(...)` 增加当前 locale 对比，语言未变化时直接返回，减少无意义的重复重建。
 - 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
   JDK 17 设置 `JAVA_HOME` 执行）。仍需下一次真机安装后确认：设置页在中文/英文/跟随系统之间切换时主界面立即刷新。
+
+### Stage AA（已完成，已验证）—— 去除语言切换时的 Activity 重建黑屏
+- **问题**：Stage Z 改为 AppCompat per-app language 后，语言切换虽然生效，但真机上会短暂黑屏一下。
+- **根因**：`AppCompatDelegate.setApplicationLocales(...)` 会触发 Activity 重建；对纯 Compose 页面来说，
+  这属于过重的刷新方式，用户能看到启动窗口/空白帧。
+- **修复**：
+  - 新增 `AppLocaleProvider`，在 Compose 树内提供本地化 `LocalContext` 与 `LocalConfiguration`，让
+    `stringResource(...)` 读取目标语言资源并随 DataStore 设置重组。
+  - `AppLocaleManager` 改为创建仅覆盖 `Resources`/`Assets` 的 `ContextWrapper`：资源读取走本地化 context，
+    `startActivity`、`contentResolver`、`applicationContext` 等能力仍委托给原 Activity，避免影响文件选择、
+    分享反馈、打开结果等依赖 `LocalContext` 的流程。
+  - `MainActivity` 退回 `ComponentActivity`，不再调用 AppCompat 语言 API，因此切换语言不再触发 Activity 重建。
+- 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
+  JDK 17 设置 `JAVA_HOME` 执行）。仍需真机复核：设置页切换中/英时应只更新文案，不再出现黑屏。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持

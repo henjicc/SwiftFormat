@@ -205,6 +205,8 @@
   TASK-07 Stage Y（去除进度页总进度条与任务行进度条末端 Material3 默认 stop indicator 圆点），
   TASK-07 Stage Z（修复设置页多语言切换不生效：`MainActivity` 改为 `AppCompatActivity` 接入
   AppCompat locale delegate，且只在真实 DataStore 设置到达后应用语言，避免初始占位值清回“跟随系统”），
+  TASK-07 Stage AA（去除语言切换时的 Activity 重建黑屏：改为 `AppLocaleProvider` 在 Compose 树内提供
+  本地化资源 context/configuration，`MainActivity` 退回 `ComponentActivity` 且不再调用 AppCompat 语言 API），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」
