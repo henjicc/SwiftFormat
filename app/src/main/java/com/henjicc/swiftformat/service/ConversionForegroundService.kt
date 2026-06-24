@@ -51,8 +51,8 @@ class ConversionForegroundService : Service() {
         createNotificationChannel()
         serviceScope.launch {
             combine(orchestrator.tasks, orchestrator.progressTaskIds) { tasks, progressTaskIds ->
-                scopedTasks(tasks, progressTaskIds)
-            }.collect { tasks -> onTasksChanged(tasks) }
+                notificationSnapshot(tasks, progressTaskIds)
+            }.collect { snapshot -> onTasksChanged(snapshot) }
         }
     }
 
@@ -61,7 +61,13 @@ class ConversionForegroundService : Service() {
             ACTION_CANCEL_ALL -> orchestrator.cancelAll()
             ACTION_CANCEL_TASK -> intent.getStringExtra(EXTRA_TASK_ID)?.let(orchestrator::cancel)
         }
-        startForeground(NOTIFICATION_ID, buildNotification(scopedTasks(orchestrator.tasks.value, orchestrator.progressTaskIds.value)))
+        val snapshot = notificationSnapshot(orchestrator.tasks.value, orchestrator.progressTaskIds.value)
+        if (!snapshot.hasActiveWork) {
+            if (hasStartedForeground) stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        startForeground(NOTIFICATION_ID, buildNotification(snapshot))
         hasStartedForeground = true
         return START_NOT_STICKY
     }
@@ -78,21 +84,25 @@ class ConversionForegroundService : Service() {
         super.onDestroy()
     }
 
-    private fun onTasksChanged(tasks: Collection<ConversionTask>) {
-        val activeCount = tasks.count { it.status.isActive() }
-        if (activeCount > 0) {
+    private fun onTasksChanged(snapshot: NotificationTaskSnapshot) {
+        if (snapshot.hasActiveWork) {
             hasObservedActiveTask = true
         }
-        if (activeCount == 0) {
+        if (!snapshot.hasActiveWork) {
             // 忽略服务启动后的第一帧空任务，避免在 startForeground() 之前就 stopSelf()
             // 触发“startForegroundService 后未及时进入前台”的系统崩溃。
-            if (!hasStartedForeground || !hasObservedActiveTask) return
+            if (!hasStartedForeground) return
+            if (!hasObservedActiveTask) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return
+            }
             serviceScope.launch {
                 val settings = settingsRepository.settings.first()
                 if (settings.showCompletionNotification) {
                     notifySafely(
                         COMPLETION_NOTIFICATION_ID,
-                        buildCompletionNotification(ConversionBatchSummary.from(tasks)),
+                        buildCompletionNotification(ConversionBatchSummary.from(snapshot.tasks)),
                     )
                 }
             }
@@ -100,13 +110,13 @@ class ConversionForegroundService : Service() {
             stopSelf()
             return
         }
-        notifySafely(NOTIFICATION_ID, buildNotification(tasks))
+        notifySafely(NOTIFICATION_ID, buildNotification(snapshot))
     }
 
-    private fun buildNotification(tasks: Collection<ConversionTask>): android.app.Notification {
-        val activeTasks = tasks.filter { it.status.isActive() }
+    private fun buildNotification(snapshot: NotificationTaskSnapshot): android.app.Notification {
+        val activeTasks = snapshot.tasks.filter { it.status.isActive() }
         val currentFile = activeTasks.firstOrNull()?.request?.input?.displayName ?: ""
-        val overallPercent = overallPercent(tasks)
+        val overallPercent = overallPercent(snapshot)
 
         val contentIntent = PendingIntent.getActivity(
             this,
@@ -123,7 +133,7 @@ class ConversionForegroundService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(getString(R.string.notification_title, activeTasks.size))
+            .setContentTitle(getString(R.string.notification_title, snapshot.activeCount))
             .setContentText(getString(R.string.notification_text, currentFile, overallPercent))
             .setProgress(100, overallPercent, false)
             .setOngoing(true)
@@ -165,16 +175,17 @@ class ConversionForegroundService : Service() {
     }
 
     /** 已完成任务记 100%，进行中任务按自身 [ConversionTask.progress] 折算，取整体均值。 */
-    private fun overallPercent(tasks: Collection<ConversionTask>): Int {
-        if (tasks.isEmpty()) return 0
-        val sum = tasks.sumOf { task ->
+    private fun overallPercent(snapshot: NotificationTaskSnapshot): Int {
+        val total = snapshot.tasks.size + snapshot.pendingPlaceholderCount
+        if (total == 0) return 0
+        val sum = snapshot.tasks.sumOf { task ->
             when (task.status) {
                 ConversionStatus.COMPLETED -> 1.0
                 ConversionStatus.FAILED, ConversionStatus.CANCELLED -> 1.0
                 else -> task.progress.toDouble()
             }
         }
-        return ((sum / tasks.size) * 100).toInt().coerceIn(0, 100)
+        return ((sum / total) * 100).toInt().coerceIn(0, 100)
     }
 
     private fun createNotificationChannel() {
@@ -225,12 +236,26 @@ private fun ConversionStatus.isActive(): Boolean = this in setOf(
     ConversionStatus.SAVING,
 )
 
-private fun scopedTasks(
+internal data class NotificationTaskSnapshot(
+    val tasks: Collection<ConversionTask>,
+    val pendingPlaceholderCount: Int,
+) {
+    val activeCount: Int = tasks.count { it.status.isActive() } + pendingPlaceholderCount
+    val hasActiveWork: Boolean = activeCount > 0
+}
+
+internal fun notificationSnapshot(
     tasks: Map<String, ConversionTask>,
     progressTaskIds: Set<String>,
-): Collection<ConversionTask> =
+): NotificationTaskSnapshot =
     if (progressTaskIds.isEmpty()) {
-        tasks.values.filter { it.status.isActive() }
+        NotificationTaskSnapshot(
+            tasks = tasks.values.filter { it.status.isActive() },
+            pendingPlaceholderCount = 0,
+        )
     } else {
-        progressTaskIds.mapNotNull(tasks::get)
+        NotificationTaskSnapshot(
+            tasks = progressTaskIds.mapNotNull(tasks::get),
+            pendingPlaceholderCount = progressTaskIds.count { it !in tasks },
+        )
     }

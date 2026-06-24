@@ -562,6 +562,27 @@
   请重点确认：点取消后状态是否稳定为“已取消”；重启后新添加文件进入进度页是否只显示本轮文件；历史页长按多选删除
   是否符合手感预期。
 
+### Stage X（已完成，已验证）—— 修复无活跃任务时的假前台通知
+- **问题**：用户实测安装/打开后，明明只有之前处理过的历史文件，系统通知却显示“正在转换 0 个文件 · 100%”。
+- **根因**：
+  - Stage W 把进度集合收窄到 `progressTaskIds` 后，`ConversionForegroundService.onStartCommand()` 仍然无条件
+    `startForeground(...)`。
+  - 如果当前集合里只有旧的已完成任务，通知构造会得到 `activeTasks.size == 0`，但总体进度按终态任务计算为
+    100%，于是出现“正在转换 0 个文件 · 100%”。
+  - 原本用于避免“服务第一帧空任务就自停”的 `!hasObservedActiveTask` 保护，又会在这种“从来没有活跃任务”的场景
+    阻止服务自停，导致假通知残留。
+- **修复**：
+  - 新增 `NotificationTaskSnapshot` / `notificationSnapshot(...)`，明确区分“已有活跃任务”“刚提交但任务对象尚未入队的
+    占位任务”和“只有终态历史任务”。
+  - `onStartCommand()` 若发现没有真实活跃工作，直接 `stopSelf()`，不再进入前台通知；若刚提交任务但运行态尚未创建，
+    用 `progressTaskIds` 的缺失项作为短暂占位，避免新转换刚开始时服务过早自停。
+  - `onTasksChanged()` 在已进入前台但从未观察到活跃任务时，会移除前台通知并停止服务，不再保留“0 个文件”通知。
+- **回归测试**：新增 `NotificationTaskSnapshotTest`，覆盖旧完成任务不算活跃、缺失当前任务 id 算占位、无显式当前集合时只取
+  真正活跃任务三种场景。
+- 验证：串行执行 `gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 通过（使用本机 JDK 17 设置
+  `JAVA_HOME`）。曾并行执行 Gradle 时触发 Kotlin incremental cache 的 `Storage ... already registered` 噪声，改串行后
+  验证干净通过。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。
