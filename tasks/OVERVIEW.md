@@ -220,9 +220,16 @@
   `Scaffold` 未设 `topBar`，其默认 `contentWindowInsets`（含状态栏）已整段计入 `NavHost` 的
   `innerPadding`，而 `HistoryScreen` 内联的 `TopAppBar` 与 `ConversionProgressScreen` 内嵌 `Scaffold`
   的 `TopAppBar` 又各自按默认 `windowInsets = WindowInsets.statusBars` 重复预留了一次状态栏空间，
-  两处都补了 `windowInsets = WindowInsets(0, 0, 0, 0)` 去重；`compileDebugKotlin` 通过，未跑模拟器/
-  真机复验），
-  `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
+  两处都补了 `windowInsets = WindowInsets(0, 0, 0, 0)` 去重），
+  TASK-07 Stage AG（用户反馈三个 Tab 左上角标题大小/位置仍不统一：`SettingsScreen` 原先是普通 `Column`
+  里一段 `headlineMedium` 文字，字号/高度/留白与 `HistoryScreen`/`ConversionProgressScreen` 用的
+  `TopAppBar`（默认 `titleLarge`，64dp 高）不一致；改为 `SettingsScreen` 同样用
+  `Column { TopAppBar(...); SettingsContent(modifier = Modifier.weight(1f), ...) }` 结构，
+  `SettingsContent` 不再自带标题文字，三个会显示页面标题的页面（历史/设置/转换进度）现在统一用同一个
+  `TopAppBar` 组件、同一套字号与内边距；首页“转换”Tab 的 56dp 紧凑选择栏因 TASK-07 Stage AD 是刻意的
+  信息密度取舍（带返回/添加图标的上下文操作栏，语义上不是单纯页面标题），保持现状未改，待用户确认是否
+  也要统一），
+  `compileDebugKotlin`、`testDebugUnitTest`、`lintDebug` 通过，未跑模拟器/真机复验。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」
   已实现（2026-06-22，新增 `AppSettings.preserveImageMetadata` 开关，默认开启；`NativeImageEngine`

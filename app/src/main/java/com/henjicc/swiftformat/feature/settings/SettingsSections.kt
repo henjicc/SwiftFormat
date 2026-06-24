@@ -34,6 +34,7 @@ import com.henjicc.swiftformat.core.model.ThemeMode
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SettingsContent(
+    modifier: Modifier = Modifier,
     settings: AppSettings,
     customOutputDirectoryLabel: String?,
     cacheBytes: Long,
@@ -60,17 +61,12 @@ internal fun SettingsContent(
     val context = LocalContext.current
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-        )
-
         AppearanceSection(
             settings = settings,
             onThemeModeChange = onThemeModeChange,
