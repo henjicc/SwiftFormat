@@ -69,13 +69,13 @@ internal fun GroupCard(
     val showSize = OutputFormatCatalog.isSizeApplicable(mediaType, settings.outputFormat) && sizeOptions.isNotEmpty()
 
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             GroupHeader(stringResource(groupLabel(mediaType)), files.size)
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 4.dp),
+                    .padding(top = 6.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (showSize) {
@@ -102,12 +102,18 @@ internal fun GroupCard(
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
 
             val visibleFiles = if (expanded) files else files.take(COLLAPSED_VISIBLE_COUNT)
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 visibleFiles.forEach { file ->
-                    FileRow(file, sizeFormatter, onRemove, imageLoader)
+                    FileRow(
+                        file = file,
+                        sizeFormatter = sizeFormatter,
+                        onRemove = onRemove,
+                        imageLoader = imageLoader,
+                        compact = true,
+                    )
                 }
             }
             if (files.size > COLLAPSED_VISIBLE_COUNT) {
@@ -168,7 +174,7 @@ private fun DropdownSettingChip(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 2.dp, bottom = 4.dp),
+            modifier = Modifier.padding(start = 2.dp, bottom = 3.dp),
         )
         Surface(
             onClick = onClick,
@@ -177,7 +183,7 @@ private fun DropdownSettingChip(
             color = MaterialTheme.colorScheme.surface,
         ) {
             Row(
-                modifier = Modifier.padding(start = 10.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+                modifier = Modifier.padding(start = 10.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(

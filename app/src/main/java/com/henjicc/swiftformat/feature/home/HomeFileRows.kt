@@ -42,7 +42,6 @@ internal fun GroupHeader(label: String, count: Int) {
         text = stringResource(R.string.group_count, label, count),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 8.dp),
     )
 }
 
@@ -53,70 +52,104 @@ internal fun FileRow(
     onRemove: (String) -> Unit,
     imageLoader: ImageLoader,
     unsupported: Boolean = false,
+    compact: Boolean = false,
 ) {
+    if (compact) {
+        FileRowContent(
+            file = file,
+            sizeFormatter = sizeFormatter,
+            onRemove = onRemove,
+            imageLoader = imageLoader,
+            unsupported = unsupported,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 1.dp),
+        )
+        return
+    }
+
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
+        FileRowContent(
+            file = file,
+            sizeFormatter = sizeFormatter,
+            onRemove = onRemove,
+            imageLoader = imageLoader,
+            unsupported = unsupported,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        )
+    }
+}
+
+@Composable
+private fun FileRowContent(
+    file: InputFile,
+    sizeFormatter: (Long) -> String,
+    onRemove: (String) -> Unit,
+    imageLoader: ImageLoader,
+    unsupported: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (!unsupported && file.mediaType in THUMBNAIL_TYPES) {
-                    AsyncImage(
-                        model = file.uri,
-                        contentDescription = null,
-                        imageLoader = imageLoader,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        error = rememberVectorPainter(mediaIcon(file.mediaType)),
-                    )
-                } else {
-                    Icon(
-                        imageVector = mediaIcon(file.mediaType),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.size(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = file.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+            if (!unsupported && file.mediaType in THUMBNAIL_TYPES) {
+                AsyncImage(
+                    model = file.uri,
+                    contentDescription = null,
+                    imageLoader = imageLoader,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = rememberVectorPainter(mediaIcon(file.mediaType)),
                 )
-                val subtitle = if (unsupported) {
-                    stringResource(R.string.unsupported_reason)
-                } else {
-                    buildString {
-                        file.extension?.let { append(it.uppercase()) }
-                        file.sizeBytes?.let {
-                            if (isNotEmpty()) append(" · ")
-                            append(sizeFormatter(it))
-                        }
+            } else {
+                Icon(
+                    imageVector = mediaIcon(file.mediaType),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Spacer(Modifier.size(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = file.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val subtitle = if (unsupported) {
+                stringResource(R.string.unsupported_reason)
+            } else {
+                buildString {
+                    file.extension?.let { append(it.uppercase()) }
+                    file.sizeBytes?.let {
+                        if (isNotEmpty()) append(" · ")
+                        append(sizeFormatter(it))
                     }
                 }
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
-            IconButton(onClick = { onRemove(file.id) }) {
-                Icon(
-                    Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.file_remove),
-                )
-            }
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(onClick = { onRemove(file.id) }) {
+            Icon(
+                Icons.Filled.Close,
+                contentDescription = stringResource(R.string.file_remove),
+            )
         }
     }
 }

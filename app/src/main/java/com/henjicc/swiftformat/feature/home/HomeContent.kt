@@ -3,9 +3,11 @@ package com.henjicc.swiftformat.feature.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,12 +17,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -116,7 +116,6 @@ private fun EmptyState(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FileList(
     state: HomeUiState,
@@ -132,43 +131,26 @@ private fun FileList(
     imageLoader: ImageLoader,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(
-                        R.string.home_summary,
-                        state.totalCount,
-                        sizeFormatter(state.totalSizeBytes),
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-            navigationIcon = {
-                // 这个页面没有上一级可返回，点击即清空选择回到初始状态，等同于原来的"清空全部"。
-                IconButton(onClick = onClear) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.home_clear))
-                }
-            },
-            actions = {
-                IconButton(onClick = onAddMore) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.home_add_more))
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
+        CompactSelectionBar(
+            title = stringResource(
+                R.string.home_summary,
+                state.totalCount,
+                sizeFormatter(state.totalSizeBytes),
+            ),
+            onClear = onClear,
+            onAddMore = onAddMore,
         )
 
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item {
-                if (state.hasActiveTasks) {
+            if (state.hasActiveTasks) {
+                item(key = "active-task") {
                     ActiveTaskCard(
                         state = state,
                         onOpen = onOpenActiveTask,
-                        modifier = Modifier.padding(bottom = 16.dp),
                     )
                 }
             }
@@ -205,9 +187,41 @@ private fun FileList(
             enabled = state.groups.isNotEmpty(),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 12.dp),
         ) {
             Text(stringResource(R.string.convert_start))
+        }
+    }
+}
+
+@Composable
+private fun CompactSelectionBar(
+    title: String,
+    onClear: () -> Unit,
+    onAddMore: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // 这个页面没有上一级可返回，点击即清空选择回到初始状态，等同于原来的"清空全部"。
+        IconButton(onClick = onClear) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.home_clear))
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 4.dp),
+        )
+        IconButton(onClick = onAddMore) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.home_add_more))
         }
     }
 }

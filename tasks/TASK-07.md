@@ -652,6 +652,22 @@
 - 验证：`gradlew.bat compileDebugKotlin testDebugUnitTest lintDebug assembleDebug` 通过（使用本机 JDK 17 设置
   `JAVA_HOME` 执行）。
 
+### Stage AD（已完成，已验证）—— 待转换文件列表信息密度优化
+- **问题**：用户真机反馈：选择文件后的参数页纵向留白过大，单条文件行上下空间、文件行之间间隔、顶部“已选 N 个”
+  到状态栏/首张卡片的距离都偏大，导致手机一屏只能显示很少内容。
+- **修复**：
+  - `HomeContent.kt`：文件参数页顶部从默认 `TopAppBar` 改为 56dp 紧凑选择栏，避免在当前根 `Scaffold`
+    已处理安全区的情况下继续叠加状态栏高度；列表外边距从 16dp 收紧为横向 12dp / 纵向 8dp，分组卡片间距从
+    16dp 收紧到 10dp，且不再为不存在的活跃任务卡片创建空 item。
+  - `GroupSettingsCard.kt`：分组卡片内部纵向 padding、参数区上下 padding、分隔线上下 padding、组内文件行间距均收紧；
+    参数下拉框视觉高度从上下各 10dp 改为各 8dp。
+  - `HomeFileRows.kt`：组内文件行新增 `compact` 模式，去掉原先“分组卡片里面再套单条文件 Card”的额外容器，
+    改为 40dp 缩略图 + 两行文字 + 48dp 删除按钮触点的紧凑列表行；不支持文件的独立列表仍保留卡片容器。
+- **边界**：删除按钮仍保持 Material `IconButton` 触点，避免为追求密度牺牲可点性；本次未改变文件选择、分组设置、
+  删除或开始转换行为。
+- 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
+  JDK 17 设置 `JAVA_HOME` 执行）。仍需下一次真机截图复核顶部留白和每屏可见文件数量是否符合预期。
+
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持
   `自动加序号`/`覆盖`两种，未做“每次询问”（见 Stage K 范围裁剪说明）。
