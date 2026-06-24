@@ -38,6 +38,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val activeTaskSummary: ConversionBatchSummary = ConversionBatchSummary(0, 0, 0, 0, 0),
     val activeTaskDisplayName: String? = null,
+    val scrollFileNames: Boolean = false,
 ) {
     val unsupported: List<InputFile> = files.filter { it.mediaType == MediaType.UNKNOWN }
 
@@ -73,7 +74,10 @@ class HomeViewModel(
             }
         }
         viewModelScope.launch {
-            settingsRepository.settings.collect { settings -> currentAppSettings = settings }
+            settingsRepository.settings.collect { settings ->
+                currentAppSettings = settings
+                _uiState.update { it.copy(scrollFileNames = settings.scrollFileNames) }
+            }
         }
         viewModelScope.launch {
             combine(orchestrator.tasks, orchestrator.progressTaskIds) { tasks, progressTaskIds ->

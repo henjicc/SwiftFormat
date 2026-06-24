@@ -39,6 +39,7 @@ class SettingsRepository(private val context: Context) {
         val PRESERVE_IMAGE_METADATA = stringPreferencesKey("preserve_image_metadata")
         val CUSTOM_OUTPUT_DIRECTORY_URI = stringPreferencesKey("custom_output_directory_uri")
         val NAME_COLLISION_STRATEGY = stringPreferencesKey("name_collision_strategy")
+        val SCROLL_FILE_NAMES = stringPreferencesKey("scroll_file_names")
     }
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { prefs ->
@@ -62,6 +63,7 @@ class SettingsRepository(private val context: Context) {
             customOutputDirectoryUri = prefs[Keys.CUSTOM_OUTPUT_DIRECTORY_URI],
             nameCollisionStrategy = prefs[Keys.NAME_COLLISION_STRATEGY]?.let { enumValueOfOrNull<NameCollisionStrategy>(it) }
                 ?: NameCollisionStrategy.AUTO_NUMBER,
+            scrollFileNames = prefs[Keys.SCROLL_FILE_NAMES]?.toBooleanStrictOrNull() ?: false,
         )
     }
 
@@ -132,6 +134,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setNameCollisionStrategy(strategy: NameCollisionStrategy) {
         context.settingsDataStore.edit { it[Keys.NAME_COLLISION_STRATEGY] = strategy.name }
+    }
+
+    suspend fun setScrollFileNames(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.SCROLL_FILE_NAMES] = enabled.toString() }
     }
 }
 

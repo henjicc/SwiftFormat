@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.feature.common.FileNameText
 import com.henjicc.swiftformat.feature.common.errorKindLabelRes
 import com.henjicc.swiftformat.feature.common.qualityLabel
 import com.henjicc.swiftformat.feature.common.sizeLabel
@@ -104,6 +105,7 @@ internal fun HistoryRecordCard(
     selectionMode: Boolean,
     selected: Boolean,
     onToggleSelection: (Long) -> Unit,
+    scrollFileNames: Boolean,
 ) {
     var showFailureDetails by rememberSaveable(item.id) { mutableStateOf(false) }
 
@@ -140,6 +142,7 @@ internal fun HistoryRecordCard(
                     sizeFormatter = sizeFormatter,
                     timeFormatter = timeFormatter,
                     onShowFailureDetails = { showFailureDetails = true },
+                    scrollFileNames = scrollFileNames,
                 )
             }
             Spacer(Modifier.size(4.dp))
@@ -210,12 +213,13 @@ private fun HistoryRecordSummary(
     sizeFormatter: (Long) -> String,
     timeFormatter: (Long) -> String,
     onShowFailureDetails: () -> Unit,
+    scrollFileNames: Boolean,
 ) {
-    Text(
+    FileNameText(
         text = item.displayName,
+        scrollEnabled = scrollFileNames,
         style = MaterialTheme.typography.bodyLarge,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
+        maxLinesWhenStatic = 2,
     )
     if (item.status != ConversionStatus.COMPLETED) {
         Text(

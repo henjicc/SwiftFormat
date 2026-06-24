@@ -60,6 +60,7 @@ internal fun GroupCard(
     onRemove: (String) -> Unit,
     sizeFormatter: (Long) -> String,
     imageLoader: ImageLoader,
+    scrollFileNames: Boolean,
 ) {
     var activeSheet by rememberSaveable { mutableStateOf<SheetKind?>(null) }
     var expanded by rememberSaveable(mediaType) { mutableStateOf(false) }
@@ -113,6 +114,7 @@ internal fun GroupCard(
                         onRemove = onRemove,
                         imageLoader = imageLoader,
                         compact = true,
+                        scrollFileNames = scrollFileNames,
                     )
                 }
             }

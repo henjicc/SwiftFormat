@@ -62,6 +62,7 @@ fun SettingsScreen(
         onPickOutputDirectory = { pickDirectoryLauncher.launch(null) },
         onResetOutputDirectory = { viewModel.setCustomOutputDirectory(null) },
         onNameCollisionStrategyChange = viewModel::setNameCollisionStrategy,
+        onScrollFileNamesChange = viewModel::setScrollFileNames,
         onCompletionNotificationChange = viewModel::setShowCompletionNotification,
         onAutoCleanupTempFilesChange = viewModel::setAutoCleanupTempFiles,
         onClearCache = viewModel::clearCache,

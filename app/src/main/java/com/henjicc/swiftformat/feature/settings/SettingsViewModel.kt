@@ -78,6 +78,7 @@ class SettingsViewModel(
     fun setPreserveImageMetadata(enabled: Boolean) = viewModelScope.launch { repository.setPreserveImageMetadata(enabled) }
     fun setCustomOutputDirectory(uri: Uri?) = viewModelScope.launch { repository.setCustomOutputDirectory(uri) }
     fun setNameCollisionStrategy(strategy: NameCollisionStrategy) = viewModelScope.launch { repository.setNameCollisionStrategy(strategy) }
+    fun setScrollFileNames(enabled: Boolean) = viewModelScope.launch { repository.setScrollFileNames(enabled) }
 
     fun clearCache() = viewModelScope.launch {
         if (orchestrator.summary().inProgress > 0) {

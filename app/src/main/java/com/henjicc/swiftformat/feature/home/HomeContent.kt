@@ -34,6 +34,7 @@ import com.henjicc.swiftformat.core.model.MediaType
 import com.henjicc.swiftformat.core.model.OutputFormatCatalog
 import com.henjicc.swiftformat.core.model.QualityPreset
 import com.henjicc.swiftformat.core.model.SizePreset
+import com.henjicc.swiftformat.feature.common.FileNameText
 
 @Composable
 internal fun HomeContent(
@@ -168,6 +169,7 @@ private fun FileList(
                         onRemove = onRemove,
                         sizeFormatter = sizeFormatter,
                         imageLoader = imageLoader,
+                        scrollFileNames = state.scrollFileNames,
                     )
                 }
             }
@@ -177,7 +179,14 @@ private fun FileList(
                     GroupHeader(stringResource(R.string.unsupported_title), state.unsupported.size)
                 }
                 items(state.unsupported, key = { it.id }) { file ->
-                    FileRow(file, sizeFormatter, onRemove, imageLoader, unsupported = true)
+                    FileRow(
+                        file = file,
+                        sizeFormatter = sizeFormatter,
+                        onRemove = onRemove,
+                        imageLoader = imageLoader,
+                        unsupported = true,
+                        scrollFileNames = state.scrollFileNames,
+                    )
                 }
             }
         }
@@ -249,12 +258,11 @@ private fun ActiveTaskCard(
                 modifier = Modifier.padding(top = 4.dp),
             )
             state.activeTaskDisplayName?.let { name ->
-                Text(
+                FileNameText(
                     text = name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    scrollEnabled = state.scrollFileNames,
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                    maxLinesWhenStatic = 1,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }

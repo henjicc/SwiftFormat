@@ -51,4 +51,5 @@ data class AppSettings(
     val preserveImageMetadata: Boolean = true,
     val customOutputDirectoryUri: String? = null,
     val nameCollisionStrategy: NameCollisionStrategy = NameCollisionStrategy.AUTO_NUMBER,
+    val scrollFileNames: Boolean = false,
 )

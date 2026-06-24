@@ -78,6 +78,8 @@
     <string name="settings_name_collision">Name collision</string>
     <string name="settings_name_collision_auto_number">Auto add a number suffix</string>
     <string name="settings_name_collision_overwrite">Overwrite the existing file</string>
+    <string name="settings_scroll_file_names">Scroll file names</string>
+    <string name="settings_scroll_file_names_desc">Horizontally scroll long file names in a loop so the full name can be read</string>
     <string name="settings_completion_notification">Completion notification</string>
     <string name="settings_completion_notification_desc">Show a summary notification when all conversions finish</string>
     <string name="settings_auto_cleanup">Auto clean temporary files</string>

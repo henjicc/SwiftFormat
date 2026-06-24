@@ -1,6 +1,6 @@
 # TASK-07 · 质量与发布
 
-**状态**：进行中（Stage A~AC 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
+**状态**：进行中（Stage A~AE 已完成）　|　**依赖**：TASK-00~06 全部　|　对应 SPEC：阶段 7、18~22 章
 
 ## 目标
 完成多设备/性能/国际化/无障碍验证、设置页收尾、错误与日志完善，准备发布。
@@ -667,6 +667,22 @@
   删除或开始转换行为。
 - 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
   JDK 17 设置 `JAVA_HOME` 执行）。仍需下一次真机截图复核顶部留白和每屏可见文件数量是否符合预期。
+
+### Stage AE（已完成，已验证）—— 文件名循环滚动显示开关
+- **问题**：长文件名在待转换列表、历史记录页、转换结果/进度页里会被省略号截断，用户无法在列表中读完整名称；
+  同时需要确认历史页与结果页的文件行设计是否对齐。
+- **结论**：历史记录页 `HistoryRecordCard` 与转换结果/进度页 `ConversionTaskRow` 已在 Stage U 对齐为同一种
+  “40dp 媒体类型图标 + 两行文字 + 行尾操作”列表项结构；本次继续复用该结构，只替换文件名文本组件。
+- **修复**：
+  - 新增 `AppSettings.scrollFileNames`（默认 `false`）与 DataStore key `scroll_file_names`，设置页“文件”分区新增
+    “滚动显示文件名”开关；默认关闭，用户需要时自行开启。
+  - 新增 `feature/common/FileNameText`：关闭时保持原有省略号；开启时使用 Compose `basicMarquee` 无限循环滚动，
+    中间保留固定空隙后再接文件名开头，符合“首尾相接但有一段空白”的阅读方式。
+  - 首页待转换列表/不支持文件列表、首页活跃任务当前文件名、进度页顶部当前文件名、进度/结果页任务行文件名、
+    历史记录行文件名全部接入同一设置；删除确认弹窗里的文件名保持静态，不做自动滚动。
+- **边界**：`basicMarquee` 只在文字宽度超过容器时才滚动；关闭开关时 UI 行高和省略号行为保持原样。
+- 验证：`gradlew.bat compileDebugKotlin`、`gradlew.bat testDebugUnitTest lintDebug assembleDebug` 通过（使用本机
+  JDK 17 设置 `JAVA_HOME` 执行）。
 
 ### 已知简化 / 下一步
 - **设置页仍未完整覆盖 SPEC 15 的极少数项**：默认目录/重名策略已可配置（见 Stage K），重名策略仍只支持

@@ -49,6 +49,7 @@ internal fun SettingsContent(
     onPickOutputDirectory: () -> Unit,
     onResetOutputDirectory: () -> Unit,
     onNameCollisionStrategyChange: (NameCollisionStrategy) -> Unit,
+    onScrollFileNamesChange: (Boolean) -> Unit,
     onCompletionNotificationChange: (Boolean) -> Unit,
     onAutoCleanupTempFilesChange: (Boolean) -> Unit,
     onClearCache: () -> Unit,
@@ -92,6 +93,7 @@ internal fun SettingsContent(
             onPickOutputDirectory = onPickOutputDirectory,
             onResetOutputDirectory = onResetOutputDirectory,
             onNameCollisionStrategyChange = onNameCollisionStrategyChange,
+            onScrollFileNamesChange = onScrollFileNamesChange,
             onCompletionNotificationChange = onCompletionNotificationChange,
             onAutoCleanupTempFilesChange = onAutoCleanupTempFilesChange,
             onClearCache = onClearCache,
@@ -207,6 +209,7 @@ private fun FileSettingsSection(
     onPickOutputDirectory: () -> Unit,
     onResetOutputDirectory: () -> Unit,
     onNameCollisionStrategyChange: (NameCollisionStrategy) -> Unit,
+    onScrollFileNamesChange: (Boolean) -> Unit,
     onCompletionNotificationChange: (Boolean) -> Unit,
     onAutoCleanupTempFilesChange: (Boolean) -> Unit,
     onClearCache: () -> Unit,
@@ -245,6 +248,12 @@ private fun FileSettingsSection(
         onSelect = onNameCollisionStrategyChange,
     )
 
+    ToggleRow(
+        title = stringResource(R.string.settings_scroll_file_names),
+        description = stringResource(R.string.settings_scroll_file_names_desc),
+        checked = settings.scrollFileNames,
+        onCheckedChange = onScrollFileNamesChange,
+    )
     ToggleRow(
         title = stringResource(R.string.settings_completion_notification),
         description = stringResource(R.string.settings_completion_notification_desc),

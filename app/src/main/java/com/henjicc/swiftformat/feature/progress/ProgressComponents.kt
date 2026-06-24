@@ -38,12 +38,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.model.ConversionStatus
+import com.henjicc.swiftformat.feature.common.FileNameText
 import com.henjicc.swiftformat.feature.common.errorKindLabelRes
 import com.henjicc.swiftformat.feature.common.statusLabelRes
 import com.henjicc.swiftformat.feature.home.mediaIcon
 
 @Composable
-internal fun ProgressHeader(state: ConversionProgressUiState, onCancelAll: () -> Unit) {
+internal fun ProgressHeader(
+    state: ConversionProgressUiState,
+    onCancelAll: () -> Unit,
+    scrollFileNames: Boolean,
+) {
     Column(modifier = Modifier.padding(16.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -62,12 +67,11 @@ internal fun ProgressHeader(state: ConversionProgressUiState, onCancelAll: () ->
                 .padding(top = 8.dp),
         )
         state.currentItem?.let { current ->
-            Text(
+            FileNameText(
                 text = "${current.displayName} · ${stringResource(statusLabelRes(current.status))}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                scrollEnabled = scrollFileNames,
+                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                maxLinesWhenStatic = 1,
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
@@ -92,6 +96,7 @@ internal fun ConversionTaskRow(
     onShare: (android.net.Uri) -> Unit,
     onShowInFolder: () -> Unit,
     onDeleteUri: (android.net.Uri) -> Boolean,
+    scrollFileNames: Boolean,
 ) {
     var outputDeleted by rememberSaveable(item.taskId) { mutableStateOf(false) }
     var originalDeleted by rememberSaveable(item.taskId) { mutableStateOf(false) }
@@ -119,11 +124,11 @@ internal fun ConversionTaskRow(
             }
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                FileNameText(
                     text = item.displayName,
+                    scrollEnabled = scrollFileNames,
                     style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLinesWhenStatic = 2,
                 )
                 if (item.status != ConversionStatus.COMPLETED) {
                     Text(

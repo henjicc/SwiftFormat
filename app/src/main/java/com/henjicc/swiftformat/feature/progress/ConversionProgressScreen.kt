@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.SwiftFormatApplication
+import com.henjicc.swiftformat.core.model.AppSettings
 import com.henjicc.swiftformat.service.ConversionForegroundService
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,8 +41,10 @@ fun ConversionProgressScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val container = (context.applicationContext as SwiftFormatApplication).container
+    val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
     val fileActions = remember(context) {
-        (context.applicationContext as SwiftFormatApplication).container.resultFileActions
+        container.resultFileActions
     }
     val showActionFailed = {
         Toast.makeText(context, R.string.file_action_failed, Toast.LENGTH_SHORT).show()
@@ -70,7 +73,11 @@ fun ConversionProgressScreen(
                 .padding(innerPadding)
                 .fillMaxSize(),
         ) {
-            ProgressHeader(state = state, onCancelAll = viewModel::cancelAll)
+            ProgressHeader(
+                state = state,
+                onCancelAll = viewModel::cancelAll,
+                scrollFileNames = settings.scrollFileNames,
+            )
             HorizontalDivider()
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -106,6 +113,7 @@ fun ConversionProgressScreen(
                                 false
                             }
                         },
+                        scrollFileNames = settings.scrollFileNames,
                     )
                 }
             }

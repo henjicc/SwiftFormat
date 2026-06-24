@@ -35,6 +35,7 @@ import coil3.compose.AsyncImage
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.core.model.InputFile
 import com.henjicc.swiftformat.core.model.MediaType
+import com.henjicc.swiftformat.feature.common.FileNameText
 
 @Composable
 internal fun GroupHeader(label: String, count: Int) {
@@ -53,6 +54,7 @@ internal fun FileRow(
     imageLoader: ImageLoader,
     unsupported: Boolean = false,
     compact: Boolean = false,
+    scrollFileNames: Boolean = false,
 ) {
     if (compact) {
         FileRowContent(
@@ -61,6 +63,7 @@ internal fun FileRow(
             onRemove = onRemove,
             imageLoader = imageLoader,
             unsupported = unsupported,
+            scrollFileNames = scrollFileNames,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 1.dp),
@@ -75,6 +78,7 @@ internal fun FileRow(
             onRemove = onRemove,
             imageLoader = imageLoader,
             unsupported = unsupported,
+            scrollFileNames = scrollFileNames,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
@@ -89,6 +93,7 @@ private fun FileRowContent(
     onRemove: (String) -> Unit,
     imageLoader: ImageLoader,
     unsupported: Boolean,
+    scrollFileNames: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -120,11 +125,11 @@ private fun FileRowContent(
         }
         Spacer(Modifier.size(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
+            FileNameText(
                 text = file.displayName,
+                scrollEnabled = scrollFileNames,
                 style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                maxLinesWhenStatic = 1,
             )
             val subtitle = if (unsupported) {
                 stringResource(R.string.unsupported_reason)

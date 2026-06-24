@@ -78,6 +78,8 @@
     <string name="settings_name_collision">重名处理</string>
     <string name="settings_name_collision_auto_number">自动追加序号</string>
     <string name="settings_name_collision_overwrite">覆盖同名文件</string>
+    <string name="settings_scroll_file_names">滚动显示文件名</string>
+    <string name="settings_scroll_file_names_desc">文件名过长时自动横向循环滚动，方便查看完整名称</string>
     <string name="settings_completion_notification">完成通知</string>
     <string name="settings_completion_notification_desc">当全部转换结束后显示汇总通知</string>
     <string name="settings_auto_cleanup">自动清理临时文件</string>

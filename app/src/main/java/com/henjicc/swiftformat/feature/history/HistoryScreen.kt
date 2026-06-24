@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.henjicc.swiftformat.R
 import com.henjicc.swiftformat.SwiftFormatApplication
+import com.henjicc.swiftformat.core.model.AppSettings
 import com.henjicc.swiftformat.service.ConversionForegroundService
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,7 +40,9 @@ fun HistoryScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val fileActions = (context.applicationContext as SwiftFormatApplication).container.resultFileActions
+    val container = (context.applicationContext as SwiftFormatApplication).container
+    val fileActions = container.resultFileActions
+    val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -133,6 +136,7 @@ fun HistoryScreen(
                         selectionMode = state.isSelectionMode,
                         selected = item.id in state.selectedIds,
                         onToggleSelection = viewModel::toggleSelection,
+                        scrollFileNames = settings.scrollFileNames,
                     )
                 }
             }
