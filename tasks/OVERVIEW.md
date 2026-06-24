@@ -216,6 +216,12 @@
   padding 收紧，组内文件行去掉嵌套单条 Card 并改为紧凑列表行，同时保留删除按钮 48dp 触点），
   TASK-07 Stage AE（新增默认关闭的“滚动显示文件名”设置项；首页待转换列表、首页活跃任务、进度/结果页、
   历史记录页统一通过 `FileNameText` 支持长文件名首尾循环滚动显示），
+  TASK-07 Stage AF（修复历史页/转换进度页标题顶部留白明显大于设置页的视觉不统一：根因是外层底部导航
+  `Scaffold` 未设 `topBar`，其默认 `contentWindowInsets`（含状态栏）已整段计入 `NavHost` 的
+  `innerPadding`，而 `HistoryScreen` 内联的 `TopAppBar` 与 `ConversionProgressScreen` 内嵌 `Scaffold`
+  的 `TopAppBar` 又各自按默认 `windowInsets = WindowInsets.statusBars` 重复预留了一次状态栏空间，
+  两处都补了 `windowInsets = WindowInsets(0, 0, 0, 0)` 去重；`compileDebugKotlin` 通过，未跑模拟器/
+  真机复验），
   `assembleDebug`、`testDebugUnitTest` 与 `lintDebug` 通过。
 - **下一步**：真机测试（用户已实测，开始转换/崩溃恢复/取消/通知/分享打开查看位置等核心链路基本无问题，
   后续若再发现问题随时反馈）与 GPL 合规均已处理完毕。SPEC 15 设置页剩余项中，「默认保留图片元数据」

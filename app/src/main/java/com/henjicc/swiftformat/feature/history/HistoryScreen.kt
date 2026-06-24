@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -70,6 +71,9 @@ fun HistoryScreen(
                 )
             },
             modifier = Modifier.fillMaxWidth(),
+            // 外层 Scaffold（无 topBar）已经把状态栏内边距留在了 NavHost 的 innerPadding 里，
+            // 这里不能再让 TopAppBar 默认的 WindowInsets.statusBars 重复占一次，否则标题会被往下挤。
+            windowInsets = WindowInsets(0, 0, 0, 0),
             navigationIcon = {
                 if (state.isSelectionMode) {
                     IconButton(onClick = viewModel::clearSelection) {
